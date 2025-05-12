@@ -26,12 +26,12 @@ const Welcome = () => {
     opacity.value = withTiming(1, { duration: 500 });
   });
   return (
-    <View className="flex-1 bg-red-400">
+    <View className="flex-1">
       <View className="absolute left-40">
         <Elipse width={300} height={300} />
       </View>
 
-      <View className="absolute bottom-0 left-3">
+      <View className="absolute bottom-0 left-0">
         <Rectangle width={300} height={300} />
       </View>
 
@@ -42,14 +42,14 @@ const Welcome = () => {
         <Bag width={200} height={200} />
       </Animated.View>
 
-      <View className="absolute bottom-40 left-16 right-16">
+      <View className="absolute bottom-40 left-10 right-10">
         <Text
           style={{ color: Colors.primary }}
-          className="font-bold text-2xl font-inter text-center"
+          className="font-bold text-3xl font-poppins-semiBold text-center"
         >
           {Strings.welcomeMessage}
         </Text>
-        <Text className="text-lg font-poppins-semiBold text-center">
+        <Text className="text-lg font-inter text-center">
           {Strings.welcomeDescription}
         </Text>
       </View>

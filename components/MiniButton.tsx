@@ -1,6 +1,7 @@
-import { TouchableOpacity, Text } from "react-native";
+import { TouchableOpacity } from "react-native";
 import Left from "@/assets/icons/Expand_left.svg";
 import Right from "@/assets/icons/Expand_right.svg";
+import Done from "@/assets/icons/Done_round.svg";
 
 type miniButtonProps = {
     direction: string,
@@ -19,7 +20,7 @@ const MiniButton = ({direction,onPress}: miniButtonProps) => {
             shadowOffset: {width: 0, height: 2}
         }}
         >
-            {direction === "left" ? <Left width={20} height={20}/> : <Right width={20} height={20} />}
+            {direction === "left" ? <Left width={20} height={20}/> : direction === "right" ? <Right width={20} height={20} /> : <Done width={20} height={20} /> }
         </TouchableOpacity>
      );
 }
