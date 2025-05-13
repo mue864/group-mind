@@ -5,20 +5,24 @@ import CheckBox from "@/components/CheckBox";
 import { Strings, TosStrings } from "@/constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View, Dimensions } from "react-native";
 
 const TermsScreen = () => {
+  const screenHeight = Dimensions.get("window").height;
+  const scrollViewHeight = screenHeight * 0.10;
   const router = useRouter();
   const styleParagraph = "font-inter pt-5";
   const styleHeading = "pt-5 font-bold text-xl font-inter";
   const [isPressed, setIsPressed] = useState(false);
   return (
     <View className="flex-1 relative">
-      <Text className="text-primary font-poppins-semiBold text-2xl pt-4 mx-5">
+      <Text className="text-primary font-poppins-semiBold text-2xl pt-8 mx-5">
         {TosStrings.termsOfServiceHeading}
       </Text>
 
-      <ScrollView className="mx-5 pt-1 max-h-[40rem]">
+      <ScrollView className="flex-[0.80] mx-5 pt-1"
+      style={{height: scrollViewHeight}}
+      >
         <Text className="font-inter font-bold text-xl">
           {TosStrings.effectiveDate}
         </Text>
@@ -87,7 +91,7 @@ const TermsScreen = () => {
       </View>
 
       <Pressable
-        className="absolute bottom-28 left-16 right-16"
+        className="absolute bottom-28 left-1/2 -translate-x-1/2"
         onPress={() => setIsPressed(!isPressed)}
       >
         <CheckBox isPressed={isPressed} />

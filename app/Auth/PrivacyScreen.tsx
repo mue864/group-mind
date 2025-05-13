@@ -18,15 +18,19 @@ const PrivacyScreen = () => {
         {PrivacyStrings.mainHeading}
       </Text>
 
-      <ScrollView className="mx-5 pt-1 max-h-[40rem]">
+      <ScrollView className="mx-5 pt-1 flex-[0.80]">
         <Text className="font-inter font-bold text-xl">
           {PrivacyStrings.effectiveDate}
         </Text>
         <Text className="pt-2">{PrivacyStrings.summary}</Text>
 
         {/* info collected*/}
-        <Text className={styleHeading}>{PrivacyStrings.infoWeCollectHeading}</Text>
-        <Text className={styleParagraph}>{PrivacyStrings.infoWeCollectText1}</Text>
+        <Text className={styleHeading}>
+          {PrivacyStrings.infoWeCollectHeading}
+        </Text>
+        <Text className={styleParagraph}>
+          {PrivacyStrings.infoWeCollectText1}
+        </Text>
 
         {PrivacyStrings.infoWeCollectList.map((item, index) => (
           <Text key={index}> • {item}</Text>
@@ -34,8 +38,12 @@ const PrivacyScreen = () => {
         <Text className="pt-2">{PrivacyStrings.infoWeCollectText2}</Text>
 
         {/* Personal Data Storage */}
-        <Text className={styleHeading}>{PrivacyStrings.personalDataStorageHeading}</Text>
-        <Text className={styleParagraph}>{PrivacyStrings.personalDataStorageText}</Text>
+        <Text className={styleHeading}>
+          {PrivacyStrings.personalDataStorageHeading}
+        </Text>
+        <Text className={styleParagraph}>
+          {PrivacyStrings.personalDataStorageText}
+        </Text>
 
         {/* 3rd Party Services */}
         <Text className={styleHeading}>{PrivacyStrings.thirdPartyHeading}</Text>
@@ -44,13 +52,17 @@ const PrivacyScreen = () => {
         </Text>
 
         {/* User responsibility */}
-        <Text className={styleHeading}>{PrivacyStrings.userResponsibilityHeading}</Text>
+        <Text className={styleHeading}>
+          {PrivacyStrings.userResponsibilityHeading}
+        </Text>
         <Text className={styleParagraph}>
           {PrivacyStrings.userResponsibilityText}
         </Text>
 
         {/* Report Abuse */}
-        <Text className={styleHeading}>{PrivacyStrings.abuseReportingHeading}</Text>
+        <Text className={styleHeading}>
+          {PrivacyStrings.abuseReportingHeading}
+        </Text>
         <Text className={styleParagraph}>
           {PrivacyStrings.abuseReportingText}
         </Text>
@@ -73,7 +85,7 @@ const PrivacyScreen = () => {
       </View>
 
       <Pressable
-        className="absolute bottom-28 left-16 right-16"
+        className="absolute bottom-28 left-1/2 -translate-x-1/2"
         onPress={() => setIsPressed(!isPressed)}
       >
         <CheckBox isPressed={isPressed} />
@@ -82,7 +94,7 @@ const PrivacyScreen = () => {
       <View className="absolute right-8 left-8 bottom-5">
         <Button
           onPress={() => {
-            isPressed && router.push("/Auth/PrivacyScreen");
+            isPressed && router.replace("/Auth/SigninScreen");
           }}
           buttonText={Strings.continueButton}
         />
