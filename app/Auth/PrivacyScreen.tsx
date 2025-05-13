@@ -2,12 +2,12 @@ import Elipse from "@/assets/icons/termsElipse.svg";
 import Rect from "@/assets/icons/termsRect.svg";
 import Button from "@/components/Button";
 import CheckBox from "@/components/CheckBox";
-import { Strings, TosStrings } from "@/constants";
+import { PrivacyStrings, Strings } from "@/constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-const TermsScreen = () => {
+const PrivacyScreen = () => {
   const router = useRouter();
   const styleParagraph = "font-inter pt-5";
   const styleHeading = "pt-5 font-bold text-xl font-inter";
@@ -15,68 +15,54 @@ const TermsScreen = () => {
   return (
     <View className="flex-1 relative">
       <Text className="text-primary font-poppins-semiBold text-2xl pt-4 mx-5">
-        {TosStrings.termsOfServiceHeading}
+        {PrivacyStrings.mainHeading}
       </Text>
 
       <ScrollView className="mx-5 pt-1 max-h-[40rem]">
         <Text className="font-inter font-bold text-xl">
-          {TosStrings.effectiveDate}
+          {PrivacyStrings.effectiveDate}
         </Text>
-        <Text className="pt-2">{TosStrings.termsIntro}</Text>
+        <Text className="pt-2">{PrivacyStrings.summary}</Text>
 
-        {/* Description of Service */}
-        <Text className={styleHeading}>{TosStrings.dosHeading}</Text>
-        <Text className={styleParagraph}>{TosStrings.dosParagraph}</Text>
+        {/* info collected*/}
+        <Text className={styleHeading}>{PrivacyStrings.infoWeCollectHeading}</Text>
+        <Text className={styleParagraph}>{PrivacyStrings.infoWeCollectText1}</Text>
 
-        {TosStrings.dosList.map((item, index) => (
+        {PrivacyStrings.infoWeCollectList.map((item, index) => (
           <Text key={index}> • {item}</Text>
         ))}
-        <Text className="pt-2">{TosStrings.dosLastParagraph}</Text>
+        <Text className="pt-2">{PrivacyStrings.infoWeCollectText2}</Text>
 
-        {/* Account Registration */}
-        <Text className={styleHeading}>{TosStrings.accRegHeading}</Text>
-        <Text className={styleParagraph}>{TosStrings.accRegParagraph}</Text>
+        {/* Personal Data Storage */}
+        <Text className={styleHeading}>{PrivacyStrings.personalDataStorageHeading}</Text>
+        <Text className={styleParagraph}>{PrivacyStrings.personalDataStorageText}</Text>
 
-        {TosStrings.accRegList.map((item, index) => (
-          <Text key={index}> • {item}</Text>
-        ))}
-        <Text className="pt-2">{TosStrings.accRegLastParagraph}</Text>
-
-        {/* Data Privacy */}
-        <Text className={styleHeading}>{TosStrings.dataPrivacyHeading}</Text>
+        {/* 3rd Party Services */}
+        <Text className={styleHeading}>{PrivacyStrings.thirdPartyHeading}</Text>
         <Text className={styleParagraph}>
-          {TosStrings.dataPrivacyParagraph}
+          {PrivacyStrings.thirdPartyServicesText}
         </Text>
 
-        {/* User Conduct */}
-        <Text className={styleHeading}>{TosStrings.userConductHeading}</Text>
+        {/* User responsibility */}
+        <Text className={styleHeading}>{PrivacyStrings.userResponsibilityHeading}</Text>
         <Text className={styleParagraph}>
-          {TosStrings.userConductParagraph}
+          {PrivacyStrings.userResponsibilityText}
         </Text>
-        {TosStrings.userConductList.map((item, index) => (
-          <Text key={index}> • {item}</Text>
-        ))}
-
-        <Text className="pt-2">{TosStrings.userConductLastParagraph}</Text>
 
         {/* Report Abuse */}
-        <Text className={styleHeading}>{TosStrings.reportAbuseHeading}</Text>
+        <Text className={styleHeading}>{PrivacyStrings.abuseReportingHeading}</Text>
         <Text className={styleParagraph}>
-          {TosStrings.reportAbuseParagraph}
+          {PrivacyStrings.abuseReportingText}
         </Text>
 
-        {/* Limitation of Liability */}
+        {/* Policy changes */}
 
         <Text className={styleHeading}>
-          {TosStrings.limitationOfLiabilityHeading}
+          {PrivacyStrings.policyChangesHeading}
         </Text>
         <Text className={styleParagraph}>
-          {TosStrings.limitationOfLiabilityParagraph}
+          {PrivacyStrings.policyChangesText}
         </Text>
-
-        {/* change of terms */}
-        <Text className={styleHeading}>{TosStrings.cotHeading}</Text>
-        <Text className={styleParagraph}>{TosStrings.cotParagraph}</Text>
       </ScrollView>
 
       <View className="absolute bottom-0 -z-10" pointerEvents="box-none">
@@ -105,4 +91,4 @@ const TermsScreen = () => {
   );
 };
 
-export default TermsScreen;
+export default PrivacyScreen;

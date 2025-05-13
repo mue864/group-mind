@@ -80,7 +80,7 @@ const IntroduceScreen_4 = () => {
 
       <View className="absolute right-10 bottom-14">
         <MiniButton
-          onPress={() => router.push("/Auth/TermsScreen")}
+          onPress={() => router.replace("/Auth/TermsScreen")}
           direction="done"
         />
       </View>
