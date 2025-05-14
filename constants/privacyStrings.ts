@@ -4,6 +4,8 @@ const PrivacyPolicy = {
   summary:
     "This Privacy Policy explains how GroupMind handles your information. As a school project, we are committed to protecting your privacy and ensuring a safe learning environment.",
 
+  privacyAgreement: "I agree to the Privacy Policy.",
+
   // info collected
   infoWeCollectHeading: "1. Information We Collect",
   infoWeCollectText1: "When you register on GroupMind, we collect:",
