@@ -35,6 +35,13 @@ const Strings = {
     loginButton: "SIGN IN",
     signUpButton: "SIGN UP",
     forgotPassword: "Forgot Password?",
+    createAccountHeading: "Create Account",
+    signInHeading: "Sign In",
+    signInSubHeading: "Welcome Back!",
+    createAccountSubHeading: "Create an account to access features.",
+    accountExists: "Already have an account?",
+    accountDontExtist: "Don't have an account?",
+    continue: "Or countinue with"
   },
   group: {
     createGroup: "Create Group",

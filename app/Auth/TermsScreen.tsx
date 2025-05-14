@@ -94,7 +94,7 @@ const TermsScreen = () => {
         className="absolute bottom-28 left-1/2 -translate-x-1/2"
         onPress={() => setIsPressed(!isPressed)}
       >
-        <CheckBox isPressed={isPressed} />
+        <CheckBox isPressed={isPressed} page="tos" />
       </Pressable>
 
       <View className="absolute right-8 left-8 bottom-5">

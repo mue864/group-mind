@@ -88,13 +88,13 @@ const PrivacyScreen = () => {
         className="absolute bottom-28 left-1/2 -translate-x-1/2"
         onPress={() => setIsPressed(!isPressed)}
       >
-        <CheckBox isPressed={isPressed} />
+        <CheckBox isPressed={isPressed} page="privacy" />
       </Pressable>
 
       <View className="absolute right-8 left-8 bottom-5">
         <Button
           onPress={() => {
-            isPressed && router.replace("/Auth/SigninScreen");
+            isPressed && router.replace("/Auth/SignUpScreen");
           }}
           buttonText={Strings.continueButton}
         />

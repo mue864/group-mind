@@ -4,6 +4,7 @@ import { useCallback, useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import {useFonts} from 'expo-font';
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,6 +35,7 @@ const RootLayout = () => {
     <SafeAreaView className="flex-1">
       <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
         <Slot />
+        <Toast />
       </View>
     </SafeAreaView>
   );
