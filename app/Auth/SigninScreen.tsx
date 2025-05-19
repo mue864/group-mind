@@ -9,9 +9,11 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { validateEmail } from "@/constants/emailValidation";
 import Toast from "react-native-toast-message";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/services/firebase";
 
 
-const SignupScreen = () => {
+const SignInScreen = () => {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -26,6 +28,29 @@ const SignupScreen = () => {
             text2: "Please enter a valid email"
           }
         )
+      } else {
+        console.log("in here")
+        handhandleData();
+      }
+    }
+
+    const handhandleData = async () => {
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCred.user;
+
+        Toast.show({
+          type: 'success',
+          text1: 'Welcome Back!',
+        })
+
+        router.replace('/Auth/CreateProfile');
+      } catch(error: any) {
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: error.message,
+          });
       }
     }
 
@@ -102,4 +127,4 @@ const SignupScreen = () => {
     );
 }
  
-export default SignupScreen;
+export default SignInScreen;

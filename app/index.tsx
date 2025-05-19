@@ -8,6 +8,8 @@ import  Animated, {
     withTiming,
     useAnimatedStyle,
 }  from "react-native-reanimated";
+import { auth } from "@/services/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 const Entry = () => {
     const router = useRouter();
@@ -20,17 +22,26 @@ const Entry = () => {
             opacity: opacity.value,
             transform: [{scale: opacity.value}],
         }
-    ))
+    ));
+
     useEffect(() => {
         // start animation
         opacity.value = withTiming(1, {duration: 1000});
 
-        const timeout = setTimeout(() => {
-            router.navigate("/Onboarding/Welcome");
-        }, 2000);
+        // firebase auth
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            const timeout = setTimeout(() => {
+                if (user) {
+                    router.replace("/Auth/CreateProfile");
+                } else {
+                    router.replace("/Onboarding/Welcome");
+                }
+            }, 2000);
 
-        return () => clearTimeout(timeout);
-    })
+            return () => clearTimeout(timeout);
+        });
+        return () => unsubscribe();
+    }, []);
 
 
     return (

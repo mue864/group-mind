@@ -41,7 +41,7 @@ const Strings = {
     createAccountSubHeading: "Create an account to access features.",
     accountExists: "Already have an account?",
     accountDontExtist: "Don't have an account?",
-    continue: "Or countinue with"
+    continue: "Or countinue with",
   },
   group: {
     createGroup: "Create Group",
@@ -50,10 +50,17 @@ const Strings = {
     textBoxMessage: "Say something...",
     scheduleButton: "Schedule",
   },
+  userProfile: {
+    profileCreationHeading: "Tell us about yourself",
+    userName: "Username",
+    userLevel: "Level",
+    userAge: "Age",
+    userPurpose: "I came here for",
+    userSubjects: "Subjects",
+    userConfident: "I'm able to explain a certain concept to someone",
+  },
 
-  
-  
-    // Privacy policy
+  // Privacy policy
 };
 
 export default Strings;

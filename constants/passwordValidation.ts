@@ -7,5 +7,5 @@ export const validatePasswords = (password: string, confirmPassword: string) => 
 }
 
 export const passwordLength = (password: string) => {
-    return password.length < 5;
+    return password.length < 6;
 }

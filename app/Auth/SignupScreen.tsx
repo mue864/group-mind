@@ -45,10 +45,48 @@ const SignUpScreen = () => {
         });
       } else {
         // add signup logic
+        handleUserInfo();
       }
     };
 
+    const handleUserInfo = async () => {
+      try {
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCred.user;
 
+        await setDoc(doc(db, "user", user.uid), {
+          email: user.email,
+          createdAt: new Date().toISOString(),
+        })
+        Toast.show({
+          type: 'success',
+          text1: 'Account Created',
+          text2: 'Logging you in'
+        })
+      } catch(error: any) {
+        
+        let message = "";
+        switch (error.code) {
+          case "auth/invalid-email":
+            message = "Invalid email address";
+            break;
+          case "auth/user-not-found":
+            message = "No account found for this email";
+            break;
+          case "auth/wrong-password":
+            message = "Incorrect password";
+            break;
+          default:
+            message = "Something went wrong";
+        }
+
+        Toast.show({
+          type: "error",
+          text1: "Login Failed",
+          text2: message,
+        });
+      }
+    }
 
     useEffect(() => {
         setPasswordMatch(validatePasswords(password, confirmPassord))
