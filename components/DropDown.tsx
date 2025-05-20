@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesome6 } from "@expo/vector-icons";
 
 interface DropDownProps {
@@ -8,13 +8,20 @@ interface DropDownProps {
     placeholder: string,
     zIndex: number,
     zIndexInverse: number,
+    setValue: (level: string)  => void,
+
 }
 
-const DropDown: React.FC<DropDownProps> = ({data, placeholder, zIndex, zIndexInverse}) => {
+const DropDown: React.FC<DropDownProps> = ({data, placeholder, zIndex, zIndexInverse, setValue}) => {
   // dropdown
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setLocalValue] = useState("");
   const [items, setItems] = useState(data);
+
+  useEffect(() => {
+    setValue(value)
+  }, [value, setValue]);
+  
   return (
     <View style={{ zIndex: open ? zIndex : 1 }}>
       <DropDownPicker
@@ -22,7 +29,7 @@ const DropDown: React.FC<DropDownProps> = ({data, placeholder, zIndex, zIndexInv
         value={value}
         items={items}
         setOpen={setOpen}
-        setValue={setValue}
+        setValue={setLocalValue}
         setItems={setItems}
         placeholder={placeholder}
         listMode="MODAL"

@@ -100,7 +100,7 @@ const TermsScreen = () => {
       <View className="absolute right-8 left-8 bottom-5">
         <Button
           onPress={() => {
-            isPressed && router.push("/Auth/PrivacyScreen");
+            isPressed && router.push("/Auth/privacyScreen");
           }}
           buttonText={Strings.continueButton}
         />

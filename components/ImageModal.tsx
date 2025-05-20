@@ -5,26 +5,26 @@ import { useState } from "react";
 interface ImageModalProps {
     modalVisible: boolean,
     changeModalVisibility: (modalVisible: boolean) => void,
-    selectedImage: (selectedImage: number | null) => void,
+    selectedImage: (selectedImage: string | null) => void,
 }
 const ImageModal = ({modalVisible, changeModalVisibility, selectedImage}: ImageModalProps) => {
-    const avatars = [
-        require('@/assets/images/avatars/avatar1.jpg'),
-        require('@/assets/images/avatars/avatar2.jpg'),
-        require('@/assets/images/avatars/avatar3.jpg'),
-        require('@/assets/images/avatars/avatar4.jpg'),
-        require('@/assets/images/avatars/avatar5.jpg'),
-        require('@/assets/images/avatars/avatar6.jpg'),
-        require('@/assets/images/avatars/avatar7.jpg'),
-        require('@/assets/images/avatars/avatar8.jpg'),
-        require('@/assets/images/avatars/avatar9.jpg'),
-    ];
-    const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null);
+    const avatars = {
+       'avatar1.jpg': require('@/assets/images/avatars/avatar1.jpg'),
+       'avatar2.jpg': require('@/assets/images/avatars/avatar2.jpg'),
+       'avatar3.jpg': require('@/assets/images/avatars/avatar3.jpg'),
+       'avatar4.jpg': require('@/assets/images/avatars/avatar4.jpg'),
+       'avatar5.jpg': require('@/assets/images/avatars/avatar5.jpg'),
+       'avatar6.jpg': require('@/assets/images/avatars/avatar6.jpg'),
+       'avatar7.jpg': require('@/assets/images/avatars/avatar7.jpg'),
+       'avatar8.jpg': require('@/assets/images/avatars/avatar8.jpg'),
+       'avatar9.jpg': require('@/assets/images/avatars/avatar9.jpg'),
+        
+    };
+    const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
     
     const handleContinue = () => {
       if (selectedAvatar !== null) {
-        const image = avatars[selectedAvatar];
-        selectedImage(image);
+        selectedImage(selectedAvatar);
         changeModalVisibility(!modalVisible);
         
       }
@@ -42,12 +42,13 @@ const ImageModal = ({modalVisible, changeModalVisibility, selectedImage}: ImageM
             </Text>
 
             <View className="flex-row flex-wrap justify-center gap-3">
-              {avatars.map((avatar, id) => (
+              {Object.entries(avatars).map(([name, source]) => (
                 <TouchableOpacity
-                  key={id}
-                  onPress={() => setSelectedAvatar(id)}
+                  key={name}
+                  onPress={() => setSelectedAvatar(name)}
+                  
                 >
-                  <Image source={avatar} className={`w-20 h-20 rounded-full ${selectedAvatar === id ? "border-4 border-primary" : "" } `} />
+                  <Image source={source} className={`w-20 h-20 rounded-full ${selectedAvatar === name ? "border-4 border-primary" : "" } `} />
                 </TouchableOpacity>
               ))}
             </View>

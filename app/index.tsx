@@ -1,6 +1,5 @@
 import "../global.css";
 import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import  Animated, {
@@ -32,9 +31,9 @@ const Entry = () => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             const timeout = setTimeout(() => {
                 if (user) {
-                    router.replace("/Auth/CreateProfile");
+                    router.replace("/Dashboard/home");
                 } else {
-                    router.replace("/Onboarding/Welcome");
+                    router.replace("/Onboarding/welcome");
                 }
             }, 2000);
 

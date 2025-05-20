@@ -81,7 +81,7 @@ const IntroduceScreen_3 = () => {
 
       <View className="absolute right-10 bottom-14">
         <MiniButton
-          onPress={() => router.push("/Onboarding/IntroduceScreen_4")}
+          onPress={() => router.push("/Onboarding/introduceScreen_4")}
           direction="right"
         />
       </View>
@@ -90,7 +90,7 @@ const IntroduceScreen_3 = () => {
         className="absolute left-10  bottom-14"
       >
         <MiniButton
-          onPress={() => router.push("/Onboarding/IntroduceScreen_2")}
+          onPress={() => router.push("/Onboarding/introduceScreen_2")}
           direction="left"
         />
       </Animated.View>

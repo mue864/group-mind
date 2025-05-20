@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { TextInput, View } from "react-native";
 
 interface TextBoxProps {
@@ -6,10 +7,15 @@ interface TextBoxProps {
   value: string;
   onChangeText: (text: string) => void;
   secureTextEntry: boolean;
-  borderColor: boolean
+  borderColor: boolean;
+  setValue: (username: string) => void;
 }
 
-const TextBox = ({ placeholder, value, onChangeText, method, secureTextEntry, borderColor }: TextBoxProps) => {
+const TextBox = ({ placeholder, value, onChangeText, method, secureTextEntry, borderColor, setValue }: TextBoxProps) => {
+
+  useEffect(() => {
+    setValue(value);
+  }, [value, setValue]);
 
   return (
     <View>

@@ -94,7 +94,7 @@ const PrivacyScreen = () => {
       <View className="absolute right-8 left-8 bottom-5">
         <Button
           onPress={() => {
-            isPressed && router.replace("/Auth/SignInScreen");
+            isPressed && router.replace("/Auth/signInScreen");
           }}
           buttonText={Strings.continueButton}
         />

@@ -18,13 +18,84 @@ import {
 import ImageModal from "@/components/ImageModal";
 import ProfileImage from "@/components/ProfileImage";
 import Button from "@/components/Button";
+import Toast from "react-native-toast-message";
+import { auth, db } from "@/services/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { useRouter } from "expo-router";
 
 const CreateProfile = () => {
+
+  const router = useRouter();
+  // text input value
   const [userName, setUserName] = useState("");
+
+  // rn dropdown value
+  const [level, setLevel] = useState("");
+  const [age, setAge] = useState("");
+  const [purpose, setPurpose] = useState("");
+
+
   const [isChecked, setIsChecked] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<number | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+
+  const handleSubmit = () => {
+    if (level === "") {
+      Toast.show({
+        type: 'info',
+        text1: 'Required',
+        text2: 'Fill in your current level',
+      });
+    }
+    if (age === "") {
+      Toast.show({
+        type: 'info',
+        text1: 'Required',
+        text2: 'Fill in your Age'
+      });
+    }
+    if (purpose === "") {
+      Toast.show({
+        type: 'info',
+        text1: 'Required',
+        text2: 'Select what you came for'
+      })
+    }
+
+    if(purpose === "" && userName === "" && age === "" && level === "") {
+      Toast.show({
+        type: 'info',
+        text1: 'Required',
+        text2: 'Fill in the blanks to continue'
+      });
+    }
+
+    dataSave();
+  }
+
+  const dataSave = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      await updateDoc(doc(db, "users", user.uid), {
+        userName: userName,
+        level: level,
+        age: age,
+        purpose: purpose,
+        profileImage: selectedImage,
+        canExplainToPeople: isChecked,
+        profileComplete: true,
+      });
+      router.replace('/Dashboard/home')
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: "An error occured, please log in again."
+      });
+      router.replace('/Auth/signInScreen');
+    }
+  }
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -80,6 +151,7 @@ const CreateProfile = () => {
               secureTextEntry={false}
               placeholder={Strings.userProfile.userName}
               method={"default"}
+              setValue={setUserName}
             />
           </View>
 
@@ -90,6 +162,7 @@ const CreateProfile = () => {
               placeholder={Strings.userProfile.userLevel}
               zIndex={3000}
               zIndexInverse={1000}
+              setValue={setLevel}
             />
           </View>
 
@@ -99,6 +172,7 @@ const CreateProfile = () => {
               placeholder={Strings.userProfile.userAge}
               zIndex={2000}
               zIndexInverse={2000}
+              setValue={setAge}
             />
           </View>
 
@@ -108,25 +182,29 @@ const CreateProfile = () => {
               placeholder={Strings.userProfile.userPurpose}
               zIndex={1000}
               zIndexInverse={3000}
+              setValue={setPurpose}
             />
           </View>
 
           {/* Checkbox */}
-          <View className="mx-10 flex-row items-center">
+          <Pressable className="mx-10 flex-row items-center"
+          onPress={() => setIsChecked(!isChecked)}
+          >
             <CheckBox
               value={isChecked}
               onValueChange={setIsChecked}
               color={isChecked ? "#4169E1" : "#9EADD9"}
             />
             <Text className="ml-3">{Strings.userProfile.userConfident}</Text>
-          </View>
+          </Pressable>
 
           <View className="mx-10 absolute bottom-20 right-16 left-16">
             <Button 
             buttonText={Strings.continueButton}
-            onPress={() => console.log("Data: ")}
+            onPress={handleSubmit}
             />
           </View>
+
         </ScrollView>
       </View>
     </KeyboardAvoidingView>

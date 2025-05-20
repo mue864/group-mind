@@ -44,7 +44,7 @@ const SignInScreen = () => {
           text1: 'Welcome Back!',
         })
 
-        router.replace('/Auth/CreateProfile');
+        router.replace('/Auth/createProfile');
       } catch(error: any) {
           Toast.show({
             type: "error",
@@ -84,6 +84,7 @@ const SignInScreen = () => {
             method="email"
             secureTextEntry={false}
             borderColor={true}
+            setValue={setEmail}
           />
         </View>
         {/* password box */}
@@ -95,6 +96,7 @@ const SignInScreen = () => {
             method="password"
             secureTextEntry={true}
             borderColor={true}
+            setValue={setPassword}
           />
         </View>
 
@@ -107,7 +109,7 @@ const SignInScreen = () => {
 
         <Pressable
           className="mt-10"
-          onPress={() => router.push("/Auth/SignUpScreen")}
+          onPress={() => router.push("/Auth/signUpScreen")}
         >
           <Text className="font-poppins-semiBold text-center">
             {Strings.login.accountDontExtist}

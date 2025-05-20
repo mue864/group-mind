@@ -12,7 +12,7 @@ import { validateEmail } from "@/constants/emailValidation";
 import Toast from "react-native-toast-message";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/services/firebase";
-import {doc, setDoc} from "firebase/firestore";
+import {doc, setDoc, Timestamp} from "firebase/firestore";
 
 
 const SignUpScreen = () => {
@@ -37,12 +37,6 @@ const SignUpScreen = () => {
           text1: "Passwords do not match",
           text2: "Double check your passwords",
         });
-      } else if (!passwordLength(password)) {
-        Toast.show({
-          type: "info",
-          text1: "Short Password",
-          text2: "Use 5 or more characters",
-        });
       } else {
         // add signup logic
         handleUserInfo();
@@ -54,15 +48,29 @@ const SignUpScreen = () => {
         const userCred = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCred.user;
 
-        await setDoc(doc(db, "user", user.uid), {
+        await setDoc(doc(db, "users", user.uid), {
           email: user.email,
-          createdAt: new Date().toISOString(),
-        })
+          createdAt: Timestamp.now(),
+          userName: "",
+          level: "",
+          age: "",
+          purpose: "",
+          profileImage: "",
+          subjectsOfInterest: [],
+          joinedGroups: [],
+          lastActive: Timestamp.now(),
+          isOnline: false,
+          notificationsEnabled: false,
+          canExplainToPeople: false,
+          isFirstLogin: true,
+          profileComplete: false,
+        });
         Toast.show({
           type: 'success',
           text1: 'Account Created',
           text2: 'Logging you in'
         })
+        router.replace("/Auth/createProfile");
       } catch(error: any) {
         
         let message = "";
@@ -77,7 +85,7 @@ const SignUpScreen = () => {
             message = "Incorrect password";
             break;
           default:
-            message = "Something went wrong";
+            message = error.code;
         }
 
         Toast.show({
@@ -121,6 +129,7 @@ const SignUpScreen = () => {
             onChangeText={setEmail}
             secureTextEntry={false}
             borderColor={true}
+            setValue={setEmail}
           />
         </View>
         {/* password box */}
@@ -136,6 +145,7 @@ const SignUpScreen = () => {
                 ? true
                 : isPasswordMatch
             }
+            setValue={setPassword}
           />
         </View>
         {/* confirm password */}
@@ -151,6 +161,7 @@ const SignUpScreen = () => {
                 ? true
                 : isPasswordMatch
             }
+            setValue={setConfirmPassword}
           />
         </View>
 
@@ -163,7 +174,7 @@ const SignUpScreen = () => {
 
         <Pressable
           className="mt-10"
-          onPress={() => router.push("/Auth/SignInScreen")}
+          onPress={() => router.push("/Auth/signInScreen")}
         >
           <Text className="font-poppins-semiBold text-center">
             {Strings.login.accountExists}
