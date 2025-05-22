@@ -49,6 +49,8 @@ const Strings = {
     postQuestion: "Post Question",
     textBoxMessage: "Say something...",
     scheduleButton: "Schedule",
+    yourGroupsTab: "Your Groups",
+    exploreGroups: "Explore",
   },
   userProfile: {
     profileCreationHeading: "Tell us about yourself",

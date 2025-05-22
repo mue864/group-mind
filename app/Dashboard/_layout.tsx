@@ -1,5 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigationState } from "@react-navigation/native";
 import { Drawer } from "expo-router/drawer";
+import { TouchableOpacity } from "react-native";
+import SearchIcon from "@/components/SearchIcon";
 
 function getActiveRouteName(state) {
   if (!state) return null;
@@ -57,7 +60,14 @@ const DrawerLayout = () => {
     >
       <Drawer.Screen
         name="(tabs)"
-        options={{ headerTitle: headerTitle, drawerLabel: "Home" }}
+        options={{ headerTitle: headerTitle, drawerLabel: "Home", headerRight: () => (
+          <TouchableOpacity
+          onPress={()=> console.log("search page")}
+          className="mx-3"
+          >
+            <SearchIcon />
+          </TouchableOpacity>
+        ) }}
       />
       <Drawer.Screen 
       name="profile"

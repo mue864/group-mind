@@ -8,7 +8,7 @@ interface ActionButtonProps {
 const ActionButton = ({action}: ActionButtonProps) => {
     return ( 
         <TouchableOpacity
-        className="bg-primary rounded-xl flex-row justify-center items-center p-4 absolute bottom-20 right-7"
+        className="bg-secondary rounded-xl flex-row justify-center items-center p-4 absolute bottom-20 right-24 left-24"
         style={{elevation: 6}}
         onPress={action}
         >
