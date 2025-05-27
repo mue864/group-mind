@@ -51,6 +51,9 @@ const Strings = {
     scheduleButton: "Schedule",
     yourGroupsTab: "Your Groups",
     exploreGroups: "Explore",
+    createGroupName: "Group Name",
+    createGroupDescription: "Group Description",
+    createGroupButton: "Create Group",
   },
   userProfile: {
     profileCreationHeading: "Tell us about yourself",

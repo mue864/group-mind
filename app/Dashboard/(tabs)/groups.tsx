@@ -11,8 +11,12 @@ import Animated, {
 import { snapShort } from "./home";
 import Rect from "@/assets/icons/rectangle.svg";
 import Elipse from "@/assets/icons/ellipse.svg";
+import FloatingButton from "@/components/FloatingButton";
+import {useRouter} from "expo-router";
 
 const Groups = () => {
+  const router = useRouter();
+
   const opacity = useSharedValue(0);
   const [userGroups, setUserGroups] = useState([]);
   const [pageIndex, setPageIndex] = useState(0);
@@ -29,7 +33,6 @@ const Groups = () => {
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 1000 });
-    console.log(snapShort.uid);
   });
   return (
     <View className="flex-1 bg-white">
@@ -73,24 +76,52 @@ const Groups = () => {
         </View>
       ) : (
         <View className="flex-1 justify-center items-center">
-          <View className="absolute top-0 left-10">
-            {/* your groups */}
-            <MiniTabs
-              index={pageIndex}
-              setIndex={setPageIndex}
-              isActive={pageIndex === 0 ? true : false}
-              tabText={Strings.group.yourGroupsTab}
-            />
-          </View>
-          {/* explore groups */}
-          <View className="absolute top-0 left-44">
-            <MiniTabs
-              index={pageIndex}
-              setIndex={setPageIndex}
-              isActive={pageIndex === 1 ? true : false}
-              tabText={Strings.group.exploreGroups}
-            />
-          </View>
+          {userGroups.length === 0 ? (
+            <>
+            <View className="absolute top-1 left-10">
+                      
+                <MiniTabs
+                  index={pageIndex}
+                  setIndex={setPageIndex}
+                  isActive={pageIndex === 0 ? true : false}
+                  tabText={Strings.group.yourGroupsTab}
+                />
+                </View>
+                  
+                 <View className="absolute top-1 left-44">
+                  <MiniTabs
+                  index={pageIndex}
+                  setIndex={setPageIndex}
+                  isActive={pageIndex === 1 ? true : false}
+                  tabText={Strings.group.exploreGroups}
+                  />
+                 </View>
+
+                 <View>
+                  <Text className="font-poppins text-gray-500 text-center">No Groups Found</Text>
+                 </View>
+                </>
+          ) : (
+            <>
+              <View className="absolute top-1 left-10">
+                <MiniTabs
+                  index={pageIndex}
+                  setIndex={setPageIndex}
+                  isActive={pageIndex === 0 ? true : false}
+                  tabText={Strings.group.yourGroupsTab}
+                />
+              </View>
+              <View className="absolute top-1 left-44">
+                <MiniTabs
+                  index={pageIndex}
+                  setIndex={setPageIndex}
+                  isActive={pageIndex === 1 ? true : false}
+                  tabText={Strings.group.exploreGroups}
+                />
+              </View>
+            </>
+          )}
+          <FloatingButton action={() => router.push("/(groups)/GroupCreate")} />
         </View>
       )}
     </View>

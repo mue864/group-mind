@@ -1,4 +1,4 @@
-import { Slot } from "expo-router";
+import { Slot, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -34,7 +34,7 @@ const RootLayout = () => {
   return (
     <SafeAreaView className="flex-1">
       <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
-        <Slot />
+        <Stack screenOptions={{headerShown: false}} />
         <Toast />
       </View>
     </SafeAreaView>

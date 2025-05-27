@@ -17,7 +17,7 @@ const ProfileImage = ({imageLocation}: ImageLocationProps) => {
       "avatar9.jpg": require("@/assets/images/avatars/avatar9.jpg"),
     };
     return ( 
-            <Image source={avatars[imageLocation]} style={{width: 100, height: 100 }} className="rounded-full border border-muted" />
+            <Image source={avatars[imageLocation]} style={{width: 150, height: 150 }} className="rounded-full border border-muted" />
      );
 }
  

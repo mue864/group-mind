@@ -135,15 +135,15 @@ const CreateProfile = () => {
                 <ProfileImage imageLocation={selectedImage} />
             ) : (
               <Avatar
-                width={100}
-                height={100}
+                width={150}
+                height={150}
                 className="border border-muted"
               />
             )}
           </Pressable>
 
           {/* Username */}
-          <View className="mx-10">
+          <View className="mx-10">  
             <TextBox
               onChangeText={setUserName}
               value={userName}

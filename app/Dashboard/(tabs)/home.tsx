@@ -1,6 +1,6 @@
 import ActionButton from "@/components/ActionButton";
 import { auth, db } from "@/services/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Rect from "@/assets/icons/rectangle.svg";
@@ -31,9 +31,14 @@ const Home = () => {
     }))
 
     const [profileName, setProfileName] = useState("");
-    const [groups, setGroups] = useState([]);
+    interface Group {
+      id: string;
+      [key: string]: any; // For other properties from doc.data()
+    }
 
-    const retrieveData = async () => {
+    const [groups, setGroups] = useState<Group[]>([]);
+
+    const retrieveUserData = async () => {
         if (user) {
           const userId = user.uid;
           const userRef = doc(db, "users", userId);
@@ -41,7 +46,6 @@ const Home = () => {
 
           if (userDocSnap.exists()) {
             snapShort = userDocSnap.data();
-            console.log(userId)
             const userName = userDocSnap.data().userName;
             const userGroups = userDocSnap.data().joinedGroups;
             setProfileName(userName);
@@ -50,10 +54,26 @@ const Home = () => {
             console.log("nice try!");
           }
         } 
-       
+    }
+
+    const retrieveGroupsData = async (uuid: string) => {
+      const q = query(
+        collection(db, "groups"),
+        where("users", "array-contains", uuid)
+      );
+      const querySnapshot = await getDocs(q);
+      const groups: Group[] = [];
+
+      querySnapshot.forEach((doc) => {
+        groups.push({id: doc.id, ...doc.data()});
+      })
+      setGroups(groups);
     }
     useEffect(() => {
-        retrieveData();
+        retrieveUserData();
+        if (user?.uid) {
+          retrieveGroupsData(user.uid);
+        }
 
         opacity.value = withTiming(1, {duration: 1500});
         translateY.value = withTiming(0, {duration: 100});
