@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigationState } from "@react-navigation/native";
 import { Drawer } from "expo-router/drawer";
 import { TouchableOpacity } from "react-native";

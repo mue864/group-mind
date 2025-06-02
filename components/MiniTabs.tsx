@@ -16,7 +16,7 @@ const MiniTabs = ({index, tabText, isActive, setIndex}: MiniTabsProps) => {
     }
     return (
 
-        <Pressable className={`rounded-full border ${isActive ? "bg-primary" : "bg-background"} border-primary w-32 h-7`}
+        <Pressable className={`rounded-full border justify-center ${isActive ? "bg-primary" : "bg-background"} border-primary w-32 h-7`}
         style={{
             elevation: 4
         }}

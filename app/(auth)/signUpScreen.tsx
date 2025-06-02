@@ -58,6 +58,7 @@ const SignUpScreen = () => {
           profileImage: "",
           subjectsOfInterest: [],
           joinedGroups: [],
+          resources: [],
           lastActive: Timestamp.now(),
           isOnline: false,
           notificationsEnabled: false,

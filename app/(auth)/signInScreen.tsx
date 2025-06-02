@@ -29,7 +29,6 @@ const SignInScreen = () => {
           }
         )
       } else {
-        console.log("in here")
         handhandleData();
       }
     }

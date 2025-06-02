@@ -2,7 +2,7 @@ import Group from "@/assets/icons/group.svg";
 import MiniTabs from "@/components/MiniTabs";
 import { Strings } from "@/constants";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { Text, View, StatusBar } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -13,6 +13,8 @@ import Rect from "@/assets/icons/rectangle.svg";
 import Elipse from "@/assets/icons/ellipse.svg";
 import FloatingButton from "@/components/FloatingButton";
 import {useRouter} from "expo-router";
+import {db} from "@/services/firebase";
+import { collection } from "firebase/firestore";
 
 const Groups = () => {
   const router = useRouter();
@@ -29,6 +31,7 @@ const Groups = () => {
   const retrieveData = () => {
     const groups = snapShort.joinedGroups;
     setUserGroups(groups);
+    console.log(groups)
   };
 
   useEffect(() => {
@@ -36,6 +39,7 @@ const Groups = () => {
   });
   return (
     <View className="flex-1 bg-white">
+      <StatusBar barStyle={'dark-content'}  />
       <View className="absolute bottom-0" pointerEvents="box-none">
         <Rect width={150} height={200} />
       </View>
@@ -48,7 +52,7 @@ const Groups = () => {
             <Group width={100} height={100} />
           </Animated.View>
           {/* your groups tab */}
-          <View className="absolute top-0 left-10">
+          <View className="absolute top-5 left-10">
             <MiniTabs
               index={pageIndex}
               setIndex={setPageIndex}
@@ -57,7 +61,7 @@ const Groups = () => {
             />
           </View>
           {/* explore groups */}
-          <View className="absolute top-0 left-44">
+          <View className="absolute top-5 left-44">
             <MiniTabs
               index={pageIndex}
               setIndex={setPageIndex}
@@ -78,7 +82,7 @@ const Groups = () => {
         <View className="flex-1 justify-center items-center">
           {userGroups.length === 0 ? (
             <>
-            <View className="absolute top-1 left-10">
+            <View className="absolute top-5 left-10">
                       
                 <MiniTabs
                   index={pageIndex}
@@ -88,7 +92,7 @@ const Groups = () => {
                 />
                 </View>
                   
-                 <View className="absolute top-1 left-44">
+                 <View className="absolute top-5 left-44">
                   <MiniTabs
                   index={pageIndex}
                   setIndex={setPageIndex}
@@ -121,7 +125,7 @@ const Groups = () => {
               </View>
             </>
           )}
-          <FloatingButton action={() => router.push("/(groups)/GroupCreate")} />
+          <FloatingButton action={() => router.push("/(groups)/groupCreate")} />
         </View>
       )}
     </View>
