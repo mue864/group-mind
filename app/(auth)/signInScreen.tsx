@@ -44,7 +44,7 @@ const SignInScreen = () => {
           text1: 'Welcome Back!',
         })
 
-        router.replace('/Auth/createProfile');
+        router.replace('/(dashboard)/(tabs)/home');
       } catch(error: any) {
           Toast.show({
             type: "error",
@@ -109,7 +109,7 @@ const SignInScreen = () => {
 
         <Pressable
           className="mt-10"
-          onPress={() => router.push("/Auth/signUpScreen")}
+          onPress={() => router.push("/(auth)/signUpScreen")}
         >
           <Text className="font-poppins-semiBold text-center">
             {Strings.login.accountDontExtist}

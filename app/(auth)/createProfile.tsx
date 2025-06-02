@@ -86,14 +86,14 @@ const CreateProfile = () => {
         canExplainToPeople: isChecked,
         profileComplete: true,
       });
-      router.replace('/Dashboard/home')
+      router.replace('/(dashboard)/(tabs)/home')
     } else {
       Toast.show({
         type: 'error',
         text1: 'Error',
         text2: "An error occured, please log in again."
       });
-      router.replace('/Auth/signInScreen');
+      router.replace('/(auth)/signInScreen');
     }
   }
   return (

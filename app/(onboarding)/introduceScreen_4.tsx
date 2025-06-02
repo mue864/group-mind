@@ -7,13 +7,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { useEffect } from "react";
 import Rect from "@/assets/icons/introduceRect.svg";
-import WebCam from "@/assets/icons/webcam.svg";
+import Devices from "@/assets/icons/devices.svg";
 import Elipse from "@/assets/icons/introduceEllipse.svg";
 import MiniButton from "@/components/MiniButton";
 import PaginationDots from "@/components/PaginationDots";
 import { Colors, Strings } from "@/constants";
 
-const IntroduceScreen_3 = () => {
+const IntroduceScreen_4 = () => {
   const router = useRouter();
 
   const translateY = useSharedValue(-250);
@@ -35,15 +35,14 @@ const IntroduceScreen_3 = () => {
   }));
 
   const animateWebCam = useAnimatedStyle(() => ({
-   transform: [{translateX: translateX.value}],
+    transform: [{ translateX: translateX.value }],
   }));
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 500 });
     translateY.value = withTiming(0, { duration: 1000 });
-    translateX.value = withTiming(0, {duration: 1000})
+    translateX.value = withTiming(0, { duration: 1000 });
     translateElipseY.value = withTiming(0, { duration: 1000 });
-    
   }, [opacity, translateY, translateElipseY, translateX]);
   return (
     <View className="flex-1">
@@ -64,7 +63,7 @@ const IntroduceScreen_3 = () => {
         className="justify-center items-center pt-20 h-64"
         style={animateWebCam}
       >
-        <WebCam width={200} height={200} />
+        <Devices width={200} height={200} />
       </Animated.View>
 
       <View className="absolute bottom-40 left-10 right-10">
@@ -72,34 +71,32 @@ const IntroduceScreen_3 = () => {
           style={{ color: Colors.primary }}
           className="text-center text-3xl font-poppins-semiBold"
         >
-          {Strings.introduce3Title}
+          {Strings.introduce4Title}
         </Text>
         <Text className="text-center text-lg font-inter">
-          {Strings.introduce3SubTitle}
+          {Strings.introduce4SubTitle}
         </Text>
       </View>
 
       <View className="absolute right-10 bottom-14">
         <MiniButton
-          onPress={() => router.push("/Onboarding/introduceScreen_4")}
-          direction="right"
+          onPress={() => router.replace("/(auth)/termsScreen")}
+          direction="done"
         />
       </View>
 
-      <Animated.View
-        className="absolute left-10  bottom-14"
-      >
+      <Animated.View className="absolute left-10  bottom-14">
         <MiniButton
-          onPress={() => router.push("/Onboarding/introduceScreen_2")}
+          onPress={() => router.push("/(onboarding)/introduceScreen_3")}
           direction="left"
         />
       </Animated.View>
 
       <View className="absolute bottom-20 left-16 right-16">
-        <PaginationDots total={4} currentIndex={2} />
+        <PaginationDots total={4} currentIndex={3} />
       </View>
     </View>
   );
 };
 
-export default IntroduceScreen_3;
+export default IntroduceScreen_4;

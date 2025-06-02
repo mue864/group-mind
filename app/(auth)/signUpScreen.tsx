@@ -70,7 +70,7 @@ const SignUpScreen = () => {
           text1: 'Account Created',
           text2: 'Logging you in'
         })
-        router.replace("/Auth/createProfile");
+        router.replace("/(auth)/createProfile");
       } catch(error: any) {
         
         let message = "";
@@ -174,7 +174,7 @@ const SignUpScreen = () => {
 
         <Pressable
           className="mt-10"
-          onPress={() => router.push("/Auth/signInScreen")}
+          onPress={() => router.push("/(auth)/signInScreen")}
         >
           <Text className="font-poppins-semiBold text-center">
             {Strings.login.accountExists}

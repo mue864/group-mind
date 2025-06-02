@@ -31,9 +31,9 @@ const Entry = () => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             const timeout = setTimeout(() => {
                 if (user) {
-                    router.replace("/Dashboard/home");
+                    router.replace("/(dashboard)/(tabs)/home");
                 } else {
-                    router.replace("/Onboarding/welcome");
+                    router.replace("/(onboarding)/welcome");
                 }
             }, 2000);
 
