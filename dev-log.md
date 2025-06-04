@@ -40,7 +40,7 @@
 - I learned that I can't render a promise directly in the render method. It's not allowed in React.
 - A `Record<string, string>` is just an object with string keys and values. It's the same as saying `[key: string]: string`.
 - You can import interfaces as Types `import type { Group } from "./GroupContext";`
--
+- FlatList can be used to create a sliding card using `horizontal` prop
 
 ### ❌ Problems I faced
 - Got confused between how messages and posts should be structured.
@@ -59,3 +59,5 @@
 ### 🗓️ Next steps
 - Display posts by group in the UI.
 - Add loading and empty state indicators.
+- Add user and profile picture on post card
+- add 

@@ -158,7 +158,7 @@ const Home = () => {
           </View>
 
           <View>
-            {posts.length !== 0 ? (
+            {posts.length !== 0 && (
               <View className="mx-8">
                 <Text className="font-inter font-semibold text-lg mt-3">
                   Recent Posts
@@ -174,10 +174,6 @@ const Home = () => {
                   ))}
                 </View>
                 <View></View>
-              </View>
-            ) : (
-              <View className="mx-8 mt-3">
-                <Text>No posts yet</Text>
               </View>
             )}
           </View>
