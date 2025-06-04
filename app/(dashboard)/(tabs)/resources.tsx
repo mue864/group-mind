@@ -1,5 +1,4 @@
 import { Text, View } from "react-native";
-import {snapShort} from "./home";
 import {useEffect, useState} from "react";
 import FolderOpen from "@/assets/icons/folderOpen.svg"
 import Animated,
@@ -15,7 +14,6 @@ const Resources = () => {
     
     useEffect(() => {
         opacity.value = withTiming(1, { duration: 1000 });
-        setResources(snapShort.resources);
     }, []);
     
     const animatedStyle = useAnimatedStyle(() => ({

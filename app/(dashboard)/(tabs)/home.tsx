@@ -2,24 +2,33 @@ import Book from "@/assets/icons/book.svg";
 import Elipse from "@/assets/icons/ellipse.svg";
 import Rect from "@/assets/icons/rectangle.svg";
 import ActionButton from "@/components/ActionButton";
+import PostCard from "@/components/PostCard";
+import ScheduledCard from "@/components/ScheduledCard";
 import { Colors } from "@/constants";
-import { auth, db } from "@/services/firebase";
+import { useGroupContext } from "@/store/GroupContext";
+import { usePostContext } from "@/store/PostContext";
 import { useRouter } from "expo-router";
-import { doc, getDoc } from "firebase/firestore";
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, StatusBar, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  StatusBar,
+  Text,
+  View,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
 
-// data accessible by routes
-export let snapShort: any;
-export let userId: string;
 const Home = () => {
   const router = useRouter();
-  const user = auth.currentUser;
+  const { groups, loading } = useGroupContext();
+  const { posts, user, getGroupNameFromId } = usePostContext();
+  const [groupNames, setGroupNames] = useState<Record<string, string>>({});
+
   // Animation
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(50);
@@ -29,74 +38,57 @@ const Home = () => {
     transform: [{ scale: opacity.value }],
   }));
 
-  const [profileName, setProfileName] = useState("");
-  const [loading, setLoading] = useState(true);
-  interface Group {
-    id: string;
-    [key: string]: any; // For other properties from doc.data()
-  }
-
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [grouIDs, setGroupIDs] = useState<string[]>([]);
-
-  const retrieveUserData = async () => {
-    if (user) {
-      userId = user.uid;
-      const userRef = doc(db, "users", userId);
-      const userDocSnap = await getDoc(userRef);
-
-      if (userDocSnap.exists()) {
-        snapShort = userDocSnap.data();
-        const userName = userDocSnap.data().userName;
-        const userGroups = userDocSnap.data().joinedGroups;
-        setProfileName(userName);
-        setGroupIDs(userGroups);
-      } else {
-        console.log("no user!");
-      }
-    }
-  };
-
-  const retrieveGroupsData = useCallback(async (groupIds: string[]) => {
-    try {
-      const groupPromises = groupIds.map(async (groupId) => {
-        const docRef = doc(db, "groups", groupId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          return { id: docSnap.id, ...docSnap.data() };
+  useEffect(() => {
+    const fetchGroupNames = async () => {
+      const names: Record<string, string> = {};
+      for (const post of posts) {
+        if (!groupNames[post.groupId]) {
+          const name = await getGroupNameFromId(post.groupId);
+          if (name) {
+            names[post.groupId] = name;
+          }
         }
-        return null;
-      });
-
-      const groupResults = await Promise.all(groupPromises);
-      const validGroups = groupResults.filter(
-        (group) => group !== null
-      ) as Group[];
-      setGroups(validGroups);
-      console.log(groups)
-    } catch (error) {
-      console.error("Failed to retrieve groups:", error);
-    }
-  }, []);
+      }
+      setGroupNames((prev) => ({ ...prev, ...names }));
+    };
+    fetchGroupNames();
+  }, [posts, getGroupNameFromId]);
 
   useEffect(() => {
-    const init = async () => {
-      if (!user) return;
-
-      await retrieveUserData(); // sets `snapShort`
-
-      const groupIds = snapShort?.joinedGroups;
-      if (Array.isArray(groupIds) && groupIds.length > 0) {
-        await retrieveGroupsData(groupIds);
-        setLoading(false);
-      }
-    };
-
-    init();
-
     opacity.value = withTiming(1, { duration: 1500 });
     translateY.value = withTiming(0, { duration: 100 });
-  }, []);
+  });
+  const flatListRef = useRef<FlatList>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const screenWidth = Dimensions.get("window").width;
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+
+  const scheduledGroups = groups.filter((group) => group.callScheduled);
+
+  useEffect(() => {
+    const intervale = setInterval(() => {
+      if (!isAutoScrolling || scheduledGroups.length <= 1) return;
+
+      const index = (currentIndex + 1) % scheduledGroups.length;
+      flatListRef.current?.scrollToIndex({ index: index, animated: true });
+      setCurrentIndex(index);
+    }, 5000);
+
+    return () => clearInterval(intervale);
+  }, [currentIndex, scheduledGroups.length, isAutoScrolling]);
+
+  const handleUserScroll = (event: any) => {
+    const newIndex = Math.round(
+      event.nativeEvent.contentOffset.x / screenWidth
+    );
+    setCurrentIndex(newIndex);
+    setIsAutoScrolling(false);
+
+    // Resume auto-scroll after user pauses interaction
+    setTimeout(() => {
+      setIsAutoScrolling(true);
+    }, 7000);
+  };
 
   return (
     <View className="bg-white flex-1">
@@ -130,7 +122,66 @@ const Home = () => {
           />
         </View>
       ) : (
-        <Text>Some groups</Text>
+        <View>
+          <FlatList
+            ref={flatListRef}
+            data={scheduledGroups}
+            keyExtractor={(item, index) => index.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleUserScroll}
+            renderItem={({ item }) => (
+              <View style={{ width: screenWidth }}>
+                <ScheduledCard
+                  title={item.callScheduled.sessionTitle}
+                  time={item.callScheduled.CallTime}
+                  type={item.callScheduled.callType}
+                  groupName={item.name}
+                />
+              </View>
+            )}
+          />
+          <View className="flex-row justify-center items-center mt-2">
+            {scheduledGroups.map((_, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  marginHorizontal: 4,
+                  backgroundColor: index === currentIndex ? "#7291EE" : "#ccc",
+                }}
+              />
+            ))}
+          </View>
+
+          <View>
+            {posts.length !== 0 ? (
+              <View className="mx-8">
+                <Text className="font-inter font-semibold text-lg mt-3">
+                  Recent Posts
+                </Text>
+
+                <View>
+                  {posts.map((post, index) => (
+                    <PostCard 
+                    key={index}
+                    post={post.post}
+                    groupName={groupNames[post.groupId]}
+                    />
+                  ))}
+                </View>
+                <View></View>
+              </View>
+            ) : (
+              <View className="mx-8 mt-3">
+                <Text>No posts yet</Text>
+              </View>
+            )}
+          </View>
+        </View>
       )}
     </View>
   );
