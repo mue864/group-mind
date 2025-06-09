@@ -15,7 +15,8 @@ interface PostByGroup {
     [groupId: string]: Post[];
 }
 interface PostContextType {
-    posts: Post[],
+    posts: Post[];
+    postByGroup: PostByGroup
     user: User | null;
     sendPost: (groudId: string, text:string) => Promise<void>;
     getGroupNameFromId: (groupId: string) => Promise<string | undefined>;
@@ -60,7 +61,8 @@ export const PostProvider = ({children, loading, groups}: {children: React.React
             setPosts(posts);
             setPostByGroup((prev) => ({
                 ...prev,
-                [group.id]: posts,
+                [group.id]: posts
+               
             }))
           });
           return unsubscribe;
@@ -83,16 +85,13 @@ export const PostProvider = ({children, loading, groups}: {children: React.React
             timeSent: serverTimestamp(),
         })
     }
-
-
-    
-
-
-    return ( 
-        <PostContext.Provider value={{posts, user, sendPost, getGroupNameFromId}}>
-            {children}
-        </PostContext.Provider>
-     );
+    return (
+      <PostContext.Provider
+        value={{ posts, user, sendPost, getGroupNameFromId, postByGroup}}
+      >
+        {children}
+      </PostContext.Provider>
+    );
 }
 
 export const usePostContext = () => {

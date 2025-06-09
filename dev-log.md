@@ -61,3 +61,29 @@
 - Add loading and empty state indicators.
 - Add user and profile picture on post card
 - add 
+
+
+# 🛠️ Developer Log
+
+## 📅 Date: [2025-06-09]
+
+### ✅ What I worked on
+- 
+- 
+
+### 🧠 What I learned
+- When getting time from Timstamp you use `.toDate().toTimeString`
+- You can loop over objects using `Object.keys.forEach()` to get the keys of the object
+- To get the value of objects use `Objects.values.forEach()`
+- `flatMap` flattens a nested array to become 1 i.e. [1, [1]] if [1, [1]].flatMap is used we get [1, 1]
+- You do not nest `FlatList` inside a `ScrollView` 
+### ❌ Problems I faced
+- Was not able to get data from an `object with keys of array of an object` i.e. {"66wJ2HZlZD26CLT6uhkF": [{"groupId": "66wJ2HZlZD26CLT6uhkF", "id": "X4PIow5wh0lake54eWSs", "post": "This is testing if it works", "timeSent": [Timestamp], "userId": "  1U73kseBwMQC5Fas1uRtzzo5mR82"}] }
+- 
+
+### 🔧 How I solved (or plan to solve) them
+- I used `Object.values().forEach(value = > { value.forEach })` ... this first extracts the values from the object, and then loop over the objects again to get the the value of the nested objects.
+- Then i used `flatMap` to flatten the nested arrays to become 1 array
+
+
+### 🗓️ Next steps

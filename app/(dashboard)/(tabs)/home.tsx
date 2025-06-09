@@ -6,7 +6,7 @@ import PostCard from "@/components/PostCard";
 import ScheduledCard from "@/components/ScheduledCard";
 import { Colors } from "@/constants";
 import { useGroupContext } from "@/store/GroupContext";
-import { usePostContext } from "@/store/PostContext";
+import { Post, usePostContext } from "@/store/PostContext";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -15,6 +15,7 @@ import {
   FlatList,
   StatusBar,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import Animated, {
@@ -26,8 +27,10 @@ import Animated, {
 const Home = () => {
   const router = useRouter();
   const { groups, loading } = useGroupContext();
-  const { posts, user, getGroupNameFromId } = usePostContext();
+  const { posts, postByGroup, getGroupNameFromId } = usePostContext();
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
+  const [testGroup, setTestGroups] = useState<Post[]>([]);
+  const [morePosts, setMorePosts] = useState(1);
 
   // Animation
   const opacity = useSharedValue(0);
@@ -53,6 +56,16 @@ const Home = () => {
     };
     fetchGroupNames();
   }, [posts, getGroupNameFromId]);
+
+  useEffect(() => {
+    // cleaning the data coming as a nested array of objects
+    const cleanData = Object.values(postByGroup).flatMap(
+      (group) => group as Post[]
+    );
+    setTestGroups(cleanData);
+  }, [postByGroup]);
+
+  console.log(testGroup);
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 1500 });
@@ -122,7 +135,8 @@ const Home = () => {
           />
         </View>
       ) : (
-        <View>
+        // Scheduled Calls card
+        <View className="flex">
           <FlatList
             ref={flatListRef}
             data={scheduledGroups}
@@ -142,6 +156,7 @@ const Home = () => {
               </View>
             )}
           />
+          {/* Scheduled calls pagination */}
           <View className="flex-row justify-center items-center mt-2">
             {scheduledGroups.map((_, index) => (
               <View
@@ -156,24 +171,36 @@ const Home = () => {
               />
             ))}
           </View>
-
-          <View>
-            {posts.length !== 0 && (
+          {/* recent posts */}
+          <View className="">
+            {testGroup.length !== 0 && (
               <View className="mx-8">
                 <Text className="font-inter font-semibold text-lg mt-3">
                   Recent Posts
                 </Text>
 
-                <View>
-                  {posts.map((post, index) => (
-                    <PostCard 
-                    key={index}
-                    post={post.post}
-                    groupName={groupNames[post.groupId]}
-                    />
-                  ))}
+                <View className="flex">
+                  <FlatList
+                    data={testGroup.slice(0, morePosts)}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                      <View className="mb-5">
+                        <PostCard
+                          post={item.post}
+                          groupName={groupNames[item.groupId]}
+                          timeSent={item.timeSent}
+                        />
+                      </View>
+                    )}
+                  />
+                  {morePosts < testGroup.length && (
+                    <TouchableOpacity
+                      onPress={() => setMorePosts((prev) => prev + 6)}
+                    >
+                      <Text>Show More</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View></View>
               </View>
             )}
           </View>
