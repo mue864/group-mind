@@ -1,15 +1,16 @@
-import {createContext, useEffect, useState, useContext} from "react";
+import {createContext, useEffect, useState, useContext, useRef, useCallback} from "react";
 import { db, auth } from "../services/firebase";
-import { collection, onSnapshot, Timestamp, orderBy, query, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, Timestamp, orderBy, query, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import {User, onAuthStateChanged} from "firebase/auth"
 import type {Group} from "./GroupContext"
 
 export interface Post {
     id: string,
-    sender: string,
+    userId: string,
     post: string,
     timeSent: Timestamp,
-    groupId: string
+    groupId: string,
+    userAvatar?: string,
 }
 interface PostByGroup {
     [groupId: string]: Post[];
@@ -24,10 +25,20 @@ interface PostContextType {
 
  const PostContext = createContext<PostContextType | undefined>(undefined);
 
-export const PostProvider = ({children, loading, groups}: {children: React.ReactNode, loading: boolean, groups: Group[]}) => {
+export const PostProvider = ({children, loading, groups: initialGroups}: {children: React.ReactNode, loading: boolean, groups: Group[]}) => {
     const [posts, setPosts] = useState<Post[]>([]);
     const [user, setUser] = useState<User | null>(null);
     const [postByGroup, setPostByGroup] = useState<PostByGroup>({});
+    const [groups, setGroups] = useState<Group[]>([]);
+    const groupsRef = useRef<Group[]>([]);
+    
+    // Update groups ref and state when initialGroups changes
+    useEffect(() => {
+        if (initialGroups && initialGroups.length > 0) {
+            groupsRef.current = [...initialGroups];
+            setGroups(initialGroups);
+        }
+    }, [initialGroups]);
 
     useEffect(() => {
         const subscribe = onAuthStateChanged(auth, (user) => {
@@ -38,43 +49,93 @@ export const PostProvider = ({children, loading, groups}: {children: React.React
         return () => subscribe();
     }, []);
 
-    useEffect (() => {
-        if(loading) {
+    useEffect(() => {
+        if (loading) {
             const interval = setInterval(() => {
-                console.log("loading data")
+                console.log("loading data");
             }, 1000);
             return () => clearInterval(interval);
         }
-    if (!groups || groups.length === 0) return; // defensive measures
-    
-    const unsubscribes = groups
-        .filter((group) => !!group.id)
-        .map((group) => {
-          const groupRef = collection(db, "groups", group.id, "posts");
-          const q = query(groupRef, orderBy("timeSent", "desc"));
 
-          const unsubscribe = onSnapshot(q, (snapshot) => {
-            const posts = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })) as Post[];
-            setPosts(posts);
-            setPostByGroup((prev) => ({
-                ...prev,
-                [group.id]: posts
-               
-            }))
-          });
-          return unsubscribe;
-        });
-      return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
-      
+        if (!groups || groups.length === 0) return; // defensive measures
+        
+        const unsubscribes = groups
+            .filter((group) => !!group.id)
+            .map((group) => {
+                const groupRef = collection(db, "groups", group.id, "posts");
+                const q = query(groupRef, orderBy("timeSent", "desc"));
+
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const posts = snapshot.docs.map((doc) => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    })) as Post[];
+                    
+                    setPosts(prevPosts => {
+                        // Only update if posts have actually changed
+                        if (JSON.stringify(prevPosts) !== JSON.stringify(posts)) {
+                            return posts;
+                        }
+                        return prevPosts;
+                    });
+                    
+                    setPostByGroup((prev) => ({
+                        ...prev,
+                        [group.id]: posts
+                    }));
+                });
+                
+                return unsubscribe;
+            });
+            
+        return () => {
+            unsubscribes.forEach(unsubscribe => unsubscribe && unsubscribe());
+        };
     }, [loading, groups]);
 
-    const getGroupNameFromId = async (groupId: string) => {
-        const group = groups.find((group) => group.id === groupId);
-        return group?.name;
-    }
+    const getGroupNameFromId = useCallback(async (groupId: string): Promise<string> => {
+        try {
+            // First check in the ref (most up-to-date)
+            const cachedGroup = groupsRef.current.find(g => g.id === groupId);
+            if (cachedGroup) return cachedGroup.name;
+            
+            // Then check in state (might be stale)
+            const stateGroup = groups.find(g => g.id === groupId);
+            if (stateGroup) {
+                // Update ref if found in state but not in ref
+                if (!groupsRef.current.some(g => g.id === groupId)) {
+                    groupsRef.current = [...groupsRef.current, stateGroup];
+                }
+                return stateGroup.name;
+            }
+            
+            // If not found locally, fetch from Firestore
+            const groupDoc = await getDoc(doc(db, 'groups', groupId));
+            if (groupDoc.exists()) {
+                const groupData = { 
+                    id: groupDoc.id, 
+                    ...groupDoc.data() 
+                } as Group;
+                
+                // Update both ref and state
+                groupsRef.current = [...groupsRef.current, groupData];
+                setGroups(prev => {
+                    // Avoid duplicates
+                    if (!prev.some(g => g.id === groupId)) {
+                        return [...prev, groupData];
+                    }
+                    return prev;
+                });
+                
+                return groupData.name;
+            }
+            
+            return 'Unknown Group';
+        } catch (error) {
+            console.error('Error getting group name:', error);
+            return 'Loading...';
+        }
+    }, [groups]);
 
     const sendPost = async (groupId: string, text: string) => {
         const groupRef = collection(db, "groups", groupId, "posts");

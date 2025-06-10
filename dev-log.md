@@ -77,6 +77,9 @@
 - To get the value of objects use `Objects.values.forEach()`
 - `flatMap` flattens a nested array to become 1 i.e. [1, [1]] if [1, [1]].flatMap is used we get [1, 1]
 - You do not nest `FlatList` inside a `ScrollView` 
+- `SplashScreen.preventAutoHideAsync` is used to prevent the splashscreen from exiting whilst assets are still being loaded
+- `SplashScreen.hideAsync()` hides the splashScreen.. make sure that all assets have loaded before hiding the splashScreen.
+
 ### ❌ Problems I faced
 - Was not able to get data from an `object with keys of array of an object` i.e. {"66wJ2HZlZD26CLT6uhkF": [{"groupId": "66wJ2HZlZD26CLT6uhkF", "id": "X4PIow5wh0lake54eWSs", "post": "This is testing if it works", "timeSent": [Timestamp], "userId": "  1U73kseBwMQC5Fas1uRtzzo5mR82"}] }
 - 

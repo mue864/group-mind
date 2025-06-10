@@ -23,6 +23,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import {auth} from "@/services/firebase";
 
 const Home = () => {
   const router = useRouter();
@@ -31,6 +32,10 @@ const Home = () => {
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
   const [testGroup, setTestGroups] = useState<Post[]>([]);
   const [morePosts, setMorePosts] = useState(1);
+
+  const user = auth.currentUser;
+  const userID = user?.uid;
+  console.log(userID);
 
   // Animation
   const opacity = useSharedValue(0);
@@ -43,19 +48,50 @@ const Home = () => {
 
   useEffect(() => {
     const fetchGroupNames = async () => {
-      const names: Record<string, string> = {};
-      for (const post of posts) {
-        if (!groupNames[post.groupId]) {
-          const name = await getGroupNameFromId(post.groupId);
-          if (name) {
-            names[post.groupId] = name;
+      try {
+        const names: Record<string, string> = {};
+        const processedGroupIds = new Set();
+
+        // Process all posts and collect unique groupIds
+        for (const post of posts) {
+          const groupId = post.groupId;
+          
+          // Skip if we've already processed this groupId in this batch
+          if (processedGroupIds.has(groupId) || !groupId) continue;
+          
+          // Skip if we already have the name in state
+          if (groupNames[groupId]) {
+            processedGroupIds.add(groupId);
+            continue;
+          }
+
+          try {
+            const name = await getGroupNameFromId(groupId);
+            if (name) {
+              names[groupId] = name;
+              processedGroupIds.add(groupId);
+            }
+          } catch (error) {
+            console.error(`Error fetching name for group ${groupId}:`, error);
+            // Set a fallback name if there's an error
+            names[groupId] = 'Unknown Group';
+            processedGroupIds.add(groupId);
           }
         }
+
+        // Only update state if we have new names
+        if (Object.keys(names).length > 0) {
+          setGroupNames((prev) => ({ ...prev, ...names }));
+        }
+      } catch (error) {
+        console.error('Error in fetchGroupNames:', error);
       }
-      setGroupNames((prev) => ({ ...prev, ...names }));
     };
-    fetchGroupNames();
-  }, [posts, getGroupNameFromId]);
+    
+    if (posts.length > 0) {
+      fetchGroupNames();
+    }
+  }, [posts, getGroupNameFromId, groupNames]);
 
   useEffect(() => {
     // cleaning the data coming as a nested array of objects
@@ -64,8 +100,6 @@ const Home = () => {
     );
     setTestGroups(cleanData);
   }, [postByGroup]);
-
-  console.log(testGroup);
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 1500 });
@@ -77,6 +111,7 @@ const Home = () => {
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
 
   const scheduledGroups = groups.filter((group) => group.callScheduled);
+
 
   useEffect(() => {
     const intervale = setInterval(() => {
@@ -187,8 +222,10 @@ const Home = () => {
                       <View className="mb-5">
                         <PostCard
                           post={item.post}
-                          groupName={groupNames[item.groupId]}
+                          groupId={item.groupId}
                           timeSent={item.timeSent}
+                          userName={item.userId && userID === item.userId.trim() ? "You" : "User"}
+                          userAvatar={item.userAvatar}
                         />
                       </View>
                     )}
@@ -196,8 +233,11 @@ const Home = () => {
                   {morePosts < testGroup.length && (
                     <TouchableOpacity
                       onPress={() => setMorePosts((prev) => prev + 6)}
+                      className="justify-center items-center mt-2 mb-2"
                     >
-                      <Text>Show More</Text>
+                      <Text className="text-secondary font-inter font-bold text-xl">
+                        Show More ({testGroup.length - 1})
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </View>
