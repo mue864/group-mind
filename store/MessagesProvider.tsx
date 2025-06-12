@@ -58,12 +58,11 @@ export const MessagesProvider = ({
 
     if (loading) {
       const interval = setInterval(() => {
-        console.log("loading data")
+
       }, 1000);
       return () => clearInterval(interval);
     }
     if (!groups || groups.length === 0) return;
-    console.log("groups.....: ", groups[1].id)
 
     const unsubscribes = groups.filter((group => !!group.id)).map(group => {
       const groupRef = collection(db, "groups", group.id, "messages");
@@ -79,7 +78,6 @@ export const MessagesProvider = ({
         }));
         
       });
-      console.log("messages: ", messagesByGroup)
       return unsubscribe;
     });
     return () => unsubscribes.forEach((unsubscribe) => unsubscribe());

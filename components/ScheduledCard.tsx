@@ -1,12 +1,10 @@
-import { View, Text } from "react-native";
-import Time from "../assets/icons/time.svg";
-import Time_dark from "../assets/icons/time_dark.svg";
-import Video from "../assets/icons/Video.svg";
-import Calling from "../assets/icons/Calling.svg"
-import Call from "../assets/icons/Callz.svg"
 import { Timestamp } from "firebase/firestore";
+import { Text, View } from "react-native";
+import Call from "../assets/icons/Callz.svg";
+import Group from "../assets/icons/groupUsers.svg";
+import Time from "../assets/icons/time.svg";
+import Video from "../assets/icons/Video.svg";
 import ScheduleButton from "./ScheduleButton";
-import Group from "../assets/icons/groupUsers.svg"
 
 interface ScheduledCardProps {
     title?: string,

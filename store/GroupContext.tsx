@@ -26,6 +26,7 @@ export interface Group {
   };
   [key: string]: any;
   createdBy: string;
+  imageUrl: string;
 }
 
 interface GroupContextType {
@@ -112,6 +113,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
   }, [user]);
+
 
 
   const joinGroup = async (groupId: string) => {

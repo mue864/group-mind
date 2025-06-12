@@ -58,8 +58,6 @@ const PostCard = ({post, groupId, timeSent, userName, userAvatar}: PostCardProps
     const date = rawDate?.slice(4, 10)
     const time = rawTime?.slice(0, 5);
 
-    console.log(post.length)
-
     return (
       <View className="rounded-2xl">
         <View className="flex flex-row gap-3 bg-primary items-center justify-around rounded-tl-2xl rounded-tr-2xl">
@@ -69,8 +67,8 @@ const PostCard = ({post, groupId, timeSent, userName, userAvatar}: PostCardProps
           </Text>
         </View>
         <View
-          className={` ${post.length < 50 ? 'h-[150px]' : 'h-[200px]'} flex bg-background rounded-br-2xl rounded-bl-2xl`}
-          style={{ elevation: 4 }}
+          className={` ${post.length < 50 ? 'h-[150px]' : 'h-[200px]'} flex bg-background rounded-br-2xl rounded-bl-2xl shadow-lg`}
+          
         >
           <View className="flex flex-col mt-3 mx-6 mb-7">
             <View className="flex flex-row items-center gap-2">

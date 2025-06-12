@@ -2,9 +2,11 @@ import Book from "@/assets/icons/book.svg";
 import Elipse from "@/assets/icons/ellipse.svg";
 import Rect from "@/assets/icons/rectangle.svg";
 import ActionButton from "@/components/ActionButton";
+import GroupCard from "@/components/GroupCard";
 import PostCard from "@/components/PostCard";
 import ScheduledCard from "@/components/ScheduledCard";
 import { Colors } from "@/constants";
+import { auth } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import { Post, usePostContext } from "@/store/PostContext";
 import { useRouter } from "expo-router";
@@ -18,12 +20,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import {auth} from "@/services/firebase";
 
 const Home = () => {
   const router = useRouter();
@@ -32,10 +34,11 @@ const Home = () => {
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
   const [testGroup, setTestGroups] = useState<Post[]>([]);
   const [morePosts, setMorePosts] = useState(1);
+  const [suggestedGroup, setSuggestedGroup] = useState(0);
 
   const user = auth.currentUser;
   const userID = user?.uid;
-  console.log(userID);
+
 
   // Animation
   const opacity = useSharedValue(0);
@@ -47,51 +50,34 @@ const Home = () => {
   }));
 
   useEffect(() => {
+    const getRandomId = () => {
+      const randomIndex = Math.floor(Math.random() * groups.length);
+      return randomIndex;
+    }
+    setSuggestedGroup(getRandomId());
+  }, [groups])
+
+  useEffect(() => {
     const fetchGroupNames = async () => {
-      try {
-        const names: Record<string, string> = {};
-        const processedGroupIds = new Set();
+      const names: Record<string, string> = {};
 
-        // Process all posts and collect unique groupIds
-        for (const post of posts) {
-          const groupId = post.groupId;
-          
-          // Skip if we've already processed this groupId in this batch
-          if (processedGroupIds.has(groupId) || !groupId) continue;
-          
-          // Skip if we already have the name in state
-          if (groupNames[groupId]) {
-            processedGroupIds.add(groupId);
-            continue;
-          }
-
-          try {
-            const name = await getGroupNameFromId(groupId);
-            if (name) {
-              names[groupId] = name;
-              processedGroupIds.add(groupId);
-            }
-          } catch (error) {
-            console.error(`Error fetching name for group ${groupId}:`, error);
-            // Set a fallback name if there's an error
-            names[groupId] = 'Unknown Group';
-            processedGroupIds.add(groupId);
+      for (const post of posts) {
+        // Check both current state AND local names object
+        if (!groupNames[post.groupId] && !names[post.groupId]) {
+          const name = await getGroupNameFromId(post.groupId);
+          if (name) {
+            names[post.groupId] = name;
           }
         }
+      }
 
-        // Only update state if we have new names
-        if (Object.keys(names).length > 0) {
-          setGroupNames((prev) => ({ ...prev, ...names }));
-        }
-      } catch (error) {
-        console.error('Error in fetchGroupNames:', error);
+      // Only update state if we have new names
+      if (Object.keys(names).length > 0) {
+        setGroupNames((prev) => ({ ...prev, ...names }));
       }
     };
-    
-    if (posts.length > 0) {
-      fetchGroupNames();
-    }
-  }, [posts, getGroupNameFromId, groupNames]);
+    fetchGroupNames();
+  }, [posts, getGroupNameFromId]);
 
   useEffect(() => {
     // cleaning the data coming as a nested array of objects
@@ -139,7 +125,8 @@ const Home = () => {
   };
 
   return (
-    <View className="bg-white flex-1">
+      <ScrollView>
+      <View className="bg-white flex-1">
       <StatusBar barStyle={"dark-content"} backgroundColor={"white"} />
       <View className="absolute bottom-0" pointerEvents="box-none">
         <Rect width={150} height={200} />
@@ -224,7 +211,7 @@ const Home = () => {
                           post={item.post}
                           groupId={item.groupId}
                           timeSent={item.timeSent}
-                          userName={item.userId && userID === item.userId.trim() ? "You" : "User"}
+                          userName={userID === item.userId ? "You" : "User"}
                           userAvatar={item.userAvatar}
                         />
                       </View>
@@ -240,6 +227,20 @@ const Home = () => {
                       </Text>
                     </TouchableOpacity>
                   )}
+
+                  {/* Sugested groups */}
+                  <View>
+                    <Text className="font-inter font-bold text-xl mt-3">
+                      Groups You May be Interested In
+                    </Text>
+                    {/* Group Card */}
+
+                    <View>
+                    <GroupCard
+                      group={groups[suggestedGroup]} // get random group id
+                    />
+                    </View>
+                  </View>
                 </View>
               </View>
             )}
@@ -247,6 +248,7 @@ const Home = () => {
         </View>
       )}
     </View>
+    </ScrollView>
   );
 };
 
