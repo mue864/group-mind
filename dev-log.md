@@ -90,3 +90,41 @@
 
 
 ### 🗓️ Next steps
+
+
+
+## 📅 Date: [2025-06-14]
+
+### ✅ What I worked on
+- optimizing the home.tsx for performance when loading data
+- 
+
+### 🧠 What I learned
+- You can use `useMemo` to cache loaded data so that it can not be reloaded on page rerender
+- `useMemo` cannot be used inside of a `useEffect` as they save different purposes. `useEffect` is for loading `sideEffects` and `useMemo` is for caching data
+- you can combine `useMemo` and `useCallback` together to optimize performance. `useMemo` for caching the data and `useCallback` for only reloading the component when the data actually changes
+- A side effect in react is something that affects something outside i.e. data changing or not rendering anything to the user
+- Transforming, filtering, calculating averages are not side effects and **should** not be put in a useEffect
+
+### Quick tip
+
+| You want to.. | Use           | Why?          |
+|:-------------|:--------------:|--------------:|
+| Fetch data from firebase        | `useEffect`         | Async, triggers outside React         |
+| Clean, sort, filter already loaded data       | `useMemo`           | Pure data transformation         |
+| Update state on button click       | `useEffect`           | Controlled by user         |
+| Optimize repeated function definitions       | `useCallback`           | Boosts performance         |
+| Call `setState` when something loads       | `useEffect`           | That's a side effect         |
+| Avoid state for derived values       | `useMemo`           | Cleaner & more efficient        |
+
+
+### ❌ Problems I faced
+- Was unable to optimize async data fetching with `useMemo` since `useMemo` cannot be used alongside `async()`. `useMemo` only accepts a `syncronous` value and cannot track the `Promise` that is returned by `async`
+- 
+
+### 🔧 How I solved (or plan to solve) them
+- I used `Object.values().forEach(value = > { value.forEach })` ... this first extracts the values from the object, and then loop over the objects again to get the the value of the nested objects.
+- Then i used `flatMap` to flatten the nested arrays to become 1 array
+
+
+### 🗓️ Next steps

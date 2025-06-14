@@ -10,7 +10,7 @@ import { auth } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import { Post, usePostContext } from "@/store/PostContext";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -26,16 +26,19 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { useInterval } from "@/hooks/useInterval";
 
 const Home = () => {
   const router = useRouter();
   const { groups, loading } = useGroupContext();
   const { posts, postByGroup, getGroupNameFromId } = usePostContext();
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
-  const [testGroup, setTestGroups] = useState<Post[]>([]);
+  const flatListRef = useRef<FlatList>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const screenWidth = Dimensions.get("window").width;
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   const [morePosts, setMorePosts] = useState(1);
   const [suggestedGroup, setSuggestedGroup] = useState(0);
-
   const user = auth.currentUser;
   const userID = user?.uid;
 
@@ -58,6 +61,7 @@ const Home = () => {
   }, [groups])
 
   useEffect(() => {
+    // useMemo can't be used here
     const fetchGroupNames = async () => {
       const names: Record<string, string> = {};
 
@@ -76,40 +80,53 @@ const Home = () => {
         setGroupNames((prev) => ({ ...prev, ...names }));
       }
     };
+
     fetchGroupNames();
   }, [posts, getGroupNameFromId]);
 
-  useEffect(() => {
-    // cleaning the data coming as a nested array of objects
-    const cleanData = Object.values(postByGroup).flatMap(
+// memoizing as this does not give any side effects and is efficient like this
+  const recentPosts = useMemo(() => {
+    return Object.values(postByGroup).flatMap(
       (group) => group as Post[]
-    );
-    setTestGroups(cleanData);
+    )
   }, [postByGroup]);
+
+  const recentPostsCard = useCallback(
+    ({ item }) => (
+      <View className="mb-5">
+        <PostCard
+          post={item.post}
+          groupId={item.groupId}
+          timeSent={item.timeSent}
+          userName={userID === item.userId ? "You" : "User"}
+          userAvatar={item.userAvatar}
+        />
+      </View>
+    ),
+    []
+  );
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 1500 });
     translateY.value = withTiming(0, { duration: 100 });
   });
-  const flatListRef = useRef<FlatList>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const screenWidth = Dimensions.get("window").width;
-  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
-
-  const scheduledGroups = groups.filter((group) => group.callScheduled);
 
 
-  useEffect(() => {
-    const intervale = setInterval(() => {
-      if (!isAutoScrolling || scheduledGroups.length <= 1) return;
 
-      const index = (currentIndex + 1) % scheduledGroups.length;
-      flatListRef.current?.scrollToIndex({ index: index, animated: true });
-      setCurrentIndex(index);
-    }, 5000);
 
-    return () => clearInterval(intervale);
-  }, [currentIndex, scheduledGroups.length, isAutoScrolling]);
+  const scheduledGroups = useMemo(() => {
+    return groups.filter((group) => group.callScheduled);
+  }, [groups])
+
+
+  useInterval(() => {
+    if (!isAutoScrolling || scheduledGroups.length <= 1) return;
+
+    const index = (currentIndex + 1) % scheduledGroups.length;
+    flatListRef.current?.scrollToIndex({ index, animated: true });
+    setCurrentIndex(index);
+  }, 5000);
+  
 
   const handleUserScroll = (event: any) => {
     const newIndex = Math.round(
@@ -124,130 +141,147 @@ const Home = () => {
     }, 7000);
   };
 
+  // memoizing values to improve device performance
+  // using useCallback to only recall the
+  const renderScheduledCard = useCallback(
+    ({ item }) => (
+      <View style={{width: screenWidth}}>
+        <ScheduledCard
+          title={item.callScheduled.sessionTitle}
+          time={item.callScheduled.CallTime}
+          type={item.callScheduled.callType}
+          groupName={item.name}
+        />
+      </View>
+    ),
+    [screenWidth]);
+
+    // mapping through the suggested group number and creating dots for each for UI hints
+    const renderScheduledCardDots = useMemo(
+      () => (
+        <View className="flex-row justify-center items-center mt-2">
+          {scheduledGroups.map((_, index) => (
+            <View
+              key={index}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                marginHorizontal: 4,
+                backgroundColor: index === currentIndex ? "#7291EE" : "#ccc",
+              }}
+            />
+          ))}
+        </View>
+      ),
+      [scheduledGroups, currentIndex]
+    );
+
+
+
   return (
-      <ScrollView>
+    <ScrollView>
       <View className="bg-white flex-1">
-      <StatusBar barStyle={"dark-content"} backgroundColor={"white"} />
-      <View className="absolute bottom-0" pointerEvents="box-none">
-        <Rect width={150} height={200} />
-      </View>
-      <View className="absolute top-0 right-0" pointerEvents="box-none">
-        <Elipse width={150} height={200} />
-      </View>
-      {loading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size={"large"} color={Colors.primary} />
+        <StatusBar barStyle={"dark-content"} backgroundColor={"white"} />
+        <View className="absolute bottom-0" pointerEvents="box-none">
+          <Rect width={150} height={200} />
         </View>
-      ) : groups.length === 0 ? (
-        // Empty state
-        <View className="flex-1 justify-center items-center">
-          <Animated.View style={animated}>
-            <Book width={100} height={100} color={"#7291EE"} />
-          </Animated.View>
-
-          <View className="justify-center items-center mx-10">
-            <Text className="font-poppins text-gray-500 text-center">
-              You haven’t joined or created any study groups yet. Start by
-              creating your own or exploring existing ones!
-            </Text>
-          </View>
-
-          <ActionButton
-            action={() => router.push("/(dashboard)/(tabs)/groups")}
-          />
+        <View className="absolute top-0 right-0" pointerEvents="box-none">
+          <Elipse width={150} height={200} />
         </View>
-      ) : (
-        // Scheduled Calls card
-        <View className="flex">
-          <FlatList
-            ref={flatListRef}
-            data={scheduledGroups}
-            keyExtractor={(item, index) => index.toString()}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleUserScroll}
-            renderItem={({ item }) => (
-              <View style={{ width: screenWidth }}>
-                <ScheduledCard
-                  title={item.callScheduled.sessionTitle}
-                  time={item.callScheduled.CallTime}
-                  type={item.callScheduled.callType}
-                  groupName={item.name}
-                />
-              </View>
-            )}
-          />
-          {/* Scheduled calls pagination */}
-          <View className="flex-row justify-center items-center mt-2">
-            {scheduledGroups.map((_, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  marginHorizontal: 4,
-                  backgroundColor: index === currentIndex ? "#7291EE" : "#ccc",
-                }}
-              />
-            ))}
+        {loading ? (
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size={"large"} color={Colors.primary} />
           </View>
-          {/* recent posts */}
-          <View className="">
-            {testGroup.length !== 0 && (
-              <View className="mx-8">
-                <Text className="font-inter font-semibold text-lg mt-3">
-                  Recent Posts
-                </Text>
+        ) : groups.length === 0 ? (
+          // Empty state
+          <View className="flex-1 justify-center items-center">
+            <Animated.View style={animated}>
+              <Book width={100} height={100} color={"#7291EE"} />
+            </Animated.View>
 
-                <View className="flex">
-                  <FlatList
-                    data={testGroup.slice(0, morePosts)}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={({ item }) => (
-                      <View className="mb-5">
-                        <PostCard
-                          post={item.post}
-                          groupId={item.groupId}
-                          timeSent={item.timeSent}
-                          userName={userID === item.userId ? "You" : "User"}
-                          userAvatar={item.userAvatar}
+            <View className="justify-center items-center mx-10">
+              <Text className="font-poppins text-gray-500 text-center">
+                You haven’t joined or created any study groups yet. Start by
+                creating your own or exploring existing ones!
+              </Text>
+            </View>
+
+            <ActionButton
+              action={() => router.push("/(dashboard)/(tabs)/groups")}
+            />
+          </View>
+        ) : (
+          // Scheduled Calls card
+          <View className="flex">
+            <FlatList
+              ref={flatListRef}
+              data={scheduledGroups}
+              keyExtractor={(item, index) => index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleUserScroll}
+              renderItem={renderScheduledCard}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={10}
+              initialNumToRender={5}
+              windowSize={5}
+            />
+            {/* Scheduled calls pagination */}
+            <View className="flex-row justify-center items-center mt-2">
+              {/* find a way to optmize this */}
+              {renderScheduledCardDots}
+            </View>
+            {/* recent posts */}
+            <View className="">
+              {recentPosts.length !== 0 && (
+                <View className="mx-8">
+                  <Text className="font-inter font-semibold text-lg mt-3">
+                    Recent Posts
+                  </Text>
+
+                  <View className="flex">
+                    <FlatList
+                      data={recentPosts.slice(0, morePosts)}
+                      keyExtractor={(item, index) => index.toString()}
+                      renderItem={recentPostsCard}
+                      removeClippedSubviews={true}
+                      maxToRenderPerBatch={10}
+                      initialNumToRender={5}
+                      windowSize={5}
+                    />
+                    {morePosts < recentPosts.length && (
+                      <TouchableOpacity
+                        onPress={() => setMorePosts((prev) => prev + 6)}
+                        className="justify-center items-center mt-2 mb-2"
+                      >
+                        <Text className="text-secondary font-inter font-bold text-xl">
+                          Show More ({recentPosts.length - 1})
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Sugested groups */}
+                    <View>
+                      <Text className="font-inter font-bold text-xl mt-3">
+                        Groups You May be Interested In
+                      </Text>
+                      {/* Group Card */}
+
+                      <View>
+                        <GroupCard
+                          group={groups[suggestedGroup]} // get random group id
                         />
                       </View>
-                    )}
-                  />
-                  {morePosts < testGroup.length && (
-                    <TouchableOpacity
-                      onPress={() => setMorePosts((prev) => prev + 6)}
-                      className="justify-center items-center mt-2 mb-2"
-                    >
-                      <Text className="text-secondary font-inter font-bold text-xl">
-                        Show More ({testGroup.length - 1})
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Sugested groups */}
-                  <View>
-                    <Text className="font-inter font-bold text-xl mt-3">
-                      Groups You May be Interested In
-                    </Text>
-                    {/* Group Card */}
-
-                    <View>
-                    <GroupCard
-                      group={groups[suggestedGroup]} // get random group id
-                    />
                     </View>
                   </View>
                 </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
-        </View>
-      )}
-    </View>
+        )}
+      </View>
     </ScrollView>
   );
 };

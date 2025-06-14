@@ -9,15 +9,15 @@ interface ImageModalProps {
 }
 const ImageModal = ({modalVisible, changeModalVisibility, selectedImage}: ImageModalProps) => {
     const avatars = {
-       'avatar1.jpg': require('@/assets/images/avatars/avatar1.jpg'),
-       'avatar2.jpg': require('@/assets/images/avatars/avatar2.jpg'),
-       'avatar3.jpg': require('@/assets/images/avatars/avatar3.jpg'),
-       'avatar4.jpg': require('@/assets/images/avatars/avatar4.jpg'),
-       'avatar5.jpg': require('@/assets/images/avatars/avatar5.jpg'),
-       'avatar6.jpg': require('@/assets/images/avatars/avatar6.jpg'),
-       'avatar7.jpg': require('@/assets/images/avatars/avatar7.jpg'),
-       'avatar8.jpg': require('@/assets/images/avatars/avatar8.jpg'),
-       'avatar9.jpg': require('@/assets/images/avatars/avatar9.jpg'),
+       'avatar1.webp': require('@/assets/images/avatars/avatar1.webp'),
+       'avatar2.webp': require('@/assets/images/avatars/avatar2.webp'),
+       'avatar3.webp': require('@/assets/images/avatars/avatar3.webp'),
+       'avatar4.webp': require('@/assets/images/avatars/avatar4.webp'),
+       'avatar5.webp': require('@/assets/images/avatars/avatar5.webp'),
+       'avatar6.webp': require('@/assets/images/avatars/avatar6.webp'),
+       'avatar7.webp': require('@/assets/images/avatars/avatar7.webp'),
+       'avatar8.webp': require('@/assets/images/avatars/avatar8.webp'),
+       'avatar9.webp': require('@/assets/images/avatars/avatar9.webp'),
         
     };
     const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);

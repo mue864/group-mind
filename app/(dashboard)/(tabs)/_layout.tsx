@@ -1,7 +1,7 @@
 import tab from "@/assets/icons/tab";
 import { Tabs } from "expo-router";
 import { useEffect } from "react";
-import { Image, Text, View } from "react-native";
+import { Image, Text } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -29,7 +29,7 @@ const TabIcon = ({ color, focused, icon, name }) => {
 
   return (
     <Animated.View
-      className="w-32 justify-center items-center"
+      className="w-32 justify-center items-center mt-7"
       style={animatedStyle}
     >
       <Image
@@ -102,12 +102,12 @@ const DashboardLayout = () => {
         options={{
           title: "Groups",
           tabBarIcon: ({ color, size, focused }) => (
-              <TabIcon
-                name="Groups"
-                icon={tab.groups}
-                focused={focused}
-                color={color}
-              />
+            <TabIcon
+              name="Groups"
+              icon={tab.groups}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -116,12 +116,12 @@ const DashboardLayout = () => {
         options={{
           title: "Resources",
           tabBarIcon: ({ color, size, focused }) => (
-              <TabIcon
-                name="Resources"
-                icon={tab.resources}
-                focused={focused}
-                color={color}
-              />
+            <TabIcon
+              name="Resources"
+              icon={tab.resources}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -130,13 +130,12 @@ const DashboardLayout = () => {
         options={{
           title: "Live Sessions",
           tabBarIcon: ({ color, size, focused }) => (
-  
-              <TabIcon
-                name="Resources"
-                icon={tab.sessions}
-                focused={focused}
-                color={color}
-              />
+            <TabIcon
+              name="Resources"
+              icon={tab.sessions}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />

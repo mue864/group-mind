@@ -55,33 +55,38 @@ export const MessagesProvider = ({
   }, []);
 
   useEffect(() => {
-
-    if (loading) {
-      const interval = setInterval(() => {
-
-      }, 1000);
-      return () => clearInterval(interval);
-    }
     if (!groups || groups.length === 0) return;
 
-    const unsubscribes = groups.filter((group => !!group.id)).map(group => {
-      const groupRef = collection(db, "groups", group.id, "messages");
+    // Avoid duplicate group IDs
+    const groupIds = [
+      ...new Set(groups.filter((g) => !!g.id).map((g) => g.id)),
+    ];
+
+    const unsubscribes = groupIds.map((groupId) => {
+      const groupRef = collection(db, "groups", groupId, "messages");
       const q = query(groupRef, orderBy("timeSent", "asc"));
+
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const messages = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Message[];
+
+        // Save messages per group
         setMessagesByGroup((prev) => ({
           ...prev,
-          [group.id]: messages,
+          [groupId]: messages,
         }));
-        
       });
+
       return unsubscribe;
     });
-    return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
-  }, [groups]);
+
+    // Cleanup all listeners
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+    };
+  }, [JSON.stringify(groups.map((g) => g.id).sort())]); // 👈 minimal dependency
 
   const sendMessage = async (groupId: string, text: string) => {
     if (!user) return;
