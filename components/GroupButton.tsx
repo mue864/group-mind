@@ -1,12 +1,23 @@
-import { View } from "react-native"
+import Chevron from "@/assets/icons/right-circle.svg";
+import { TouchableOpacity, View, Text } from "react-native";
 
-
-function GroupButton() {
-  return (
-    <View>
-
-    </View>
-  )
+interface GroupButtonProps {
+  openGroup: (groupId: string) => void;
+  groupType: string // either a string with Invite or Yours
 }
 
-export default GroupButton
+function GroupButton({ openGroup, groupType }: GroupButtonProps) {
+  return (
+    <TouchableOpacity
+      className="bg-primary rounded-xl w-24 h-9 justify-center items-center"
+      onPress={openGroup}
+      activeOpacity={0.8}
+    >
+      <View>
+        {groupType === "Invite" ? <Text className="font-poppins-semiBold text-white font-medium">Join</Text> : <Chevron width={25} height={25} /> }
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+export default GroupButton;

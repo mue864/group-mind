@@ -1,37 +1,10 @@
 import tab from "@/assets/icons/tab";
 import { Tabs } from "expo-router";
-import { useEffect } from "react";
-import { Image, Text } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import { Image, Text, View } from "react-native";
 
 const TabIcon = ({ color, focused, icon, name }) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-
-  useEffect(() => {
-    if (focused) {
-      scale.value = withSpring(1.2, { damping: 5 });
-      const timeout = setTimeout(() => {
-        scale.value = withSpring(1);
-      }, 200);
-      return () => clearTimeout(timeout);
-    }
-  }, [focused]);
-
   return (
-    <Animated.View
-      className="w-32 justify-center items-center mt-7"
-      style={animatedStyle}
-    >
+    <View className="w-32 justify-center items-center mt-7">
       <Image
         source={icon}
         resizeMode="contain"
@@ -45,7 +18,7 @@ const TabIcon = ({ color, focused, icon, name }) => {
       >
         {name}
       </Text>
-    </Animated.View>
+    </View>
   );
 };
 
@@ -60,7 +33,7 @@ const DashboardLayout = () => {
           borderRadius: 15,
           height: 75,
           position: "absolute",
-          bottom: 15,
+          bottom: 8,
           marginLeft: 15,
           marginRight: 15,
           backgroundColor: "#fff",

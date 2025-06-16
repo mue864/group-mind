@@ -24,14 +24,14 @@ const Resources = () => {
     return ( 
         <View className="flex-1 bg-white">
             {resources.length === 0 ? (
-                <Animated.View style={animatedStyle}
+                <View
                 className="flex-1 justify-center items-center"
                 >
                 <FolderOpen width={100} height={100} />
                 <Text className="font-poppins text-gray-500 text-center">
                 No resources found
               </Text>
-              </Animated.View>
+              </View>
             ) : (
                 <Text>Resources</Text>
             )}

@@ -2,10 +2,11 @@ import Book from "@/assets/icons/book.svg";
 import Elipse from "@/assets/icons/ellipse.svg";
 import Rect from "@/assets/icons/rectangle.svg";
 import ActionButton from "@/components/ActionButton";
-import GroupCard from "@/components/GroupCard";
 import PostCard from "@/components/PostCard";
+import RandomGroupCard from "@/components/RandomGroupCard";
 import ScheduledCard from "@/components/ScheduledCard";
 import { Colors } from "@/constants";
+import { useInterval } from "@/hooks/useInterval";
 import { auth } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import { Post, usePostContext } from "@/store/PostContext";
@@ -21,12 +22,6 @@ import {
   View,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
-import { useInterval } from "@/hooks/useInterval";
 
 const Home = () => {
   const router = useRouter();
@@ -42,23 +37,13 @@ const Home = () => {
   const user = auth.currentUser;
   const userID = user?.uid;
 
-
-  // Animation
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(50);
-
-  const animated = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: opacity.value }],
-  }));
-
   useEffect(() => {
     const getRandomId = () => {
       const randomIndex = Math.floor(Math.random() * groups.length);
       return randomIndex;
-    }
+    };
     setSuggestedGroup(getRandomId());
-  }, [groups])
+  }, [groups]);
 
   useEffect(() => {
     // useMemo can't be used here
@@ -84,11 +69,9 @@ const Home = () => {
     fetchGroupNames();
   }, [posts, getGroupNameFromId]);
 
-// memoizing as this does not give any side effects and is efficient like this
+  // memoizing as this does not give any side effects and is efficient like this
   const recentPosts = useMemo(() => {
-    return Object.values(postByGroup).flatMap(
-      (group) => group as Post[]
-    )
+    return Object.values(postByGroup).flatMap((group) => group as Post[]);
   }, [postByGroup]);
 
   const recentPostsCard = useCallback(
@@ -106,18 +89,9 @@ const Home = () => {
     []
   );
 
-  useEffect(() => {
-    opacity.value = withTiming(1, { duration: 1500 });
-    translateY.value = withTiming(0, { duration: 100 });
-  });
-
-
-
-
   const scheduledGroups = useMemo(() => {
     return groups.filter((group) => group.callScheduled);
-  }, [groups])
-
+  }, [groups]);
 
   useInterval(() => {
     if (!isAutoScrolling || scheduledGroups.length <= 1) return;
@@ -126,7 +100,6 @@ const Home = () => {
     flatListRef.current?.scrollToIndex({ index, animated: true });
     setCurrentIndex(index);
   }, 5000);
-  
 
   const handleUserScroll = (event: any) => {
     const newIndex = Math.round(
@@ -145,7 +118,7 @@ const Home = () => {
   // using useCallback to only recall the
   const renderScheduledCard = useCallback(
     ({ item }) => (
-      <View style={{width: screenWidth}}>
+      <View style={{ width: screenWidth }}>
         <ScheduledCard
           title={item.callScheduled.sessionTitle}
           time={item.callScheduled.CallTime}
@@ -154,30 +127,29 @@ const Home = () => {
         />
       </View>
     ),
-    [screenWidth]);
+    [screenWidth]
+  );
 
-    // mapping through the suggested group number and creating dots for each for UI hints
-    const renderScheduledCardDots = useMemo(
-      () => (
-        <View className="flex-row justify-center items-center mt-2">
-          {scheduledGroups.map((_, index) => (
-            <View
-              key={index}
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                marginHorizontal: 4,
-                backgroundColor: index === currentIndex ? "#7291EE" : "#ccc",
-              }}
-            />
-          ))}
-        </View>
-      ),
-      [scheduledGroups, currentIndex]
-    );
-
-
+  // mapping through the suggested group number and creating dots for each for UI hints
+  const renderScheduledCardDots = useMemo(
+    () => (
+      <View className="flex-row justify-center items-center mt-2">
+        {scheduledGroups.map((_, index) => (
+          <View
+            key={index}
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              marginHorizontal: 4,
+              backgroundColor: index === currentIndex ? "#7291EE" : "#ccc",
+            }}
+          />
+        ))}
+      </View>
+    ),
+    [scheduledGroups, currentIndex]
+  );
 
   return (
     <ScrollView>
@@ -196,9 +168,9 @@ const Home = () => {
         ) : groups.length === 0 ? (
           // Empty state
           <View className="flex-1 justify-center items-center">
-            <Animated.View style={animated}>
+            <View>
               <Book width={100} height={100} color={"#7291EE"} />
-            </Animated.View>
+            </View>
 
             <View className="justify-center items-center mx-10">
               <Text className="font-poppins text-gray-500 text-center">
@@ -269,9 +241,10 @@ const Home = () => {
                       </Text>
                       {/* Group Card */}
 
-                      <View>
-                        <GroupCard
+                      <View className="mb-32">
+                        <RandomGroupCard
                           group={groups[suggestedGroup]} // get random group id
+                          groupType="Invite"
                         />
                       </View>
                     </View>

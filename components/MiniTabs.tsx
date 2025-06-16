@@ -16,10 +16,7 @@ const MiniTabs = ({index, tabText, isActive, setIndex}: MiniTabsProps) => {
     }
     return (
 
-        <Pressable className={`rounded-full border justify-center ${isActive ? "bg-primary" : "bg-background"} border-primary w-32 h-7`}
-        style={{
-            elevation: 4
-        }}
+        <Pressable className={`rounded-full border justify-center ${isActive ? "bg-primary" : "bg-background"} border-primary w-32 h-7 shadow-md shadow-gray-600`}
         onPress={handlePageSwitch}
         >
           <Text className={`font-inter font-bold ${isActive ? "text-white" : "text-black"} text-center`}>{tabText}</Text>
