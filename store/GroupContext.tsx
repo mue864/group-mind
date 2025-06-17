@@ -1,15 +1,19 @@
 import { auth, db } from "@/services/firebase";
-import { User, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import {
   arrayRemove,
   arrayUnion,
+  collection,
   doc as firestoreDoc,
   getDoc,
   onSnapshot,
+  serverTimestamp,
+  setDoc,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import Toast from "react-native-toast-message";
 
 export interface Group {
   id: string;
@@ -32,9 +36,18 @@ export interface Group {
 interface GroupContextType {
   groups: Group[];
   loading: boolean;
+  groupCreating: boolean;
   error: string | null;
   joinGroup: (groupId: string) => Promise<void>;
   leaveGroup: (groupId: string) => Promise<void>;
+  createGroup: (
+    name: string,
+    description: string,
+    imageUrl: string,
+    category: string,
+    maxGradeLevel: string,
+    onboardingText: string
+  ) => Promise<void>;
   refreshGroups: () => Promise<void>;
 }
 
@@ -45,20 +58,19 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [groupName, setGroupName] = useState<string[]>([]);
+  const [groupCreating, setGroupCreating] = useState(false);
 
- useEffect (() => {
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
-        if (!user) {
-            setGroups([]);
-            setLoading(false);
-            setError(null);
-        }
+      setUser(user);
+      if (!user) {
+        setGroups([]);
+        setLoading(false);
+        setError(null);
+      }
     });
     return () => unsubscribe();
- }, []);
-
+  }, []);
 
   // Subscribe to real-time updates for user's groups
   useEffect(() => {
@@ -114,8 +126,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [user]);
 
-
-
   const joinGroup = async (groupId: string) => {
     if (!user) return;
 
@@ -127,6 +137,45 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) {
       console.error("Error joining group:", err);
       throw err;
+    }
+  };
+
+  const createGroup = async (
+    name: string,
+    description: string,
+    imageUrl: string,
+    category: string,
+    maxGradeLevel: string,
+    onboardingText: string,
+  ) => {
+    try {
+      setGroupCreating(true);
+      const groupRef = firestoreDoc(collection(db, "groups"));
+      const groupData = {
+        name,
+        description,
+        category,
+        imageUrl,
+        onboardingText,
+        maxGradeLevel,
+        createdBy: user?.uid,
+        createdAt: serverTimestamp(),
+        admins: [user?.uid],
+      };
+      await setDoc(groupRef, groupData);
+      Toast.show({
+        type: "success",
+        text1: name,
+        text2: "Successfully created",
+      });
+      setGroupCreating(false);
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Unable to create group " + error,
+      });
+      setGroupCreating(false);
     }
   };
 
@@ -188,6 +237,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         joinGroup,
         leaveGroup,
         refreshGroups,
+        createGroup,
+        groupCreating,
       }}
     >
       {children}

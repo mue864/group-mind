@@ -152,8 +152,7 @@ const Home = () => {
   );
 
   return (
-    <ScrollView>
-      <View className="bg-white flex-1">
+    <ScrollView className="bg-white flex-1">
         <StatusBar barStyle={"dark-content"} backgroundColor={"white"} />
         <View className="absolute bottom-0" pointerEvents="box-none">
           <Rect width={150} height={200} />
@@ -254,7 +253,7 @@ const Home = () => {
             </View>
           </View>
         )}
-      </View>
+   
     </ScrollView>
   );
 };

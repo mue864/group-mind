@@ -127,4 +127,37 @@
 - Then i used `flatMap` to flatten the nested arrays to become 1 array
 
 
+
+## 📅 Date: [2025-06-16]
+
+### ✅ What I worked on
+- Added Group Cards to the groups page
+- Integrated `react-native-paper` in the project
+- Implemented floating action button (FAB) with `FAB.Group`
+- Learned how to use `Provider` and `Portal` from React Native Paper
+
+### 🧠 What I learned
+- `PaperProvider` wraps the app (or screen) and provides theming and context for all React Native Paper components
+- `Portal` ensures floating components like FAB or modals render above everything else and are not clipped by parent views or tab bars
+- To position FAB properly, use `Portal` and place the FAB outside of scrollable containers, with absolute positioning
+- Use the Paper theme’s `roundness` property to consistently control border radius on inputs and other components instead of individual `borderRadius` styles
+- Active underline or outline color in inputs is controlled by the theme’s `colors.primary` or can be overridden with `activeOutlineColor` prop on `TextInput`
+- For consistent theming, set colors and roundness globally in the Paper theme rather than patching individual styles
+- React Native Paper’s `TextInput` supports two modes: `flat` (underline) and `outlined` (border outline)
+- Customizing individual parts like border radius or active line is easier and more reliable via the theme settings
+
+### ❌ Problems I faced
+- FAB disappeared when nested inside certain views or without Portal
+- Border radius customization on `TextInput` only affected some corners due to internal component structure
+- Active underline/outline color wasn’t obvious how to change initially
+
+### 🔧 How I solved (or plan to solve) them
+- Wrapped FAB inside `Portal` and used absolute positioning with zIndex/elevation to keep it visible above the tab bar
+- Used the Paper theme’s `roundness` property for consistent corner radius instead of inline styles
+- Customized active line color by overriding `colors.primary` in the theme and using `activeOutlineColor` prop for individual inputs when needed
+
 ### 🗓️ Next steps
+- Explore more React Native Paper components (Buttons, Cards, Dialogs) to build a consistent UI
+- Customize theme colors for dark mode and light mode support
+- Refactor existing inputs and buttons in the app to use React Native Paper components for uniform styling and behavior
+- Experiment with more Portal use cases for modals and snackbars
