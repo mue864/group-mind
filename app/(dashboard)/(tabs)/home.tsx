@@ -37,6 +37,8 @@ const Home = () => {
   const user = auth.currentUser;
   const userID = user?.uid;
 
+
+
   useEffect(() => {
     const getRandomId = () => {
       const randomIndex = Math.floor(Math.random() * groups.length);

@@ -22,11 +22,11 @@ const ScheduledCard = ({
 }: ScheduledCardProps) => {
   // time formatting
   const now = new Date();
-  const isScheduled = time && time.toDate() > now;
+  const isScheduled = time && time?.toDate?.() > now;
   const dateString = now.toDateString();
   const splitNow = dateString.split(" 2025");
-  const scheduleTime = time?.toDate().toDateString().split(" 2025");
-  const timeString = time?.toDate().toTimeString().split(" ")[0]; // Gets '18:30:52'
+  const scheduleTime = time?.toDate?.().toDateString().split(" 2025");
+  const timeString = time?.toDate?.().toTimeString().split(" ")[0]; // Gets '18:30:52'
   const hoursAndMinutes = timeString?.substring(0, 5); // Takes first 5 characters '18:30'
   const formattedSchedule = scheduleTime?.[0].substring(4, 10);
   const formattedTime = timeString?.substring(0, 5);

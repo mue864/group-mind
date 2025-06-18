@@ -1,9 +1,11 @@
 import { auth, db } from "@/services/firebase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
   arrayRemove,
   arrayUnion,
   collection,
+  FieldValue,
   doc as firestoreDoc,
   getDoc,
   onSnapshot,
@@ -14,6 +16,7 @@ import {
 } from "firebase/firestore";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
+import { reviveTimestamps } from "@/utils/formatDate";
 
 export interface Group {
   id: string;
@@ -38,6 +41,7 @@ interface GroupContextType {
   loading: boolean;
   groupCreating: boolean;
   groupCreated: boolean;
+  qaPostSent: boolean;
   error: string | null;
   user: User | null;
   joinGroup: (groupId: string) => Promise<void>;
@@ -49,6 +53,17 @@ interface GroupContextType {
     category: string,
     maxGradeLevel: string,
     onboardingText: string
+  ) => Promise<void>;
+  sendQaPost: (
+    groupId: string,
+    message: string,
+    timeSent: Timestamp | FieldValue,
+    responseFrom: [],
+    responseTo: [],
+    isAnswered: boolean,
+    type: string,
+    sentBy: string,
+    groupName: string
   ) => Promise<void>;
   refreshGroups: () => Promise<void>;
 }
@@ -62,6 +77,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [groupCreating, setGroupCreating] = useState(false);
   const [groupCreated, setGroupCreated] = useState(false);
+  const [qaPostSent, setQaPostSent] = useState(false);
+  const [savedLocalData, setSavedLocalData] = useState<Group[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -74,6 +91,34 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     });
     return () => unsubscribe();
   }, []);
+
+  // local data
+  useEffect(() => {
+    if (!user) return;
+    const retriveLocalData = async () => {
+      try {
+        const data = await AsyncStorage.getItem("validGroups");
+      if (!data) return
+      const rawData = JSON.parse(data)
+      const fixedTimeStamps = reviveTimestamps(rawData)
+      setGroups(fixedTimeStamps);
+      } catch (error) {
+        console.log("Unable to retrive group data: ", error);
+      } 
+    }
+    retriveLocalData();
+
+  }, [user]);
+
+  // compare data
+  function compareData(localData: Group[], remoteData: Group[]) {
+    if (localData.length !== remoteData.length) {
+      saveGroupData(remoteData);
+      setGroups(remoteData);
+      return true
+    }
+    return false
+  }
 
   // Subscribe to real-time updates for user's groups
   useEffect(() => {
@@ -107,7 +152,10 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
 
               const results = await Promise.all(groupPromises); // wait for all promises to resolve i.e. wait for all group data to be fetched
               const validGroups = results.filter((g): g is Group => g !== null); // says g is of type Group and filter out any null values, i.e. groups that don't exist (g !== null)
-              setGroups(validGroups);
+               compareData(savedLocalData, validGroups)
+
+              
+              console.log("data fetched from web")
               setLoading(false);
             };
             fetchGroups();
@@ -129,6 +177,14 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [user]);
 
+  const saveGroupData = async (validGroups: Group[]) => {
+    try {
+      await AsyncStorage.setItem("validGroups", JSON.stringify(validGroups));
+    } catch (error) {
+      console.error("Unable to save group data: ", error);
+    }
+  };
+
   const joinGroup = async (groupId: string) => {
     if (!user) return;
 
@@ -149,11 +205,11 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     imageUrl: string | null,
     category: string,
     maxGradeLevel: string,
-    onboardingText: string,
+    onboardingText: string
   ) => {
     try {
       setGroupCreating(true);
-      setGroupCreated(false)
+      setGroupCreated(false);
       const groupRef = firestoreDoc(collection(db, "groups"));
       const groupData = {
         name,
@@ -187,6 +243,38 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const sendQaPost = async (
+    groupId: string,
+    message: string,
+    timeSent: Timestamp | FieldValue,
+    responseFrom: [],
+    responseTo: [],
+    isAnswered: boolean,
+    type: string,
+    sentBy: string,
+    groupName: string
+  ) => {
+    if (!user) return;
+    try {
+      setQaPostSent(false);
+      const qaRef = firestoreDoc(collection(db, "groups", groupId, "qa"));
+      const qaData = {
+        groupId,
+        message,
+        timeSent,
+        responseFrom,
+        responseTo,
+        isAnswered,
+        type,
+        sentBy,
+        groupName,
+      };
+      await setDoc(qaRef, qaData);
+      setQaPostSent(true);
+    } catch (error) {
+      console.error("Unable to send post: ", error);
+    }
+  };
 
   const leaveGroup = async (groupId: string) => {
     if (!user) return;
@@ -249,7 +337,9 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         createGroup,
         groupCreating,
         groupCreated,
-        user
+        user,
+        qaPostSent,
+        sendQaPost,
       }}
     >
       {children}

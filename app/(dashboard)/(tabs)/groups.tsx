@@ -21,7 +21,7 @@ const Groups = () => {
         <FAB.Group
          open={open}
          icon={open ? 'close' : 'plus'}
-        
+        color="#fff"
          style={{ position: 'absolute', bottom: 80, right: 3, zIndex: 9999, elevation: 9999 }}
          fabStyle={{backgroundColor: '#4169E1'}}
          actions={[
