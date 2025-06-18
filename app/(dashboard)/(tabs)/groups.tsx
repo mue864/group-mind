@@ -51,7 +51,7 @@ const Groups = () => {
       <StatusBar barStyle={"dark-content"} />
 
       {/* groups available */}
-      {groups.length !== 0 && pageIndex === 0 ? (
+
         <View className="flex-1 justify-center items-center">
           <View className="justify-center items-center mt-5 relative">
             <FlatList
@@ -72,11 +72,6 @@ const Groups = () => {
             />
           </View>
         </View>
-      ) : (
-        <View className="flex-1 justify-center items-center">
-          <FloatingButton action={() => router.push("/groupCreate")} />
-        </View>
-      )}
     </ScrollView>
     </Provider>
   );

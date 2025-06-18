@@ -5,7 +5,8 @@ import { useGroupContext } from "@/store/GroupContext";
 import { useEffect, useState } from "react";
 import { Image, Pressable, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { Button, TextInput, HelperText } from "react-native-paper";
+import { Button, TextInput, Menu } from "react-native-paper";
+import { useRouter } from "expo-router";
 
 interface GroupImagesProp {
   groupImage1: string;
@@ -22,7 +23,7 @@ interface GroupImagesProp {
 }
 
 const GroupCreate = () => {
-  const { groupCreating, createGroup } = useGroupContext();
+  const { groupCreating, createGroup, groupCreated } = useGroupContext();
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -36,6 +37,22 @@ const GroupCreate = () => {
   const [groupNameTouched, setGroupNameTouched] = useState(false);
   const [groupDescriptionTouched, setGroupDescriptionTouched] = useState(false);
 
+  const categoryOptions = ["Math", "Science", "History", "English"];
+  const gradeOptions = ["Grade 8", "Grade 9", "Grade 10", "Grade 11"];
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [gradeMenuVisible, setGradeMenuVisible] = useState(false);
+
+  const router = useRouter();
+
+
+  const formValid =
+    groupName.length >= 3 &&
+    groupDescription.length >= 7 &&
+    category &&
+    grade &&
+    onboardingText &&
+    selectedImage
+
   useEffect(() => {
     if (groupNameTouched)
     {
@@ -48,6 +65,7 @@ const GroupCreate = () => {
       setHasGroupDescriptionErrors(groupDescription.length < 7);
     }
   }, [groupDescription, groupDescriptionTouched]);
+
 
   return (
     <KeyboardAwareScrollView
@@ -66,7 +84,7 @@ const GroupCreate = () => {
           {selectedImage ? (
             <Image
               source={groupImages[selectedImage as keyof GroupImagesProp]}
-              style={{ width: 200, height: 150, borderRadius: 100 }}
+              style={{ width: 150, height: 150, borderRadius: 75 }}
               resizeMode="contain"
             />
           ) : (
@@ -110,22 +128,72 @@ const GroupCreate = () => {
         error={hasGroupDescriptionErrors}
       />
 
-      <View className="flex flex-row justify-between w-[85%]">
-        <TextInput
-          label="Category"
-          value={category}
-          onChangeText={setCategory}
-          mode="outlined"
-          style={{ width: "48%", marginVertical: 10, height: 60 }}
-        />
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          width: "85%",
+        }}
+      >
+        <View style={{ width: "48%" }}>
+          <Menu
+            visible={categoryMenuVisible}
+            onDismiss={() => setCategoryMenuVisible(false)}
+            anchor={
+              <Pressable onPress={() => setCategoryMenuVisible(true)}>
+                <TextInput
+                  label="Category"
+                  value={category}
+                  mode="outlined"
+                  editable={false}
+                  right={<TextInput.Icon icon="menu-down" />}
+                  pointerEvents="none" // prevents native tap handling so Pressable works
+                />
+              </Pressable>
+            }
+          >
+            {categoryOptions.map((option, index) => (
+              <Menu.Item
+                key={index}
+                onPress={() => {
+                  setCategory(option);
+                  setCategoryMenuVisible(false);
+                }}
+                title={option}
+              />
+            ))}
+          </Menu>
+        </View>
 
-        <TextInput
-          label="Grade Level"
-          value={grade}
-          onChangeText={setGrade}
-          mode="outlined"
-          style={{ width: "48%", marginVertical: 10, height: 60 }}
-        />
+        <View style={{ width: "48%" }}>
+          <Menu
+            visible={gradeMenuVisible}
+            onDismiss={() => setGradeMenuVisible(false)}
+            anchor={
+              <Pressable onPress={() => setGradeMenuVisible(true)}>
+                <TextInput
+                  label="Grade Level"
+                  value={grade}
+                  mode="outlined"
+                  editable={false}
+                  right={<TextInput.Icon icon="menu-down" />}
+                  pointerEvents="none"
+                />
+              </Pressable>
+            }
+          >
+            {gradeOptions.map((option, index) => (
+              <Menu.Item
+                key={index}
+                onPress={() => {
+                  setGrade(option);
+                  setGradeMenuVisible(false);
+                }}
+                title={option}
+              />
+            ))}
+          </Menu>
+        </View>
       </View>
 
       <TextInput
@@ -138,19 +206,26 @@ const GroupCreate = () => {
 
       <Button
         onPress={() => {
-          console.log("Create Group");
+          createGroup(
+            groupName,
+            groupDescription,
+            selectedImage,
+            category,
+            grade,
+            onboardingText
+          );
         }}
         loading={groupCreating}
         mode="contained"
         icon="plus"
-        disabled={true}
+        disabled={!formValid || groupCreating}
         style={{
           width: "85%",
           margin: 10,
           height: 60,
-          justifyContent: "center",
-          alignItems: "center",
+          
         }}
+        contentStyle={{ height: 60, justifyContent: "center", alignItems: 'center' }}
       >
         Create Group
       </Button>

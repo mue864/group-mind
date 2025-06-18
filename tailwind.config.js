@@ -15,7 +15,7 @@ module.exports = {
       colors: {
         primary: "#4169E1",
         secondary: "#7291EE",
-        background: "#FFFFFF",
+        background: "#F5F6FA",
         cardHeadingText: "#7291EE",
         muted: "#9EADD9",
         'muted-50': 'rgba(158, 173, 217, 0.5)',

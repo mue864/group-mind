@@ -52,7 +52,6 @@ export const PostProvider = ({children, loading, groups: initialGroups}: {childr
     useEffect(() => {
         if (loading) {
             const interval = setInterval(() => {
-                console.log("loading data");
             }, 1000);
             return () => clearInterval(interval);
         }

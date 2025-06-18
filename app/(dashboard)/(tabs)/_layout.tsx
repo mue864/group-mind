@@ -104,7 +104,7 @@ const DashboardLayout = () => {
           title: "Live Sessions",
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon
-              name="Resources"
+              name="Live Sessions"
               icon={tab.sessions}
               focused={focused}
               color={color}

@@ -37,13 +37,15 @@ interface GroupContextType {
   groups: Group[];
   loading: boolean;
   groupCreating: boolean;
+  groupCreated: boolean;
   error: string | null;
+  user: User | null;
   joinGroup: (groupId: string) => Promise<void>;
   leaveGroup: (groupId: string) => Promise<void>;
   createGroup: (
     name: string,
     description: string,
-    imageUrl: string,
+    imageUrl: string | null,
     category: string,
     maxGradeLevel: string,
     onboardingText: string
@@ -59,6 +61,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [groupCreating, setGroupCreating] = useState(false);
+  const [groupCreated, setGroupCreated] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -143,13 +146,14 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const createGroup = async (
     name: string,
     description: string,
-    imageUrl: string,
+    imageUrl: string | null,
     category: string,
     maxGradeLevel: string,
     onboardingText: string,
   ) => {
     try {
       setGroupCreating(true);
+      setGroupCreated(false)
       const groupRef = firestoreDoc(collection(db, "groups"));
       const groupData = {
         name,
@@ -158,17 +162,21 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         imageUrl,
         onboardingText,
         maxGradeLevel,
+        members: [user?.uid],
         createdBy: user?.uid,
         createdAt: serverTimestamp(),
         admins: [user?.uid],
       };
       await setDoc(groupRef, groupData);
+
+      joinGroup(groupRef.id);
       Toast.show({
         type: "success",
         text1: name,
         text2: "Successfully created",
       });
       setGroupCreating(false);
+      setGroupCreated(true);
     } catch (error) {
       Toast.show({
         type: "error",
@@ -178,6 +186,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       setGroupCreating(false);
     }
   };
+
 
   const leaveGroup = async (groupId: string) => {
     if (!user) return;
@@ -239,6 +248,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         refreshGroups,
         createGroup,
         groupCreating,
+        groupCreated,
+        user
       }}
     >
       {children}

@@ -5,6 +5,7 @@ import GroupButton from "./GroupButton";
 import { db } from "@/services/firebase";
 import { getDoc, doc } from "firebase/firestore";
 import avatars from "@/assets/images/avatars";
+import { useRouter } from "expo-router";
 
 interface GroupCardProps {
     id: string,
@@ -43,11 +44,13 @@ interface Avatars {
 }
 
 const GroupCard = ({id, imageUrl, description, members, createdBy, name, groupType}: GroupCardProps) => {
-
     const [groupCreatorName, setGroupCreatorName] = useState("")
     const [groupCreatorImage, setGroupCreatorImage] = useState<string | null>(null)
 
+    const router = useRouter();
+
     useEffect(() => {
+      // this has to be cached locally
         const retriveCreatorImage = async () => {
             const userRef = doc(db, "users", createdBy.trim());
             const userDoc = await getDoc(userRef);
@@ -111,7 +114,7 @@ const GroupCard = ({id, imageUrl, description, members, createdBy, name, groupTy
 
             <View>
               <GroupButton
-                openGroup={() => console.log("Opening")}
+                openGroup={() => router.push(`/(groups)/${id}`)}
                 groupType="Yours"
               />
             </View>

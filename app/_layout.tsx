@@ -6,25 +6,10 @@ import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { GroupProvider, useGroupContext } from "@/store/GroupContext";
-import { MessagesProvider } from "@/store/MessagesProvider";
 import { PostProvider } from "@/store/PostContext";
 import {Provider as PaperProvider, DefaultTheme} from "react-native-paper";
 
 SplashScreen.preventAutoHideAsync();
-
-const AppContext = ({children} : {children: React.ReactNode}) => {
-  const {groups, loading, error} = useGroupContext();
-  console.log(loading)
-  if (error) {
-    return;
-  }
-
-  return (
-    <MessagesProvider groups={groups} loading={loading}>
-      {children}
-    </MessagesProvider>
-  )
-}
 
 // theme
 
@@ -70,32 +55,36 @@ const RootLayout = () => {
   if (!fontsLoaded) {
     return <ActivityIndicator size={"large"} />;
   }
-  return (
 
-      <PaperProvider theme={theme}>
-        <GroupProvider>
-          <AppContext>
-            <Post>
-              <SafeAreaView className="flex-1">
-                <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
-                  <Stack
-                    screenOptions={({ route }) => ({
-                      headerShown: route.path?.includes("(groups)") || false,
+  
+  return (
+    <PaperProvider theme={theme}>
+      <GroupProvider>
+          <Post>
+            <SafeAreaView className="flex-1">
+              <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
+                <Stack
+                  screenOptions={({ route }) => {
+  
+
+                    return {
+                      headerShown: false,
                       headerStyle: {
                         backgroundColor: "#fff",
                       },
                       headerTitle: "",
-                    })}
-                  >
-                    <Stack.Screen name="index" />
-                  </Stack>
-                  <Toast />
-                </View>
-              </SafeAreaView>
-            </Post>
-          </AppContext>
-        </GroupProvider>
-      </PaperProvider>
+                    };
+                  }}
+                >
+                  <Stack.Screen name="index" />
+                </Stack>
+
+                <Toast />
+              </View>
+            </SafeAreaView>
+          </Post>
+      </GroupProvider>
+    </PaperProvider>
   );
 };
 export default RootLayout;
