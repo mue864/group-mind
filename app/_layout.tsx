@@ -8,6 +8,8 @@ import Toast from "react-native-toast-message";
 import { GroupProvider, useGroupContext } from "@/store/GroupContext";
 import { PostProvider } from "@/store/PostContext";
 import {Provider as PaperProvider, DefaultTheme} from "react-native-paper";
+import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -58,33 +60,37 @@ const RootLayout = () => {
 
   
   return (
-    <PaperProvider theme={theme}>
-      <GroupProvider>
+    <GestureHandlerRootView>
+      <PaperProvider theme={theme}>
+        <GroupProvider>
           <Post>
-            <SafeAreaView className="flex-1">
-              <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
-                <Stack
-                  screenOptions={({ route }) => {
-  
+            {/* Wrap everything in a view that sets the background color */}
+            <View className="flex-1 bg-[#F5F6FA]">
+              {/* Place StatusBar OUTSIDE SafeAreaView */}
+              <StatusBar style="dark" translucent />
 
-                    return {
+              <SafeAreaView className="flex-1">
+                <View onLayout={onLayoutRootView} className="flex-1">
+                  <Stack
+                    screenOptions={({ route }) => ({
                       headerShown: false,
                       headerStyle: {
                         backgroundColor: "#fff",
                       },
                       headerTitle: "",
-                    };
-                  }}
-                >
-                  <Stack.Screen name="index" />
-                </Stack>
+                    })}
+                  >
+                    <Stack.Screen name="index" />
+                  </Stack>
 
-                <Toast />
-              </View>
-            </SafeAreaView>
+                  <Toast />
+                </View>
+              </SafeAreaView>
+            </View>
           </Post>
-      </GroupProvider>
-    </PaperProvider>
+        </GroupProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 };
 export default RootLayout;

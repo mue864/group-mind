@@ -2,16 +2,18 @@ import {Text, View, StatusBar, TouchableOpacity} from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
 import {db} from "@/services/firebase"
 import { collection, onSnapshot, orderBy, query, Timestamp } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGroupContext } from '@/store/GroupContext';
 import Back from "@/assets/icons/Arrow_left.svg";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import QApostCard from "@/components/QApostCard";
+import { FlatList } from 'react-native-gesture-handler';
 type Post = {
   id: string;
   message: string;
   timeSent: Timestamp; // or Timestamp if you're importing from firebase
-  responseFrom?: string;
-  responseTo?: string;
+  responseFrom?: [];
+  responseTo: [];
   isAnswered?: boolean;
   type: string;
   sentBy: string;
@@ -19,20 +21,22 @@ type Post = {
 };
 
 
+
 function GroupQA() {
     const {groupId} = useLocalSearchParams();
     const {user} = useGroupContext();
     const [posts, setPosts] = useState<Post[]>([])
     
-    console.log(groupId)
     // first fetch locally
     useEffect(() => {
       const localData = async () => {
         try {
-          const cached = await AsyncStorage.getItem(`groupPosts-${groupId}`);
+          const cached = await AsyncStorage.getItem(`${groupId}`);
 
           if (cached) {
             setPosts(JSON.parse(cached));
+          } else {
+            console.log("no data")
           }
         } catch(error) {
           console.error("Error fetching local data:" , error)
@@ -45,10 +49,6 @@ function GroupQA() {
     
     useEffect(() => {
       if (!user || !groupId) return;
-
-      const q = query(collection(db, "groups", groupId.toString(), "qa"),
-      orderBy("timeSent", "desc")
-    );
 
       const unsubscribe = onSnapshot(
         collection(db, "groups", groupId.toString(), "qa"),
@@ -87,10 +87,21 @@ function GroupQA() {
       }
     }
 
-    console.log(posts)
+   const renderPosts = useCallback(({item}) => (
+     <View>
+       <QApostCard
+        post={item.message}
+        timeSent={item.timeSent}
+        responseTo={item.responseTo}
+        responseFrom={item.responseFrom}
+       />
+     </View>
+   ), [])
+
+   console.log(posts)
 
   return (
-    <View className='bg-background'>
+    <View className="bg-background flex-1">
       <View className="flex flex-row items-center justify-between mx-4 mt-4 relative">
         {/* Back Button */}
         <TouchableOpacity
@@ -108,7 +119,18 @@ function GroupQA() {
         )}
       </View>
 
-      <StatusBar barStyle={"light-content"} />
+      {/* Page Name */}
+      <View className='mx-5 mt-10'>
+        <Text className='font-inter font-bold text-xl text-primary'>Q&A Board</Text>
+      </View>
+      
+      <View>
+        <FlatList 
+        data={posts}
+        keyExtractor={(key, item) => item.toString()}
+        renderItem={renderPosts}
+        />
+      </View>
     </View>
   );
 }

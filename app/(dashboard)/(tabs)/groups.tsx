@@ -10,8 +10,7 @@ import { FAB, Portal, Provider } from "react-native-paper";
 const Groups = () => {
   const router = useRouter();
 
-  const { groups, loading } = useGroupContext();
-  const [pageIndex, setPageIndex] = useState(0);
+  const { groups } = useGroupContext();
   const [open, setOpen] = useState(false);
 
   const onStateChange = ({ open }: { open: boolean }) => setOpen(open);

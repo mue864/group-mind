@@ -17,6 +17,7 @@ module.exports = {
         secondary: "#7291EE",
         background: "#F5F6FA",
         cardHeadingText: "#7291EE",
+        qaText: "#707487",
         muted: "#9EADD9",
         'muted-50': 'rgba(158, 173, 217, 0.5)',
       },
