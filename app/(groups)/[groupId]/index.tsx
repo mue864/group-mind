@@ -6,7 +6,7 @@ import { useGroupContext } from "@/store/GroupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
 import { FAB, Portal, Provider } from "react-native-paper";
@@ -28,19 +28,28 @@ export type QaPost = {
   userName: string;
 };
 
+export let id = "";
+
 function GroupQA() {
-  const { groupId } = useLocalSearchParams();
+  const { groupId, groupName } = useLocalSearchParams();
   const { user } = useGroupContext();
   const [posts, setPosts] = useState<QaPost[]>([]);
   const [open, setOpen] = useState(false);
   const [messagesById, setMessagesById] = useState<Record<string, QaPost>>({});
+  const [localGroupName, setLocalGroupName] = useState("");
 
   const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      id = groupId.toString();
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [groupId]);
 
   // first fetch locally
   useEffect(() => {
     const localData = async () => {
-      const id = groupId.toString();
       try {
         const cachedQaGroups = await AsyncStorage.getItem(id);
         if (cachedQaGroups) {
@@ -56,7 +65,7 @@ function GroupQA() {
     const localMessages = async () => {
       try {
         const cachedLocalData = await AsyncStorage.getItem(`local-${groupId}`);
-
+        console.log("groupID: ", groupId);
         if (cachedLocalData) {
           console.log("cached messages: ", JSON.parse(cachedLocalData));
           setMessagesById(JSON.parse(cachedLocalData));
@@ -67,6 +76,20 @@ function GroupQA() {
         console.error("There has been an error in fetching messages: ", error);
       }
     };
+
+    const fetchGroupName = async () => {
+      try {
+        const cachedGroupName = await AsyncStorage.getItem("groupName");
+        if (cachedGroupName) {
+          setLocalGroupName(cachedGroupName);
+        } else {
+          console.log("no group name");
+        }
+      } catch (error) {
+        console.error("Error fetching group name: ", error);
+      }
+    };
+    fetchGroupName();
     localData();
     localMessages();
   }, [groupId]);
@@ -134,16 +157,17 @@ function GroupQA() {
 
   // save groupName locally
   useEffect(() => {
-    if (posts.length === 0) return;
+    if (posts.length === 0 || !groupName) return;
+
     const saveGroupName = async () => {
       try {
-        await AsyncStorage.setItem("groupName", posts[0].groupName); // change this logic with time
+        await AsyncStorage.setItem("groupName", groupName.toString()); // change this logic with time
       } catch (error) {
         console.error("Unable to save group name", error);
       }
     };
     saveGroupName();
-  }, [posts]);
+  }, [posts, groupName]);
 
   // const local and cloud data comparison
   function compareData(localData: QaPost[], cloudData: QaPost[]) {
@@ -184,6 +208,7 @@ function GroupQA() {
     }
   };
 
+
   // caching post data
   const localSaveData = async (groupId: string, postData: QaPost[]) => {
     try {
@@ -192,6 +217,15 @@ function GroupQA() {
       console.error("Failed to sace groupData ", error);
     }
   };
+
+  // sort posts by time
+  const sortedPosts = useMemo(() => {
+    return [...posts].sort((a, b) => {
+      const timeA = a.timeSent?.toDate?.()?.getTime() || 0;
+      const timeB = b.timeSent?.toDate?.()?.getTime() || 0;
+      return timeB - timeA;
+    });
+  }, [posts]);
 
   const renderPosts = useCallback(
     ({ item }) => (
@@ -257,7 +291,7 @@ function GroupQA() {
             {posts.length !== 0 && (
               <Text className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">
                 {/* Group Name issue */}
-                {posts[0].groupName}
+                {!groupName ? localGroupName : groupName}
               </Text>
             )}
           </View>
@@ -271,7 +305,7 @@ function GroupQA() {
 
           <View style={{ flex: 1 }}>
             <FlatList
-              data={posts}
+              data={sortedPosts}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderPosts}
               contentContainerStyle={{ paddingBottom: 120 }}

@@ -62,7 +62,7 @@ function QApostCard({ post, timeSent, responseTo, responseFrom,  postID, groupID
               <View className="flex flex-row items-center space-x-1">
                 <Comment width={20} height={20} />
                 <Text className="text-qaText font-inter">
-                  {responseFrom.length}
+                  2
                 </Text>
               </View>
 

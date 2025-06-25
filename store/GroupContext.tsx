@@ -36,6 +36,37 @@ export interface Group {
   imageUrl: string;
 }
 
+interface MessageData {
+  message: string;
+  sentBy: string;
+  timeSent: Timestamp;
+  isAdmin: boolean;
+  isMod: boolean;
+  imageUrl?: string;
+  userName: string;
+  purpose: string;
+  type: 'message' | 'question' | 'response';
+  parentMessageId?: string;
+  isHelpful?: boolean;
+  helpfulCount?: number;
+}
+
+interface SendMessageParams {
+  message: string;
+  isAdmin: boolean;
+  isMod: boolean;
+  sentBy: string;
+  timeSent: Timestamp;
+  groupId: string;
+  type: 'message' | 'question' | 'response';
+  parentMessageId?: string;
+  userInformation: {
+    profilePicture?: string;
+    userName: string;
+    purpose: string;
+  };
+}
+
 interface GroupContextType {
   groups: Group[];
   loading: boolean;
@@ -58,8 +89,6 @@ interface GroupContextType {
     groupId: string,
     message: string,
     timeSent: Timestamp | FieldValue,
-    responseFrom: [],
-    responseTo: [],
     isAnswered: boolean,
     type: string,
     sentBy: string,
@@ -77,6 +106,30 @@ interface GroupContextType {
     timeSent: Timestamp,
     groupId: string
   ) => Promise<void>;
+  sendMessage: (
+    message: string,
+    isAdmin: boolean,
+    isMod: boolean,
+    sentBy: string,
+    timeSent: Timestamp,
+    groupId: string,
+    type?: 'message' | 'question' | 'response',
+    parentMessageId?: string
+  ) => Promise<{ success: boolean; messageId?: string; error?: any }>;
+  respondToMessage: (
+    message: string,
+    isAdmin: boolean,
+    isMod: boolean,
+    sentBy: string,
+    timeSent: Timestamp,
+    groupId: string,
+    parentMessageId: string,
+  ) => Promise<{ success: boolean; messageId?: string; error?: any }>;
+  markResponseHelpful: (
+    groupId: string,
+    messageId: string,
+    responseId: string
+  ) => Promise<{ success: boolean; error?: any }>;
   refreshGroups: () => Promise<void>;
   userInformation: UserInfo | null;
   qaPostID: string;
@@ -105,6 +158,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [savedLocalData, setSavedLocalData] = useState<Group[]>([]);
   const [userInformation, setUserInformation] = useState<UserInfo | null>(null);
   const [qaPostID, setQaPostID] = useState("");
+  const [messageSent, setMessageSent] = useState(false);
 
 
   useEffect(() => {
@@ -281,8 +335,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     groupId: string,
     message: string,
     timeSent: Timestamp | FieldValue,
-    responseFrom: [],
-    responseTo: [],
     isAnswered: boolean,
     type: string,
     sentBy: string,
@@ -298,8 +350,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         groupId,
         message,
         timeSent,
-        responseFrom,
-        responseTo,
         isAnswered,
         type,
         sentBy,
@@ -359,6 +409,150 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("An error occured when sending response: ", error);
     }
   };
+
+  const sendUnifiedMessage = async ({
+    message,
+    isAdmin,
+    isMod,
+    sentBy,
+    timeSent,
+    groupId,
+    type = 'message',
+    parentMessageId,
+    userInformation: userInfoParam,
+  }: SendMessageParams) => {
+    try {
+      setMessageSent(false);
+      let messageRef;
+
+      if (type === 'response' && parentMessageId) {
+        messageRef = firestoreDoc(
+          collection(
+            db,
+            'groups',
+            groupId.toString(),
+            'messages',
+            parentMessageId.toString(),
+            'responses'
+          )
+        );
+      } else {
+        messageRef = firestoreDoc(
+          collection(db, 'groups', groupId.toString(), 'messages')
+        );
+      }
+
+      const userInfo = userInfoParam || userInformation;
+      const messageData: MessageData = {
+        message,
+        sentBy,
+        timeSent,
+        isAdmin,
+        isMod,
+        imageUrl: userInfo?.profilePicture,
+        userName: userInfo?.userName || '',
+        purpose: userInfo?.purpose || '',
+        type,
+        ...(parentMessageId && { parentMessageId }),
+        ...(type === 'response' && { isHelpful: false, helpfulCount: 0 }),
+      };
+
+      await setDoc(messageRef, messageData);
+      setMessageSent(true);
+      return { success: true, messageId: messageRef.id };
+    } catch (error) {
+      console.error('An error occurred when sending message: ', error);
+      return { success: false, error };
+    }
+  };
+
+  const sendMessage = async (
+    message: string,
+    isAdmin: boolean,
+    isMod: boolean,
+    sentBy: string,
+    timeSent: Timestamp,
+    groupId: string,
+    type: 'message' | 'question' | 'response' = 'message',
+    parentMessageId?: string
+  ) => {
+    if (!userInformation) {
+      return { success: false, error: 'User information not available' };
+    }
+
+    return sendUnifiedMessage({
+      message,
+      isAdmin,
+      isMod,
+      sentBy,
+      timeSent,
+      groupId,
+      type,
+      parentMessageId,
+      userInformation: {
+        profilePicture: userInformation.profilePicture,
+        userName: userInformation.userName,
+        purpose: userInformation.purpose,
+      },
+    });
+  };
+
+  const respondToMessage = async (
+    message: string,
+    isAdmin: boolean,
+    isMod: boolean,
+    sentBy: string,
+    timeSent: Timestamp,
+    groupId: string,
+    parentMessageId: string,
+  ) => {
+    if (!userInformation) {
+      return { success: false, error: 'User information not available' };
+    }
+
+    return sendUnifiedMessage({
+      message,
+      isAdmin,
+      isMod,
+      sentBy,
+      timeSent,
+      groupId,
+      type: 'response',
+      parentMessageId,
+      userInformation: {
+        profilePicture: userInformation.profilePicture,
+        userName: userInformation.userName,
+        purpose: userInformation.purpose,
+      },
+    });
+  };
+
+  const markResponseHelpful = async (
+    groupId: string,
+    messageId: string,
+    responseId: string
+  ) => {
+    try {
+      const responseRef = firestoreDoc(
+        db,
+        'groups',
+        groupId,
+        'messages',
+        messageId,
+        'responses',
+        responseId
+      );
+
+      await updateDoc(responseRef, { 
+        isHelpful: true,
+        helpfulCount: arrayUnion(1) // Increment helpful count
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error marking response as helpful:', error);
+      return { success: false, error };
+    }
+  }
 
   const leaveGroup = async (groupId: string) => {
     if (!user) return;
@@ -455,6 +649,9 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         qaPostSent,
         sendQaPost,
         responseQaPost,
+        sendMessage,
+        respondToMessage,
+        markResponseHelpful,
         userInformation,
         qaPostID,
       }}

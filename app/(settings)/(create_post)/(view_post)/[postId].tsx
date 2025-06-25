@@ -296,7 +296,7 @@ function ViewPost() {
           </TouchableOpacity>
 
           {/* Message Input */}
-          <View className="flex-1 mx-2 justify-center">
+          <View className="flex-1 mx-2 ">
             <TextInput
               value={post}
               onChangeText={(text) => (setPost(text), setUserTyping(!!text))}

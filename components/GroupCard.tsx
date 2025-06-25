@@ -6,6 +6,7 @@ import { db } from "@/services/firebase";
 import { getDoc, doc } from "firebase/firestore";
 import avatars from "@/assets/images/avatars";
 import { useRouter } from "expo-router";
+import { useGroupContext } from "@/store/GroupContext";
 
 interface GroupCardProps {
     id: string,
@@ -44,13 +45,15 @@ interface Avatars {
 }
 
 const GroupCard = ({id, imageUrl, description, members, createdBy, name, groupType}: GroupCardProps) => {
+    const { user } = useGroupContext();
     const [groupCreatorName, setGroupCreatorName] = useState("")
     const [groupCreatorImage, setGroupCreatorImage] = useState<string | null>(null)
 
+    const isCreator = user?.uid === createdBy;
     const router = useRouter();
 
     useEffect(() => {
-      // this has to be cached locally
+      // this has to be cached locally eats a lot of reads from firestore per each render lol 
         const retriveCreatorImage = async () => {
             const userRef = doc(db, "users", createdBy.trim());
             const userDoc = await getDoc(userRef);
@@ -63,7 +66,7 @@ const GroupCard = ({id, imageUrl, description, members, createdBy, name, groupTy
             }
         };
         retriveCreatorImage()
-    }, []);
+    }, [createdBy]);
 
     return (
       <View className="bg-gray-50 border-2 border-gray-100 shadow-sm rounded-xl mb-7">
@@ -114,8 +117,14 @@ const GroupCard = ({id, imageUrl, description, members, createdBy, name, groupTy
 
             <View>
               <GroupButton
-                openGroup={() => router.push(`/(groups)/${id}`)}
-                groupType="Yours"
+                openGroup={() => router.push({
+                  pathname: `/(groups)/[groupId]`,
+                  params: {
+                    groupId: id,
+                    groupName: name
+                  }
+                })}
+                groupType={isCreator ? "Yours" : "Others"}
               />
             </View>
           </View>

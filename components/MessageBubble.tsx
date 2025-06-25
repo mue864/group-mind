@@ -19,27 +19,44 @@ type Avatars = {
 
 interface MessageBubbleProps {
   message: string;
-  messageTimeSent: Timestamp | { seconds: number; nanoseconds: number };
+  timeSent?: Timestamp | { seconds: number; nanoseconds: number };
+  messageTimeSent?: Timestamp | { seconds: number; nanoseconds: number }; // Keep for backward compatibility
   isSelf: boolean;
   isAdmin: boolean;
   isMod: boolean;
-  userAvatar: string;
+  imageUrl?: string;
+  userAvatar?: string; // Keep for backward compatibility
   userName: string;
-  type: "question" | "response";
+  type: "message" | "question" | "response";
   purpose?: string;
-};
+  onReply?: (messageId?: string) => void;
+  onHelpful?: (messageId?: string) => void;
+  messageId?: string;
+  responseCount?: number;
+  isHelpful?: boolean;
+}
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
-  messageTimeSent,
-  userAvatar,
+  timeSent,
+  messageTimeSent, // Fallback for backward compatibility
+  imageUrl,
+  userAvatar, // Fallback for backward compatibility
   userName,
   isAdmin,
   isMod,
   isSelf,
-  type = "question",
+  type = "message",
   purpose = "",
+  onReply,
+  onHelpful,
+  messageId,
+  responseCount = 0,
+  isHelpful = false,
 }) => {
+  // Use timeSent first, then fall back to messageTimeSent for backward compatibility
+  const timestamp = timeSent || messageTimeSent;
+
   const formatTime = (
     timestamp: Timestamp | { seconds: number; nanoseconds: number }
   ) => {
@@ -51,10 +68,78 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // Use imageUrl first, then fall back to userAvatar for backward compatibility
+  const avatarSource = imageUrl || userAvatar;
   const avatarImage =
-    userAvatar && avatars[userAvatar as keyof Avatars]
-      ? avatars[userAvatar as keyof Avatars]
+    avatarSource && avatars[avatarSource as keyof Avatars]
+      ? avatars[avatarSource as keyof Avatars]
       : avatars.avatar6;
+
+  const getBubbleStyle = () => {
+    switch (type) {
+      case "question":
+        return isSelf
+          ? "bg-blue-500 rounded-tr-none"
+          : "bg-purple-100 border border-purple-200 rounded-tl-none";
+      case "response":
+        return isSelf
+          ? "bg-green-500 rounded-tr-none"
+          : "bg-green-50 border border-green-200 rounded-tl-none";
+      case "message":
+      default:
+        return isSelf
+          ? "bg-blue-500 rounded-tr-none"
+          : "bg-gray-100 border border-gray-200 rounded-tl-none";
+    }
+  };
+
+  const getTextStyle = () => {
+    switch (type) {
+      case "question":
+        return isSelf ? "text-white" : "text-purple-800";
+      case "response":
+        return isSelf ? "text-white" : "text-green-800";
+      case "message":
+      default:
+        return isSelf ? "text-white" : "text-gray-800";
+    }
+  };
+
+  const getTypeIcon = () => {
+    switch (type) {
+      case "question":
+        return "help-circle-outline";
+      case "response":
+        return "chatbubble-ellipses-outline";
+      case "message":
+      default:
+        return "chatbubble-outline";
+    }
+  };
+
+  const getTypeLabel = () => {
+    switch (type) {
+      case "question":
+        return "Question";
+      case "response":
+        return "Response";
+      case "message":
+      default:
+        return null; // Don't show label for regular messages
+    }
+  };
+
+  const handleReply = () => {
+    if (onReply) {
+      onReply(messageId);
+    }
+  };
+
+  const handleHelpful = () => {
+    if (onHelpful) {
+      onHelpful(messageId);
+    }
+  };
 
   return (
     <View
@@ -99,63 +184,107 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               </View>
             )}
           </View>
-          <Text className="text-xs text-gray-500 ml-2">
-            {formatTime(messageTimeSent)}
-          </Text>
+          {timestamp && (
+            <Text className="text-xs text-gray-500 ml-2">
+              {formatTime(timestamp)}
+            </Text>
+          )}
         </View>
 
         {/* Bubble Box */}
-        <View
-          className={`rounded-2xl p-3 ${
-            isSelf
-              ? type === "question"
-                ? "bg-blue-500 rounded-tr-none"
-                : "bg-blue-200 rounded-tr-none"
-              : type === "question"
-              ? "bg-gray-100 rounded-tl-none"
-              : "bg-white border border-gray-200 rounded-tl-none"
-          }`}
-        >
-          {/* Question Label */}
-          {type === "question" && (
-            <View className="flex-row items-center mb-1">
+        <View className={`rounded-2xl p-3 ${getBubbleStyle()}`}>
+          {/* Type Label (for questions and responses) */}
+          {getTypeLabel() && (
+            <View className="flex-row items-center mb-2">
               <Ionicons
-                name="help-circle-outline"
+                name={getTypeIcon() as any}
                 size={16}
-                color={isSelf ? "rgba(255,255,255,0.8)" : Colors.primary}
+                color={
+                  isSelf
+                    ? "rgba(255,255,255,0.8)"
+                    : type === "question"
+                    ? Colors.primary || "#8B5CF6"
+                    : "#059669"
+                }
               />
               <Text
-                className={`text-sm ml-1 ${
-                  isSelf ? "text-white/80" : "text-blue-600"
+                className={`text-sm ml-1 font-medium ${
+                  isSelf
+                    ? "text-white/80"
+                    : type === "question"
+                    ? "text-purple-600"
+                    : "text-green-600"
                 }`}
               >
-                Question
+                {getTypeLabel()}
               </Text>
             </View>
           )}
 
           {/* Message Text */}
-          <Text
-            className={`text-base ${isSelf ? "text-white" : "text-gray-800"}`}
-          >
-            {message}
-          </Text>
+          <Text className={`text-base ${getTextStyle()}`}>{message}</Text>
+
+          {/* Question Actions */}
+          {type === "question" && !isSelf && (
+            <View className="flex-row mt-3 border-t border-opacity-20 pt-2">
+              <TouchableOpacity
+                className="flex-row items-center mr-4"
+                onPress={handleReply}
+              >
+                <Ionicons name="chatbubble-outline" size={16} color="#8B5CF6" />
+                <Text className="text-purple-600 text-sm ml-1 font-medium">
+                  Reply {responseCount > 0 ? `(${responseCount})` : ""}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Response Actions */}
-          {type === "response" && (
-            <View className="flex-row mt-2 border-t border-gray-100 pt-2">
-              <TouchableOpacity className="flex-row items-center mr-4">
-                <Ionicons name="thumbs-up-outline" size={16} color="#666" />
-                <Text className="text-gray-600 text-sm ml-1">Helpful</Text>
+          {type === "response" && !isSelf && (
+            <View className="flex-row mt-3 border-t border-opacity-20 pt-2">
+              <TouchableOpacity
+                className="flex-row items-center mr-4"
+                onPress={handleHelpful}
+              >
+                <Ionicons
+                  name={isHelpful ? "thumbs-up" : "thumbs-up-outline"}
+                  size={16}
+                  color={isHelpful ? "#059669" : "#666"}
+                />
+                <Text
+                  className={`text-sm ml-1 font-medium ${
+                    isHelpful ? "text-green-600" : "text-gray-600"
+                  }`}
+                >
+                  {isHelpful ? "Helpful!" : "Helpful"}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-row items-center">
+              <TouchableOpacity
+                className="flex-row items-center"
+                onPress={handleReply}
+              >
                 <Ionicons
                   name="chatbubble-ellipses-outline"
                   size={16}
                   color="#666"
                 />
-                <Text className="text-gray-600 text-sm ml-1">Reply</Text>
+                <Text className="text-gray-600 text-sm ml-1 font-medium">
+                  Reply
+                </Text>
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Purpose/Context (if provided) */}
+          {purpose && (
+            <View className="mt-2 pt-2 border-t border-opacity-20">
+              <Text
+                className={`text-xs italic ${
+                  isSelf ? "text-white/70" : "text-gray-500"
+                }`}
+              >
+                {purpose}
+              </Text>
             </View>
           )}
         </View>

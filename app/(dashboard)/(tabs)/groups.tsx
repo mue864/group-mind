@@ -10,8 +10,9 @@ import { FAB, Portal, Provider } from "react-native-paper";
 const Groups = () => {
   const router = useRouter();
 
-  const { groups } = useGroupContext();
+  const { groups, user } = useGroupContext();
   const [open, setOpen] = useState(false);
+
 
   const onStateChange = ({ open }: { open: boolean }) => setOpen(open);
 
@@ -67,7 +68,7 @@ const Groups = () => {
                   createdBy={item.createdBy}
                   name={item.name}
                   imageUrl={item.imageUrl}
-                  groupType="Yours"
+                  groupType={item.createdBy}
                 />
               )}
             />

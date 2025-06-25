@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text } from "react-native";
 
 interface GroupButtonProps {
   openGroup: (groupId: string) => void;
-  groupType: string // either a string with Invite or Yours
+  groupType: string | undefined // either a string with Invite or Yours
 }
 
 function GroupButton({ openGroup, groupType }: GroupButtonProps) {

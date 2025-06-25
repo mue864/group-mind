@@ -3,6 +3,7 @@ import Back from "@/assets/icons/Arrow_left.svg";
 import HR from "@/assets/icons/hr2.svg";
 import { messages } from "@/assets/icons/messages";
 import avatars from "@/assets/images/avatars";
+import ShareModal from "@/components/ShareModal";
 import { useGroupContext } from "@/store/GroupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format, isToday, isYesterday } from "date-fns";
@@ -19,7 +20,7 @@ import {
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { TextInput } from "react-native-paper";
+import { TextInput, Modal } from "react-native-paper";
 
 
 interface Avatars {
@@ -264,6 +265,11 @@ const CreatePost = () => {
             </View>
           </View>
         </KeyboardAwareScrollView>
+        
+        <ShareModal 
+        visible={isActive}
+        onDismiss={() => setIsActive(!isActive)}
+        />
 
         <View className="px-4 py-2 border-t border-gray-200 bg-white flex flex-row items-center">
           {/* Add Button */}
