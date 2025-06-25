@@ -46,13 +46,15 @@ const Groups = () => {
          }}
       />
       </Portal>
-      <ScrollView className="flex-1 bg-background">
+      <View className="flex-1 bg-background">
       <StatusBar barStyle={"dark-content"} />
 
       {/* groups available */}
 
         <View className="flex-1 justify-center items-center">
-          <View className="justify-center items-center mt-5 relative">
+          <View className="justify-center items-center mt-5 relative"
+          style={{flex: 1}}
+          >
             <FlatList
               data={groups}
               keyExtractor={(item, index) => index.toString()}
@@ -71,7 +73,7 @@ const Groups = () => {
             />
           </View>
         </View>
-    </ScrollView>
+    </View>
     </Provider>
   );
 };

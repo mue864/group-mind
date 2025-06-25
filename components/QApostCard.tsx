@@ -5,14 +5,17 @@ import Comment from "@/assets/icons/comment_duotone.svg"
 import Time from "@/assets/icons/time-qa.svg"
 import HR from "@/assets/icons/hr.svg"
 import Button from "@/assets/icons/Arrow-Right.svg"
+import { router } from "expo-router";
 interface QaProps {
   post: string;
-  timeSent?: Timestamp;
+  timeSent: Timestamp;
   responseTo: [];
   responseFrom: [];
+  postID: string;
+  groupID: string | string[]
 }
 
-function QApostCard({ post, timeSent, responseTo, responseFrom }: QaProps) {
+function QApostCard({ post, timeSent, responseTo, responseFrom,  postID, groupID }: QaProps) {
     
     let displayTime = ""
     
@@ -35,9 +38,20 @@ function QApostCard({ post, timeSent, responseTo, responseFrom }: QaProps) {
         const diffHours = Math.floor(diffMin / 60);
         displayTime = `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`
     }
-
     return (
-      <TouchableOpacity activeOpacity={0.7} className="mt-5">
+      <TouchableOpacity
+        activeOpacity={0.7}
+        className="mt-5"
+        onPress={() =>
+          router.push({
+            pathname: '/(settings)/(create_post)/(view_post)/[postId]',
+            params: {
+              postId: postID,
+              groupId: groupID
+            }
+          })
+        }
+      >
         <View className="flex flex-row justify-between items-start mx-3">
           {/* Left section (Text and Meta) */}
           <View className="flex-1 pr-4">
