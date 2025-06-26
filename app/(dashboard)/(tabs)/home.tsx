@@ -176,7 +176,7 @@ const Home = () => {
 
       if (item.type === "post") {
         return (
-          <View className="mx-4 mb-5">
+          <View className=" mb-5">
             <PostCard
               post={item.data.post}
               groupId={item.data.groupId}
@@ -213,7 +213,7 @@ const Home = () => {
 
       if (item.type === "suggestedGroup") {
         return (
-          <View className="mx-4 mb-32">
+          <View className="mb-32">
             <RandomGroupCard
               group={groups[suggestedGroup]}
               groupType="Invite"
