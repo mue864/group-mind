@@ -2,15 +2,17 @@ import Book from "@/assets/icons/book.svg";
 import Elipse from "@/assets/icons/ellipse.svg";
 import Rect from "@/assets/icons/rectangle.svg";
 import ActionButton from "@/components/ActionButton";
-import PostCard from "@/components/PostCard";
+import QApostCard from "@/components/QApostCard";
 import RandomGroupCard from "@/components/RandomGroupCard";
 import ScheduledCard from "@/components/ScheduledCard";
 import { Colors } from "@/constants";
 import { useInterval } from "@/hooks/useInterval";
-import { auth } from "@/services/firebase";
+import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
-import { Post, usePostContext } from "@/store/PostContext";
+import { usePostContext } from "@/store/PostContext";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { collection, onSnapshot, Timestamp } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,61 +24,119 @@ import {
   View,
 } from "react-native";
 
+// Q&A Post type definition
+type QaPost = {
+  id: string;
+  message: string;
+  timeSent: Timestamp;
+  responseFrom?: any[];
+  responseTo: any[];
+  isAnswered?: boolean;
+  type: string;
+  sentBy: string;
+  groupName: string;
+  isAdmin: boolean;
+  isMod: boolean;
+  imageUrl: string | undefined;
+  purpose: string;
+  userName: string;
+  groupId: string; // Add groupId for navigation
+};
+
 const Home = () => {
   const router = useRouter();
-  const { groups, loading } = useGroupContext();
-  const { posts, postByGroup, getGroupNameFromId } = usePostContext();
-  const [groupNames, setGroupNames] = useState<Record<string, string>>({});
+  const { groups, allGroups, loading, user } = useGroupContext();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const screenWidth = Dimensions.get("window").width;
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
-  const [morePosts, setMorePosts] = useState(1);
-  const [suggestedGroup, setSuggestedGroup] = useState(0);
-  const user = auth.currentUser;
+  const [qaPosts, setQaPosts] = useState<QaPost[]>([]);
+  const [qaLoading, setQaLoading] = useState(true);
   const userID = user?.uid;
 
+  // Fetch Q&A posts from all user's groups
   useEffect(() => {
-    const getRandomId = () => {
-      const randomIndex = Math.floor(Math.random() * groups.length);
-      return randomIndex;
-    };
-    setSuggestedGroup(getRandomId());
-  }, [groups]);
+    if (!user || !groups.length) {
+      setQaLoading(false);
+      return;
+    }
 
-  useEffect(() => {
-    // useMemo can't be used here
-    const fetchGroupNames = async () => {
-      const names: Record<string, string> = {};
+    const unsubscribes: (() => void)[] = [];
+    const allQaPosts: QaPost[] = [];
 
-      for (const post of posts) {
-        // Check both current state AND local names object
-        if (!groupNames[post.groupId] && !names[post.groupId]) {
-          const name = await getGroupNameFromId(post.groupId);
-          if (name) {
-            names[post.groupId] = name;
-          }
+    groups.forEach((group) => {
+      if (!group.id) return;
+
+      const unsubscribe = onSnapshot(
+        collection(db, "groups", group.id, "qa"),
+        (snapshot) => {
+          const groupQaPosts = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              message: data.message,
+              timeSent: data.timeSent,
+              responseFrom: data.responseFrom || [],
+              responseTo: data.responseTo || [],
+              isAnswered: data.isAnswered || false,
+              type: data.type,
+              sentBy: data.sentBy,
+              groupName: data.groupName || group.name,
+              imageUrl: data.imageUrl,
+              isAdmin: data.isAdmin || false,
+              isMod: data.isMod || false,
+              purpose: data.purpose,
+              userName: data.userName,
+              groupId: group.id,
+            } as QaPost;
+          });
+
+          // Update the specific group's posts
+          setQaPosts((prevPosts) => {
+            const filteredPosts = prevPosts.filter(
+              (post) => post.groupId !== group.id
+            );
+            return [...filteredPosts, ...groupQaPosts];
+          });
+        },
+        (error) => {
+          console.error(
+            `Error fetching QA posts for group ${group.id}:`,
+            error
+          );
         }
-      }
+      );
 
-      // Only update state if we have new names
-      if (Object.keys(names).length > 0) {
-        setGroupNames((prev) => ({ ...prev, ...names }));
-      }
+      unsubscribes.push(unsubscribe);
+    });
+
+    setQaLoading(false);
+
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
-
-    fetchGroupNames();
-  }, [posts, getGroupNameFromId]);
-
-  // memoizing as this does not give any side effects and is efficient like this
-  const recentPosts = useMemo(() => {
-    return Object.values(postByGroup).flatMap((group) => group as Post[]);
-  }, [postByGroup]);
-
+  }, [user, groups]);
 
   const scheduledGroups = useMemo(() => {
     return groups.filter((group) => group.callScheduled);
   }, [groups]);
+
+  // Get suggested groups (groups the user hasn't joined yet)
+  const suggestedGroups = useMemo(() => {
+    if (!userID || !allGroups.length) return [];
+
+    const userJoinedGroupIds = groups.map((group) => group.id);
+    return allGroups
+      .filter((group) => !userJoinedGroupIds.includes(group.id))
+      .slice(0, 3); // Show up to 3 suggested groups
+  }, [allGroups, groups, userID]);
+
+  // Sort Q&A posts by time (most recent first) and limit to 2
+  const recentQaPosts = useMemo(() => {
+    return qaPosts
+      .sort((a, b) => b.timeSent.toMillis() - a.timeSent.toMillis())
+      .slice(0, 2);
+  }, [qaPosts]);
 
   useInterval(() => {
     if (!isAutoScrolling || scheduledGroups.length <= 1) return;
@@ -105,7 +165,7 @@ const Home = () => {
   // memoizing values to improve device performance
   // using useCallback to only recall the
   const renderScheduledCard = useCallback(
-    ({ item }) => (
+    ({ item }: { item: any }) => (
       <View style={{ width: screenWidth }}>
         <ScheduledCard
           title={item.callScheduled.sessionTitle}
@@ -141,7 +201,7 @@ const Home = () => {
 
   // Create a single FlatList with all content
   const renderMainContent = useCallback(
-    ({ item}) => {
+    ({ item }: {item: any}) => {
       if (item.type === "scheduledCards") {
         return (
           <View>
@@ -164,40 +224,80 @@ const Home = () => {
         );
       }
 
-      if (item.type === "recentPostsHeader") {
+      if (item.type === "qaPostsHeader") {
         return (
-          <View className="mx-4">
-            <Text className="font-inter font-semibold text-lg mt-3">
-              Recent Posts
-            </Text>
+          <View className="mx-4 mt-6">
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="font-inter font-bold text-xl text-gray-800">
+                  Recent Q&A
+                </Text>
+                <Text className="font-inter text-gray-500 text-sm mt-1">
+                  Questions and answers from your groups
+                </Text>
+              </View>
+              {recentQaPosts.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => router.push("/(dashboard)/(tabs)/groups")}
+                  className="bg-blue-50 rounded-full px-3 py-1"
+                >
+                  <Text className="text-blue-600 font-inter font-semibold text-sm">
+                    View All
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         );
       }
 
-      if (item.type === "post") {
+      if (item.type === "qaPost") {
         return (
-          <View className=" mb-5">
-            <PostCard
-              post={item.data.post}
-              groupId={item.data.groupId}
+          <View className="mb-4">
+            <QApostCard
+              post={item.data.message}
               timeSent={item.data.timeSent}
-              userName={userID === item.data.userId ? "You" : "User"}
-              userAvatar={item.data.userAvatar}
+              responseTo={item.data.responseTo}
+              responseFrom={item.data.responseFrom}
+              postID={item.data.id}
+              groupID={item.data.groupId}
             />
           </View>
         );
       }
 
-      if (item.type === "showMore") {
+      if (item.type === "qaEmptyState") {
         return (
-          <TouchableOpacity
-            onPress={() => setMorePosts((prev) => prev + 6)}
-            className="justify-center items-center mt-2 mb-2 mx-4"
-          >
-            <Text className="text-secondary font-inter font-bold text-xl">
-              Show More ({recentPosts.length - 1})
-            </Text>
-          </TouchableOpacity>
+          <View className="mx-4 mb-6">
+            <View className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6 border border-gray-100">
+              <View className="items-center">
+                <View className="w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full items-center justify-center mb-4">
+                  <Ionicons
+                    name="help-circle-outline"
+                    size={32}
+                    color="white"
+                  />
+                </View>
+                <Text className="font-bold text-gray-800 text-lg text-center mb-2">
+                  No Q&A Posts Yet
+                </Text>
+                <Text className="text-gray-600 text-center text-sm leading-5 mb-4">
+                  Start asking questions in your study groups to see them here!
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/(dashboard)/(tabs)/groups")}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-3 rounded-xl"
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons name="add" size={18} color="white" />
+                    <Text className="text-white font-bold text-sm ml-2">
+                      Ask a Question
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         );
       }
 
@@ -207,18 +307,38 @@ const Home = () => {
             <Text className="font-inter font-bold text-xl mt-3">
               Groups You May be Interested In
             </Text>
+            <Text className="font-inter text-gray-500 text-sm mt-1">
+              Discover and join new study groups
+            </Text>
           </View>
         );
       }
 
       if (item.type === "suggestedGroup") {
         return (
-          <View className="mb-32">
+          <View className="mb-4">
             <RandomGroupCard
-              group={groups[suggestedGroup]}
-              groupType="Invite"
+              group={item.data}
+              groupType="Group"
+              userId={userID}
             />
           </View>
+        );
+      }
+
+      if (item.type === "exploreMoreButton") {
+        return (
+          <TouchableOpacity
+            onPress={() => router.push("/(dashboard)/(tabs)/groups")}
+            className="mx-4 mb-8 bg-blue-50 rounded-xl p-4 border border-blue-200"
+          >
+            <View className="flex-row items-center justify-center">
+              <Ionicons name="search" size={20} color="#4169E1" />
+              <Text className="text-blue-600 font-inter font-semibold text-lg ml-2">
+                Explore More Groups
+              </Text>
+            </View>
+          </TouchableOpacity>
         );
       }
 
@@ -228,11 +348,11 @@ const Home = () => {
       scheduledGroups,
       renderScheduledCard,
       renderScheduledCardDots,
-      recentPosts.length,
-      groups,
-      suggestedGroup,
+      suggestedGroups,
       userID,
       handleUserScroll,
+      router,
+      recentQaPosts,
     ]
   );
 
@@ -243,31 +363,46 @@ const Home = () => {
     // Add scheduled cards
     data.push({ type: "scheduledCards", id: "scheduled" });
 
-    // Add recent posts if they exist
-    if (recentPosts.length !== 0) {
-      data.push({ type: "recentPostsHeader", id: "recentHeader" });
+    // Add Q&A posts section
+    data.push({ type: "qaPostsHeader", id: "qaHeader" });
 
-      // Add posts
-      recentPosts.slice(0, morePosts).forEach((post, index) => {
-        data.push({ type: "post", id: `post-${index}`, data: post });
+    if (qaLoading) {
+      // Show loading state for Q&A posts
+      data.push({ type: "qaLoading", id: "qaLoading" });
+    } else if (recentQaPosts.length > 0) {
+      // Add Q&A posts
+      recentQaPosts.forEach((qaPost, index) => {
+        data.push({ type: "qaPost", id: `qaPost-${index}`, data: qaPost });
+      });
+    } else {
+      // Show empty state for Q&A posts
+      data.push({ type: "qaEmptyState", id: "qaEmpty" });
+    }
+
+    // Add suggested groups section if there are suggested groups
+    if (suggestedGroups.length > 0) {
+      data.push({ type: "suggestedHeader", id: "suggestedHeader" });
+
+      // Add each suggested group
+      suggestedGroups.forEach((group, index) => {
+        data.push({
+          type: "suggestedGroup",
+          id: `suggestedGroup-${index}`,
+          data: group,
+        });
       });
 
-      // Add show more button if needed
-      if (morePosts < recentPosts.length) {
-        data.push({ type: "showMore", id: "showMore" });
-      }
-
-      // Add suggested groups
-      data.push({ type: "suggestedHeader", id: "suggestedHeader" });
-      data.push({ type: "suggestedGroup", id: "suggestedGroup" });
+      // Add explore more button
+      data.push({ type: "exploreMoreButton", id: "exploreMoreButton" });
     }
 
     return data;
-  }, [recentPosts, morePosts]);
+  }, [suggestedGroups, recentQaPosts, qaLoading]);
 
   return (
     <View className="bg-white flex-1">
       <StatusBar barStyle={"dark-content"} backgroundColor={"white"} />
+
       <View className="absolute bottom-0" pointerEvents="box-none">
         <Rect width={150} height={200} />
       </View>
@@ -278,7 +413,7 @@ const Home = () => {
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size={"large"} color={Colors.primary} />
         </View>
-      ) : groups.length === 0 ? (
+      ) : groups.length === 0 && suggestedGroups.length === 0 ? (
         // Empty state
         <View className="flex-1 justify-center items-center">
           <View>

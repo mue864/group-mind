@@ -3,7 +3,14 @@ import { Colors } from "@/constants";
 import { Ionicons } from "@expo/vector-icons";
 import { Timestamp } from "firebase/firestore";
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Linking,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type Avatars = {
   avatar1: string;
@@ -57,6 +64,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // Use timeSent first, then fall back to messageTimeSent for backward compatibility
   const timestamp = timeSent || messageTimeSent;
 
+  /**
+   * Formats timestamp to readable time format
+   * @param timestamp - Firestore timestamp or timestamp object
+   * @returns Formatted time string (e.g., "14:30")
+   */
   const formatTime = (
     timestamp: Timestamp | { seconds: number; nanoseconds: number }
   ) => {
@@ -74,6 +86,94 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     avatarSource && avatars[avatarSource as keyof Avatars]
       ? avatars[avatarSource as keyof Avatars]
       : avatars.avatar6;
+
+  /**
+   * Extracts image URLs from message text
+   * Looks for Cloudinary URLs and other image links
+   * @param text - Message text to parse
+   * @returns Array of image URLs found in the text
+   */
+  const extractImageUrls = (text: string): string[] => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urls = text.match(urlRegex) || [];
+
+    // Filter for image URLs (Cloudinary, common image formats)
+    return urls.filter(
+      (url) =>
+        url.includes("cloudinary.com") ||
+        /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url)
+    );
+  };
+
+  /**
+   * Removes image URLs from message text for display
+   * @param text - Original message text
+   * @returns Text without image URLs
+   */
+  const getDisplayText = (text: string): string => {
+    const imageUrls = extractImageUrls(text);
+    let displayText = text;
+
+    // Remove image URLs from display text
+    imageUrls.forEach((url) => {
+      displayText = displayText.replace(url, "").trim();
+    });
+
+    return displayText;
+  };
+
+  /**
+   * Handles opening image links
+   * @param url - Image URL to open
+   */
+  const handleImageLink = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("Error", "Cannot open this image link");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to open image link");
+    }
+  };
+
+  /**
+   * Renders image link components for Q&A responses
+   * @param urls - Array of image URLs to render
+   * @returns Array of TouchableOpacity components
+   */
+  const renderImageLinks = (urls: string[]) => {
+    return urls.map((url, index) => (
+      <TouchableOpacity
+        key={index}
+        className={`flex-row items-center mt-2 p-2 rounded-lg ${
+          isSelf ? "bg-white/20" : "bg-gray-100"
+        }`}
+        onPress={() => handleImageLink(url)}
+      >
+        <Ionicons
+          name="image-outline"
+          size={20}
+          color={isSelf ? "rgba(255,255,255,0.8)" : "#6B7280"}
+        />
+        <Text
+          className={`ml-2 text-sm flex-1 ${
+            isSelf ? "text-white/80" : "text-blue-600"
+          }`}
+          numberOfLines={1}
+        >
+          📷 View Image
+        </Text>
+        <Ionicons
+          name="open-outline"
+          size={16}
+          color={isSelf ? "rgba(255,255,255,0.6)" : "#9CA3AF"}
+        />
+      </TouchableOpacity>
+    ));
+  };
 
   const getBubbleStyle = () => {
     switch (type) {
@@ -222,7 +322,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           )}
 
           {/* Message Text */}
-          <Text className={`text-base ${getTextStyle()}`}>{message}</Text>
+          <Text className={`text-base ${getTextStyle()}`}>
+            {getDisplayText(message)}
+          </Text>
+
+          {/* Image Links - Only show in Q&A responses */}
+          {type === "response" && extractImageUrls(message).length > 0 && (
+            <View className="mt-2">
+              {renderImageLinks(extractImageUrls(message))}
+            </View>
+          )}
 
           {/* Question Actions */}
           {type === "question" && !isSelf && (

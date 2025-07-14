@@ -1,12 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { Timestamp } from "firebase/firestore";
 import { memo } from "react";
-import { Text, View, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import Call from "../assets/icons/Callz.svg";
 import Group from "../assets/icons/groupUsers.svg";
 import Time from "../assets/icons/time.svg";
 import Video from "../assets/icons/Video.svg";
-import ScheduleButton from "./ScheduleButton";
-import { LinearGradient } from "expo-linear-gradient";
 
 interface ScheduledCardProps {
   title?: string;
@@ -58,21 +58,45 @@ const ScheduledCard = ({
 
   const getStatusInfo = () => {
     if (!scheduledDate)
-      return { status: "pending", color: ["#f093fb", "#f5576c"] };
+      return {
+        status: "pending",
+        color: ["#f093fb", "#f5576c"],
+        icon: "⏳",
+        bgColor: "#fef3c7",
+        textColor: "#92400e",
+      };
 
     const diffTime = scheduledDate.getTime() - now.getTime();
     const diffMinutes = Math.ceil(diffTime / (1000 * 60));
 
     if (diffMinutes <= 0) {
-      return { status: "live", color: ["#ff6b6b", "#ee5a52"] };
+      return {
+        status: "live",
+        color: ["#ff6b6b", "#ee5a52"],
+        icon: "🔴",
+        bgColor: "#fee2e2",
+        textColor: "#dc2626",
+      };
     } else if (diffMinutes <= 30) {
-      return { status: "starting soon", color: ["#feca57", "#ff9ff3"] };
+      return {
+        status: "starting soon",
+        color: ["#feca57", "#ff9ff3"],
+        icon: "⚡",
+        bgColor: "#fef3c7",
+        textColor: "#d97706",
+      };
     } else {
-      return { status: "scheduled", color: ["#667eea", "#764ba2"] };
+      return {
+        status: "scheduled",
+        color: ["#667eea", "#764ba2"],
+        icon: "📅",
+        bgColor: "#e0e7ff",
+        textColor: "#3730a3",
+      };
     }
   };
 
-  const { status, color } = getStatusInfo();
+  const { status, color, icon, bgColor, textColor } = getStatusInfo();
 
   const callTypeIcon =
     type === "video" ? (
@@ -87,132 +111,157 @@ const ScheduledCard = ({
 
   return (
     <View className="mx-3 mb-4">
-      <TouchableOpacity activeOpacity={0.95}>
+      <TouchableOpacity
+        activeOpacity={0.95}
+        style={{
+          transform: [{ scale: 1 }],
+        }}
+      >
         <View
-          className="bg-white rounded-2xl overflow-hidden"
+          className="bg-white rounded-3xl overflow-hidden"
           style={{
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-            elevation: 6,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.12,
+            shadowRadius: 16,
+            elevation: 12,
           }}
         >
-          {/* Header with Status */}
+          {/* Enhanced Header with Status */}
           <LinearGradient
             colors={color}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="px-4 py-4"
+            className="px-5 py-5"
           >
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center flex-1">
-                <View className="bg-white/20 rounded-xl p-2 mr-3">
-                  <Text className="text-white text-lg">📚</Text>
+                <View className="bg-white/25 rounded-2xl p-3 mr-4 backdrop-blur-sm">
+                  <Text className="text-white text-xl">📚</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="text-white font-bold text-lg">
+                  <Text className="text-white font-bold text-lg mb-1">
                     {getSessionTypeText()}
                   </Text>
+                  <Text className="text-white/80 text-sm">{groupName}</Text>
                 </View>
               </View>
 
-              {/* Status Badge */}
-              <View className="bg-white/20 rounded-full px-3 py-1">
-                <Text className="text-white text-xs font-semibold uppercase">
-                  {status}
-                </Text>
+              {/* Enhanced Status Badge */}
+              <View className="bg-white/25 rounded-full px-4 py-2 backdrop-blur-sm">
+                <View className="flex-row items-center">
+                  <Text className="text-white text-sm mr-1">{icon}</Text>
+                  <Text className="text-white text-xs font-bold uppercase tracking-wide">
+                    {status}
+                  </Text>
+                </View>
               </View>
             </View>
           </LinearGradient>
 
-          {/* Content Section */}
-          <View className="p-4">
-            {/* Session Topic */}
-            <View className="bg-gray-100 rounded-xl p-4 mb-3">
-              <View className="flex-row items-center mb-2">
-                <View className="bg-blue-200 rounded-lg p-2 mr-3">
+          {/* Enhanced Content Section */}
+          <View className="p-5">
+            {/* Session Topic with improved styling */}
+            <View className="bg-blue-50 rounded-2xl p-4 mb-4 border border-blue-100">
+              <View className="flex-row items-center mb-3">
+                <LinearGradient
+                  colors={["#3b82f6", "#6366f1"]}
+                  className="rounded-xl p-3 mr-4"
+                >
                   {callTypeIcon}
-                </View>
+                </LinearGradient>
                 <View className="flex-1">
-                  <Text className="text-gray-500 text-xs font-medium uppercase tracking-wide">
-                    Topic
+                  <Text className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">
+                    Session Topic
                   </Text>
-                  <Text className="text-gray-800 font-semibold text-base mt-1">
+                  <Text className="text-gray-800 font-bold text-lg">
                     {title || "Study Topic"}
                   </Text>
                 </View>
               </View>
             </View>
 
-            {/* Schedule Details */}
-            <View className="bg-purple-100 rounded-xl p-4 mb-3">
+            {/* Enhanced Schedule Details */}
+            <View className="bg-purple-50 rounded-2xl p-4 mb-4 border border-purple-100">
               <View className="flex-row items-center">
-                <View className="bg-purple-300 rounded-lg p-2 mr-3">
-                  <Time width={18} height={18} />
-                </View>
+                <LinearGradient
+                  colors={["#a855f7", "#ec4899"]}
+                  className="rounded-xl p-3 mr-4"
+                >
+                  <Time width={20} height={20} />
+                </LinearGradient>
                 <View className="flex-1">
-                  <Text className="text-purple-600 text-xs font-medium uppercase tracking-wide">
+                  <Text className="text-purple-600 text-xs font-bold uppercase tracking-wider mb-1">
                     Schedule
                   </Text>
-                  <Text className="text-purple-800 font-semibold text-base mt-1">
+                  <Text className="text-purple-800 font-bold text-lg">
                     {formatDateTime()}
                   </Text>
                 </View>
               </View>
             </View>
 
-            {/* Study Group Info */}
-            <View className="bg-green-100 rounded-xl p-4 mb-4">
+            {/* Enhanced Study Group Info */}
+            <View className="bg-green-50 rounded-2xl p-4 mb-5 border border-green-100">
               <View className="flex-row items-center">
-                <View className="bg-green-300 rounded-lg p-2 mr-3">
-                  <Group width={18} height={18} />
-                </View>
+                <LinearGradient
+                  colors={["#22c55e", "#10b981"]}
+                  className="rounded-xl p-3 mr-4"
+                >
+                  <Group width={20} height={20} />
+                </LinearGradient>
                 <View className="flex-1">
-                  <Text className="text-green-600 text-xs font-medium uppercase tracking-wide">
+                  <Text className="text-green-600 text-xs font-bold uppercase tracking-wider mb-1">
                     Study Group
                   </Text>
-                  <Text className="text-green-800 font-semibold text-base mt-1">
+                  <Text className="text-green-800 font-bold text-lg">
                     {groupName}
                   </Text>
                 </View>
               </View>
             </View>
 
-            {/* Action Buttons */}
-            <View className="flex-row gap-3 mb-3">
+            {/* Enhanced Action Buttons */}
+            <View className="flex-row gap-4 mb-4">
               <TouchableOpacity className="flex-1">
-                <LinearGradient
-                  colors={["#4facfe", "#00f2fe"]}
-                  className="rounded-xl py-3 px-4"
-                >
+                <View className="bg-gray-100 rounded-2xl py-4 px-4 border border-gray-200">
                   <View className="flex-row items-center justify-center">
-                    <Text className="text-white text-xs mr-1">⏰</Text>
-                    <Text className="text-white font-semibold text-sm">
+                    <Ionicons
+                      name="notifications-outline"
+                      size={18}
+                      color="#6b7280"
+                    />
+                    <Text className="text-gray-600 font-semibold text-sm ml-2">
                       Set Reminder
                     </Text>
                   </View>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity className="flex-1">
                 <LinearGradient
                   colors={
                     status === "live"
-                      ? ["#ff6b6b", "#ee5a52"]
+                      ? ["#ef4444", "#dc2626"]
                       : ["#667eea", "#764ba2"]
                   }
-                  className="rounded-xl py-3 px-4"
+                  className="rounded-2xl py-4 px-4"
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
                 >
                   <View className="flex-row items-center justify-center">
-                    <Text className="text-white text-xs mr-1">
-                      {status === "live"
-                        ? "🔴"
-                        : type === "video"
-                        ? "📹"
-                        : "📞"}
-                    </Text>
-                    <Text className="text-white font-semibold text-sm">
+                    <Ionicons
+                      name={
+                        status === "live"
+                          ? "radio-button-on"
+                          : type === "video"
+                          ? "videocam"
+                          : "call"
+                      }
+                      size={18}
+                      color="white"
+                    />
+                    <Text className="text-white font-bold text-sm ml-2">
                       {status === "live" ? "Join Now" : "Join Session"}
                     </Text>
                   </View>
@@ -220,15 +269,19 @@ const ScheduledCard = ({
               </TouchableOpacity>
             </View>
 
-            {/* Study Tip */}
-            <View className="bg-yellow-50 rounded-xl p-3 border-l-4 border-yellow-200">
+            {/* Enhanced Study Tip */}
+            <View className="bg-amber-50 rounded-2xl p-4 border-l-4 border-amber-300">
               <View className="flex-row items-start">
-                <Text className="text-yellow-600 text-sm mr-2">💡</Text>
-                <Text className="text-yellow-700 text-xs leading-4 flex-1">
-                  <Text className="font-semibold">Study Tip:</Text> Make sure
-                  that you have a stable internet connection to avoid
-                  inconveniences.
-                </Text>
+                <View className="bg-amber-100 rounded-full p-2 mr-3">
+                  <Ionicons name="bulb-outline" size={16} color="#d97706" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-amber-800 text-sm leading-5">
+                    <Text className="font-bold">Study Tip:</Text> Make sure you
+                    have a stable internet connection and a quiet environment
+                    for the best learning experience.
+                  </Text>
+                </View>
               </View>
             </View>
           </View>

@@ -1,125 +1,842 @@
-import { Text, View, TouchableOpacity, Image, FlatList } from "react-native";
-import Back from "@/assets/icons/Arrow_left.svg";
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/services/firebase";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  interpolate,
+  SlideInRight,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+
 import groupImages from "@/assets/images/group_images";
-import Edit from "@/assets/icons/Edit.svg";
 import GroupImageModal from "@/components/GroupImageModal";
+import ProfileImage from "@/components/ProfileImage";
+import { db } from "@/services/firebase";
+import { useGroupContext } from "@/store/GroupContext";
+
+const ROLE_CONFIG = {
+  groupOwner: {
+    label: "Admin",
+    color: "#059669",
+    bgColor: "#ECFDF5",
+    icon: "shield-checkmark" as const,
+    priority: 1,
+  },
+  admins: {
+    label: "Admins",
+    color: "#2563EB",
+    bgColor: "#EFF6FF",
+    icon: "people" as const,
+    priority: 2,
+  },
+  moderators: {
+    label: "Moderators",
+    color: "#7C3AED",
+    bgColor: "#F3F4F6",
+    icon: "hammer" as const,
+    priority: 3,
+  },
+  members: {
+    label: "Members",
+    color: "#6B7280",
+    bgColor: "#F9FAFB",
+    icon: "person" as const,
+    priority: 4,
+  },
+  blockedUsers: {
+    label: "Blocked",
+    color: "#DC2626",
+    bgColor: "#FEF2F2",
+    icon: "ban" as const,
+    priority: 5,
+  },
+  joinRequests: {
+    label: "Join Requests",
+    color: "#D97706",
+    bgColor: "#FFFBEB",
+    icon: "time" as const,
+    priority: 6,
+  },
+};
+
+const AnimatedTouchableOpacity =
+  Animated.createAnimatedComponent(TouchableOpacity);
 
 interface GroupData {
-    admins: [],
-    description: string,
-    groupImage: string,
-    groupMembers: [],
-    groupType: string,
-    name: string,
-    purpose: string,
-    moderators: [],
+  id?: string;
+  name?: string;
+  description?: string;
+  imageUrl?: string;
+  groupOwner: string;
+  admins: string[];
+  moderators: string[];
+  members: string[];
+  blockedUsers: string[];
+  joinRequests: string[];
 }
 
-interface GroupImages {
-    groupImage1: string,
-    groupImage2: string,
-    groupImage3: string,
-    groupImage4: string,
-    groupImage5: string,
-    groupImage6: string,
-    groupImage7: string,
-    groupImage8: string,
-    groupImage9: string,
-    groupImage10: string,
-    groupImage11: string,
+interface MenuOption {
+  label: string;
+  icon: string;
+  action: () => void;
+  destructive?: boolean;
 }
 
 const GroupSettings = () => {
-    const { groupId, groupName } = useLocalSearchParams();
-    const [groupData, setGroupData] = useState<GroupData | null>(null);
-    const [showModal, setShowModal] = useState(false);
-    
-    // fetch groupInfo
-useEffect(() => {
-  if (!groupId) return;
+  const { groupId } = useLocalSearchParams();
+  const [groupData, setGroupData] = useState<GroupData | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuOptions, setMenuOptions] = useState<MenuOption[]>([]);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  const groupData = async () => {
-    const groupRef = doc(db, "groups", groupId.toString());
-    const groupSnapshot = await getDoc(groupRef);
+  const scrollY = useSharedValue(0);
 
-    if (groupSnapshot.exists()) {
-      const data = groupSnapshot.data();
 
-      const formattedData = {
-        admins: data.admins,
-        description: data.description,
-        groupImage: data.imageUrl,
-        groupMembers: data.members,
-        groupType: data.category,
-        name: data.name,
-        purpose: data.onboardingText,
-        moderators: data.moderators,
-      } satisfies GroupData;
+  const {
+    user,
+    userInformation,
+    promoteToAdmin,
+    promoteToModerator,
+    demoteModerator,
+    removeMember,
+    blockMember,
+    unblockMember,
+    approveJoinRequest,
+    rejectJoinRequest,
+    transferOwnership,
+  } = useGroupContext();
 
-      setGroupData(formattedData);
+  // Add a hook to fetch user profiles for all user IDs in the group
+  const [userProfiles, setUserProfiles] = useState<
+    Record<string, { userName: string; profileImage: string }>
+  >({});
+
+  // Fetch group data
+  useEffect(() => {
+    if (!groupId) return;
+
+    const fetchGroup = async () => {
+      try {
+        const groupRef = doc(db, "groups", groupId.toString());
+        const groupSnapshot = await getDoc(groupRef);
+        if (groupSnapshot.exists()) {
+          setGroupData({
+            ...groupSnapshot.data(),
+            id: groupSnapshot.id,
+          } as GroupData);
+        }
+      } catch (error) {
+        console.error("Error fetching group:", error);
+      }
+    };
+
+    fetchGroup();
+  }, [groupId]);
+
+  // Memoized computations
+  const currentUserId = user?.uid;
+
+  const currentRole = useMemo(() => {
+    if (!groupData || !currentUserId) return null;
+
+    if (groupData.groupOwner === currentUserId) return "groupOwner";
+    if (groupData.admins?.includes(currentUserId)) return "admins";
+    if (groupData.moderators?.includes(currentUserId)) return "moderators";
+    if (groupData.members?.includes(currentUserId)) return "members";
+    if (groupData.blockedUsers?.includes(currentUserId)) return "blockedUsers";
+    if (groupData.joinRequests?.includes(currentUserId)) return "joinRequests";
+
+    return null;
+  }, [groupData, currentUserId]);
+
+  const getUsersByRole = useMemo(() => {
+    if (!groupData) return {} as Record<string, string[]>;
+
+    const result: Record<string, string[]> = {};
+    const allUsers = new Set<string>();
+
+    // Initialize all roles with empty arrays
+    Object.keys(ROLE_CONFIG).forEach((role) => {
+      result[role] = [];
+    });
+
+    // Add group owner first (highest priority)
+    if (groupData.groupOwner) {
+      result.groupOwner = [groupData.groupOwner];
+      allUsers.add(groupData.groupOwner);
     }
+
+    // Add admins (excluding group owner)
+    if (groupData.admins) {
+      result.admins = groupData.admins.filter(
+        (userId) => !allUsers.has(userId)
+      );
+      groupData.admins.forEach((userId) => allUsers.add(userId));
+    }
+
+    // Add moderators (excluding group owner and admins)
+    if (groupData.moderators) {
+      result.moderators = groupData.moderators.filter(
+        (userId) => !allUsers.has(userId)
+      );
+      groupData.moderators.forEach((userId) => allUsers.add(userId));
+    }
+
+    // Add members (excluding group owner, admins, and moderators)
+    if (groupData.members) {
+      result.members = groupData.members.filter(
+        (userId) => !allUsers.has(userId)
+      );
+      groupData.members.forEach((userId) => allUsers.add(userId));
+    }
+
+    // Add blocked users (excluding all above)
+    if (groupData.blockedUsers) {
+      result.blockedUsers = groupData.blockedUsers.filter(
+        (userId) => !allUsers.has(userId)
+      );
+      groupData.blockedUsers.forEach((userId) => allUsers.add(userId));
+    }
+
+    // Add join requests (excluding all above)
+    if (groupData.joinRequests) {
+      result.joinRequests = groupData.joinRequests.filter(
+        (userId) => !allUsers.has(userId)
+      );
+      groupData.joinRequests.forEach((userId) => allUsers.add(userId));
+    }
+
+    return result;
+  }, [groupData]);
+
+  const totalMembers = useMemo(() => {
+    return Object.values(getUsersByRole).flat().length;
+  }, [getUsersByRole]);
+
+  // Add a hook to fetch user profiles for all user IDs in the group
+  useEffect(() => {
+    // Gather all unique user IDs from all roles
+    if (!groupData) return;
+    const allUserIds = [
+      groupData.groupOwner,
+      ...(groupData.admins || []),
+      ...(groupData.moderators || []),
+      ...(groupData.members || []),
+      ...(groupData.blockedUsers || []),
+      ...(groupData.joinRequests || []),
+    ];
+    const uniqueUserIds = Array.from(new Set(allUserIds));
+
+    const fetchProfiles = async () => {
+      const newProfiles: Record<
+        string,
+        { userName: string; profileImage: string }
+      > = {};
+      for (const userId of uniqueUserIds) {
+        if (!userId) continue;
+        try {
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            newProfiles[userId] = {
+              userName: data.userName || userId,
+              profileImage: data.profileImage || "avatar1",
+            };
+          } else {
+            newProfiles[userId] = {
+              userName: userId,
+              profileImage: "avatar1",
+            };
+          }
+        } catch (e) {
+          newProfiles[userId] = {
+            userName: userId,
+            profileImage: "avatar1",
+          };
+        }
+      }
+      setUserProfiles(newProfiles);
+    };
+    fetchProfiles();
+  }, [groupData]);
+
+  // Helper functions
+  const getDisplayName = (userId: string) => {
+    if (!userProfiles[userId]) return userId;
+    const name = userProfiles[userId].userName;
+    if (userInformation?.userID === userId) {
+      return `${name} (You)`;
+    }
+    return name;
   };
 
-  groupData();
-}, [groupId]);
- 
-console.log("groupData: ", groupData);
+  const getUserRole = (userId: string) => {
+    if (!groupData) return null;
+
+    if (groupData.groupOwner === userId) return "groupOwner";
+    if (groupData.admins?.includes(userId)) return "admins";
+    if (groupData.moderators?.includes(userId)) return "moderators";
+    if (groupData.members?.includes(userId)) return "members";
+    if (groupData.blockedUsers?.includes(userId)) return "blockedUsers";
+    if (groupData.joinRequests?.includes(userId)) return "joinRequests";
+
+    return null;
+  };
+
+  const buildMenuOptions = (
+    targetId: string,
+    targetRole: string | null
+  ): MenuOption[] => {
+    const isSelf = targetId === currentUserId;
+    if (isSelf) return [];
+
+    const options: MenuOption[] = [];
+
+    if (currentRole === "groupOwner") {
+      if (targetRole === "admins") {
+        options.push({
+          label: "Transfer Ownership",
+          icon: "swap-horizontal",
+          action: () =>
+            transferOwnership(
+              groupData?.id || "",
+              groupData?.groupOwner || "",
+              targetId
+            ),
+          destructive: true,
+        });
+      }
+
+      if (targetRole !== "groupOwner" && targetRole !== "admins") {
+        options.push({
+          label: "Make Admin",
+          icon: "shield-checkmark",
+          action: () => promoteToAdmin(groupData?.id || "", targetId),
+        });
+      }
+
+      if (targetRole !== "moderators" && targetRole !== "groupOwner") {
+        options.push({
+          label: "Promote to Moderator",
+          icon: "hammer",
+          action: () => promoteToModerator(groupData?.id || "", targetId),
+        });
+      }
+
+      if (targetRole === "moderators") {
+        options.push({
+          label: "Revoke Mod Rights",
+          icon: "remove-circle",
+          action: () => demoteModerator(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+
+      if (targetRole !== "groupOwner") {
+        options.push({
+          label: "Remove Member",
+          icon: "person-remove",
+          action: () => removeMember(groupData?.id || "", targetId),
+          destructive: true,
+        });
+
+        options.push({
+          label: "Block Member",
+          icon: "ban",
+          action: () => blockMember(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+
+      if (targetRole === "blockedUsers") {
+        options.push({
+          label: "Unblock",
+          icon: "checkmark-circle",
+          action: () => unblockMember(groupData?.id || "", targetId),
+        });
+      }
+
+      if (targetRole === "joinRequests") {
+        options.push({
+          label: "Approve Request",
+          icon: "checkmark-circle",
+          action: () => approveJoinRequest(groupData?.id || "", targetId),
+        });
+
+        options.push({
+          label: "Reject Request",
+          icon: "close-circle",
+          action: () => rejectJoinRequest(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+    } else if (currentRole === "admins") {
+      // Admin permissions (similar structure but limited)
+      if (targetRole !== "groupOwner" && targetRole !== "admins") {
+        options.push({
+          label: "Promote to Moderator",
+          icon: "hammer",
+          action: () => promoteToModerator(groupData?.id || "", targetId),
+        });
+      }
+
+      if (targetRole === "moderators") {
+        options.push({
+          label: "Revoke Mod Rights",
+          icon: "remove-circle",
+          action: () => demoteModerator(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+
+      if (targetRole !== "groupOwner" && targetRole !== "admins") {
+        options.push({
+          label: "Remove Member",
+          icon: "person-remove",
+          action: () => removeMember(groupData?.id || "", targetId),
+          destructive: true,
+        });
+
+        options.push({
+          label: "Block Member",
+          icon: "ban",
+          action: () => blockMember(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+
+      if (targetRole === "blockedUsers") {
+        options.push({
+          label: "Unblock",
+          icon: "checkmark-circle",
+          action: () => unblockMember(groupData?.id || "", targetId),
+        });
+      }
+
+      if (targetRole === "joinRequests") {
+        options.push({
+          label: "Approve Request",
+          icon: "checkmark-circle",
+          action: () => approveJoinRequest(groupData?.id || "", targetId),
+        });
+
+        options.push({
+          label: "Reject Request",
+          icon: "close-circle",
+          action: () => rejectJoinRequest(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+    } else if (currentRole === "moderators") {
+      // Moderator permissions (limited)
+      if (targetRole === "members") {
+        options.push({
+          label: "Remove Member",
+          icon: "person-remove",
+          action: () => removeMember(groupData?.id || "", targetId),
+          destructive: true,
+        });
+
+        options.push({
+          label: "Block Member",
+          icon: "ban",
+          action: () => blockMember(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+
+      if (targetRole === "joinRequests") {
+        options.push({
+          label: "Approve Request",
+          icon: "checkmark-circle",
+          action: () => approveJoinRequest(groupData?.id || "", targetId),
+        });
+
+        options.push({
+          label: "Reject Request",
+          icon: "close-circle",
+          action: () => rejectJoinRequest(groupData?.id || "", targetId),
+          destructive: true,
+        });
+      }
+    }
+
+    return options;
+  };
+
+  const handleMenuAction = (action: () => void) => {
+    action();
+    setMenuVisible(false);
+  };
+
+  // Animated styles
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(scrollY.value, [0, 100], [1, 0.8]),
+      transform: [
+        {
+          translateY: interpolate(scrollY.value, [0, 100], [0, -20]),
+        },
+      ],
+    };
+  });
+
+  // Render components
+  const renderMemberCard = (userId: string, index: number) => {
+    const role = getUserRole(userId);
+    const isSelf = userId === currentUserId;
+    const roleConfig = role ? ROLE_CONFIG[role] : null;
+    const profile = userProfiles[userId];
+
     return (
-      <View className="flex-1 bg-background relative">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}
-          className="ml-6 mt-2"
-          >
-          <Back />
-        </TouchableOpacity>
-        <View className="pt-4">
-          <View className="flex-row items-center justify-center gap-4">
-            <Text className="text-2xl font-bold text-center">{groupName}</Text>
-          </View>
-          <TouchableOpacity onPress={() => {setShowModal(true)}} activeOpacity={0.7}
-            className="absolute top-1 right-4">
-            <Edit  />
-          </TouchableOpacity>
-          <View className="flex items-center mt-10">
-            <Image
-              source={
-                groupData
-                  ? groupImages[groupData.groupImage as keyof GroupImages]
-                  : groupImages.groupImage1
-              }
-              style={{ width: 200, height: 200 }}
-              className="rounded-full border-2 border-primary"
-              resizeMode="contain"
-            />
-          </View>
-
-        
-        <View className="mt-6 items-center">
-          <Text className=" text-lg font-poppins-semiBold ">Group Description</Text>
-          <Text className="text-center font-poppins">{groupData?.description}</Text>
-        </View>
-
-        {/* list of members by heirachy */}
-        <View className="mt-6">
-          <Text className=" text-lg font-poppins-semiBold ">Group Members</Text>
-          <View className="mt-4">
-            <FlatList
-              data={groupData?.groupMembers}
-              renderItem={({ item }) => (
-                <View className="flex-row items-center justify-center gap-4">
-                  <Text className="text-lg font-poppins-semiBold ">{item}</Text>
+      <AnimatedTouchableOpacity
+        key={userId}
+        entering={FadeInDown.delay(index * 100)}
+        activeOpacity={0.7}
+        className="mb-2"
+        onPress={() => {
+          if (!isSelf) {
+            setSelectedUser(userId);
+            setMenuOptions(buildMenuOptions(userId, role));
+            setMenuVisible(true);
+          }
+        }}
+      >
+        <View className="bg-white rounded-xl border border-gray-200 p-3">
+          <View className="flex-row items-center">
+            {/* Profile avatar */}
+            <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-3 overflow-hidden">
+              {profile ? (
+                <ProfileImage imageLocation={profile.profileImage} />
+              ) : (
+                <Ionicons name="person" size={20} color="#6B7280" />
+              )}
+            </View>
+            {/* User info */}
+            <View className="flex-1">
+              <Text className="font-poppins-medium text-gray-900 text-base">
+                {getDisplayName(userId)}
+              </Text>
+              {roleConfig && (
+                <View className="flex-row items-center mt-1">
+                  <View
+                    className="px-2 py-1 rounded-full mr-2"
+                    style={{ backgroundColor: roleConfig.bgColor }}
+                  >
+                    <Text
+                      className="font-poppins text-xs"
+                      style={{ color: roleConfig.color }}
+                    >
+                      {roleConfig.label}
+                    </Text>
+                  </View>
                 </View>
               )}
-            />
+            </View>
+            {/* Action button */}
+            {!isSelf && (
+              <TouchableOpacity
+                className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center border border-gray-200"
+                onPress={() => {
+                  setSelectedUser(userId);
+                  setMenuOptions(buildMenuOptions(userId, role));
+                  setMenuVisible(true);
+                }}
+              >
+                <Ionicons
+                  name="ellipsis-horizontal"
+                  size={16}
+                  color="#6B7280"
+                />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+      </AnimatedTouchableOpacity>
+    );
+  };
+
+  const renderRoleSection = (role: string, index: number) => {
+    const users = getUsersByRole[role];
+    const roleConfig = ROLE_CONFIG[role as keyof typeof ROLE_CONFIG];
+
+    if (!users || users.length === 0) return null;
+
+    return (
+      <Animated.View
+        key={role}
+        entering={FadeInUp.delay(index * 200)}
+        className="mb-4"
+      >
+        {/* Role header */}
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center">
+            <View
+              className="w-8 h-8 rounded-full items-center justify-center mr-3"
+              style={{ backgroundColor: roleConfig.bgColor }}
+            >
+              <Ionicons
+                name={roleConfig.icon as any}
+                size={16}
+                color={roleConfig.color}
+              />
+            </View>
+            <Text className="font-poppins-semiBold text-lg text-gray-900">
+              {roleConfig.label}
+            </Text>
+            <View
+              className="ml-2 px-2 py-1 rounded-full"
+              style={{ backgroundColor: roleConfig.bgColor }}
+            >
+              <Text
+                className="font-poppins-medium text-xs"
+                style={{ color: roleConfig.color }}
+              >
+                {users.length}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={() =>
+              setActiveSection(activeSection === role ? null : role)
+            }
+            className="p-2"
+          >
+            <Ionicons
+              name={activeSection === role ? "chevron-up" : "chevron-down"}
+              size={20}
+              color="#6B7280"
+            />
+          </TouchableOpacity>
         </View>
-        <GroupImageModal show={showModal} onDismiss={() => setShowModal(false)} onImageSelect={(imageUri) => {}} />
+
+        {/* Members list */}
+        {(activeSection === role || activeSection === null) && (
+          <View className="space-y-2">
+            {users.map((userId, userIndex) =>
+              renderMemberCard(userId, userIndex)
+            )}
+          </View>
+        )}
+      </Animated.View>
+    );
+  };
+
+  if (!groupData) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-50">
+        <View className="bg-white rounded-2xl p-8 shadow-sm">
+          <Ionicons name="hourglass-outline" size={48} color="#6B7280" />
+          <Text className="font-poppins-medium text-gray-600 mt-4">
+            Loading group...
+          </Text>
+        </View>
       </View>
     );
-}
- 
+  }
+
+  return (
+    <View className="flex-1 bg-gray-50">
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Clean Header */}
+      <Animated.View
+        style={headerAnimatedStyle}
+        className="bg-white border-b border-gray-100"
+      >
+        <View className="flex-row items-center justify-between px-6 py-4 pt-12">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+          >
+            <Ionicons name="arrow-back" size={20} color="#374151" />
+          </TouchableOpacity>
+
+          <Text className="font-poppins-bold text-gray-900 text-xl">
+            Group Settings
+          </Text>
+
+          {currentRole === "groupOwner" && (
+            <TouchableOpacity
+              onPress={() => setShowModal(true)}
+              className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+            >
+              <Ionicons name="create-outline" size={20} color="#374151" />
+            </TouchableOpacity>
+          )}
+
+          {currentRole !== "groupOwner" && <View className="w-10 h-10" />}
+        </View>
+      </Animated.View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          scrollY.value = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+        className="flex-1"
+      >
+        {/* Group Info Card */}
+        <Animated.View entering={FadeIn.delay(300)} className="px-6 pt-6">
+          <View className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+            <View className="items-center">
+              <View className="relative">
+                <Image
+                  source={
+                    groupImages[
+                      groupData.imageUrl as keyof typeof groupImages
+                    ] || groupImages.groupImage1
+                  }
+                  style={{ width: 100, height: 100 }}
+                  className="rounded-full"
+                  resizeMode="cover"
+                />
+                <View className="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full items-center justify-center border-2 border-white">
+                  <Ionicons name="checkmark" size={12} color="white" />
+                </View>
+              </View>
+
+              <Text className="font-poppins-bold text-2xl text-gray-900 mt-4">
+                {groupData.name || "Group Name"}
+              </Text>
+
+              <View className="flex-row items-center mt-2 bg-gray-50 px-4 py-2 rounded-full">
+                <Ionicons name="people" size={16} color="#6B7280" />
+                <Text className="font-poppins-medium text-gray-600 ml-2">
+                  {totalMembers} {totalMembers === 1 ? "member" : "members"}
+                </Text>
+              </View>
+
+              {groupData.description && (
+                <Text className="font-poppins text-gray-600 text-center mt-4 leading-6">
+                  {groupData.description}
+                </Text>
+              )}
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Members Section */}
+        <View className="px-6 mt-8">
+          <View className="flex-row items-center justify-between mb-6">
+            <Text className="font-poppins-bold text-xl text-gray-900">
+              Members
+            </Text>
+            <View className="bg-blue-50 px-3 py-1 rounded-full">
+              <Text className="font-poppins-medium text-blue-600 text-sm">
+                {totalMembers} total
+              </Text>
+            </View>
+          </View>
+
+          {Object.keys(ROLE_CONFIG)
+            .sort(
+              (a, b) =>
+                ROLE_CONFIG[a as keyof typeof ROLE_CONFIG].priority -
+                ROLE_CONFIG[b as keyof typeof ROLE_CONFIG].priority
+            )
+            .map((role, index) => renderRoleSection(role, index))}
+        </View>
+
+        {/* Bottom padding */}
+        <View className="h-20" />
+      </ScrollView>
+
+      {/* Edit Group Modal */}
+      <GroupImageModal
+        show={showModal}
+        onDismiss={() => setShowModal(false)}
+        onImageSelect={() => setShowModal(false)}
+      />
+
+      {/* Member Actions Menu */}
+      <Modal visible={menuVisible} transparent animationType="fade">
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => setMenuVisible(false)}
+        >
+          <BlurView intensity={20} style={{ flex: 1 }}>
+            <View className="flex-1 justify-end p-6">
+              <Animated.View
+                entering={SlideInRight}
+                className="bg-white rounded-3xl shadow-lg overflow-hidden"
+              >
+                <View className="p-6">
+                  <View className="flex-row items-center mb-4">
+                    <View className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center mr-3">
+                      <Ionicons
+                        name="person-circle"
+                        size={32}
+                        color="#6B7280"
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-poppins-semiBold text-lg text-gray-900">
+                        {selectedUser && getDisplayName(selectedUser)}
+                      </Text>
+                      <Text className="font-poppins text-sm text-gray-500">
+                        Member
+                      </Text>
+                    </View>
+                  </View>
+
+                  {menuOptions.map((option, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => handleMenuAction(option.action)}
+                      className="flex-row items-center py-4 border-b border-gray-100 last:border-b-0"
+                    >
+                      <View
+                        className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                        style={{
+                          backgroundColor: option.destructive
+                            ? "#FEF2F2"
+                            : "#F3F4F6",
+                        }}
+                      >
+                        <Ionicons
+                          name={option.icon}
+                          size={18}
+                          color={option.destructive ? "#EF4444" : "#6B7280"}
+                        />
+                      </View>
+                      <Text
+                        className="font-poppins-medium text-base"
+                        style={{
+                          color: option.destructive ? "#EF4444" : "#374151",
+                        }}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </Animated.View>
+            </View>
+          </BlurView>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+};
+
 export default GroupSettings;

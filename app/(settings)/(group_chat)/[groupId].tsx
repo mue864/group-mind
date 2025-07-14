@@ -1,8 +1,8 @@
-import { id } from "@/app/(groups)/[groupId]";
 import Back from "@/assets/icons/Arrow_left.svg";
 import ExpandRight from "@/assets/icons/Expand_right_dark.svg";
 import HR from "@/assets/icons/hr2.svg";
 import MessageBubble from "@/components/MessageBubble";
+import SearchBar from "@/components/SearchBar";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -10,24 +10,24 @@ import { router, useLocalSearchParams } from "expo-router";
 import {
   collection,
   onSnapshot,
-  Timestamp,
-  query,
   orderBy,
+  query,
+  Timestamp,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  StyleSheet,
   ViewStyle,
-  Alert,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { TextInput, Button } from "react-native-paper";
+import { TextInput } from "react-native-paper";
 
 type TimelineMessage = {
   id: string;
@@ -62,86 +62,134 @@ function GroupChat() {
   );
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [groupName, setGroupName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
-//   fetch group name
+  // Fetch group name
   useEffect(() => {
     if (!groupId) return;
-   try {
-     const fetchGroupName = async () => {
+    try {
+      const fetchGroupName = async () => {
         const groupName = await AsyncStorage.getItem(`groupName`);
         console.log(groupName);
         if (!groupName) return;
         setGroupName(groupName?.toString());
+      };
+      fetchGroupName();
+    } catch (error) {
+      console.log(error);
     }
-    fetchGroupName();   
-   } catch (error) {
-    console.log(error);
-   }
   }, [groupId]);
 
-
+  // Load messages with offline support using existing AsyncStorage approach
   useEffect(() => {
     if (!user || !groupId) return;
 
-    const messagesQuery = query(
-      collection(db, "groups", groupId.toString(), "messages"),
-      orderBy("timeSent", "asc")
-    );
+    const loadMessages = async () => {
+      try {
+        // First try to load from cache (using your existing approach)
+        const cachedMessagesKey = `messages_${groupId}`;
+        const cachedData = await AsyncStorage.getItem(cachedMessagesKey);
 
-    const unsubscribe = onSnapshot(
-      messagesQuery,
-      async (snapshot) => {
-        const messagesData = [];
-
-        for (const doc of snapshot.docs) {
-          const data = doc.data();
-
-          // Get response count for questions
-          let responseCount = 0;
-          if (data.type === "question") {
-            try {
-              const responsesSnapshot = await collection(
-                db,
-                "groups",
-                groupId.toString(),
-                "messages",
-                doc.id,
-                "responses"
-              );
-              // You'd need to count these - this is a simplified example
-              responseCount = 0; // Implement actual counting logic
-            } catch (error) {
-              console.log("Error getting response count:", error);
-            }
-          }
-
-          messagesData.push({
-            id: doc.id,
-            message: data.message || "",
-            sentBy: data.sentBy || "",
-            timeSent: data.timeSent || Timestamp.now(),
-            isSelf: data.sentBy === user.uid,
-            isAdmin: data.isAdmin || false,
-            isMod: data.isMod || false,
-            imageUrl: data.imageUrl,
-            userName: data.userName || "Unknown User",
-            purpose: data.purpose || "",
-            type: data.type || "message",
-            parentMessageId: data.parentMessageId,
-            responseCount,
-            isHelpful: data.isHelpful || false,
-          });
+        if (cachedData) {
+          const cachedMessages = JSON.parse(cachedData);
+          setTimeline(cachedMessages);
         }
 
-        setTimeline(messagesData);
-      },
-      (error) => {
-        console.error("Error fetching messages:", error);
-      }
-    );
+        // Then try to connect to Firestore
+        const messagesQuery = query(
+          collection(db, "groups", groupId.toString(), "messages"),
+          orderBy("timeSent", "asc")
+        );
 
-    return () => unsubscribe();
+        const unsubscribe = onSnapshot(
+          messagesQuery,
+          async (snapshot) => {
+            const messagesData = [];
+
+            for (const doc of snapshot.docs) {
+              const data = doc.data();
+
+              // Get response count for questions
+              let responseCount = 0;
+              if (data.type === "question") {
+                try {
+                  const responsesSnapshot = await collection(
+                    db,
+                    "groups",
+                    groupId.toString(),
+                    "messages",
+                    doc.id,
+                    "responses"
+                  );
+                  // You'd need to count these - this is a simplified example
+                  responseCount = 0; // Implement actual counting logic
+                } catch (error) {
+                  console.log("Error getting response count:", error);
+                }
+              }
+
+              const messageData = {
+                id: doc.id,
+                message: data.message || "",
+                sentBy: data.sentBy || "",
+                timeSent: data.timeSent || Timestamp.now(),
+                isSelf: data.sentBy === user.uid,
+                isAdmin: data.isAdmin || false,
+                isMod: data.isMod || false,
+                imageUrl: data.imageUrl,
+                userName: data.userName || "Unknown User",
+                purpose: data.purpose || "",
+                type: data.type || "message",
+                parentMessageId: data.parentMessageId,
+                responseCount,
+                isHelpful: data.isHelpful || false,
+              };
+
+              messagesData.push(messageData);
+            }
+
+            setTimeline(messagesData);
+
+            try {
+              await AsyncStorage.setItem(
+                cachedMessagesKey,
+                JSON.stringify(messagesData)
+              );
+            } catch (error) {
+              console.error("Error caching messages:", error);
+            }
+          },
+          (error) => {
+            console.error("Error fetching messages:", error);
+            // If online fetch fails, we already have cached data
+          }
+        );
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      }
+    };
+
+    loadMessages();
   }, [user, groupId]);
+
+  // Filter messages based on search query
+  const filteredTimeline = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return timeline;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return timeline.filter((msg) => {
+      return (
+        msg.message.toLowerCase().includes(query) ||
+        msg.userName.toLowerCase().includes(query) ||
+        (msg.purpose && msg.purpose.toLowerCase().includes(query))
+      );
+    });
+  }, [timeline, searchQuery]);
 
   const handleSendMessage = async () => {
     if (!message.trim() || !user || isSending || !groupId) return;
@@ -149,11 +197,12 @@ function GroupChat() {
     try {
       setIsSending(true);
       const timeSent = Timestamp.now();
+      const messageText = message.trim();
 
+      // Send message normally
       if (replyingTo) {
-        // Send as response
         await sendMessage(
-          message.trim(),
+          messageText,
           isAdmin,
           isMod,
           user.uid,
@@ -164,9 +213,8 @@ function GroupChat() {
         );
         setReplyingTo(null);
       } else {
-        // Send as regular message or question
         await sendMessage(
-          message.trim(),
+          messageText,
           isAdmin,
           isMod,
           user.uid,
@@ -186,7 +234,7 @@ function GroupChat() {
     }
   };
 
-//   rethink about this one
+  // Handle reply to a message
   const handleReply = (messageId?: string) => {
     if (messageId) {
       setReplyingTo(messageId);
@@ -234,22 +282,44 @@ function GroupChat() {
               <Back />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push({
-                pathname: `/(settings)/(group_settings)/[groupId]`,
-                params: {
-                    groupId: groupId,
+              onPress={() =>
+                router.push({
+                  pathname: `/(settings)/(group_settings)/[groupId]`,
+                  params: {
+                    groupId: groupId.toString(),
                     groupName: groupName,
-                }
-              })}
+                  },
+                })
+              }
               activeOpacity={0.7}
               className="absolute left-1/2 -translate-x-1/2 "
             >
-            <View className="flex flex-row items-center gap-2">
-              <Text className="text-2xl font-bold">{groupName}</Text>
-              <ExpandRight width={20} height={20} />
-            </View>
+              <View className="flex flex-row items-center gap-2">
+                <Text className="text-2xl font-bold">{groupName}</Text>
+                <ExpandRight width={20} height={20} />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowSearch(!showSearch)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.searchButton}>{showSearch ? "✕" : "🔍"}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Search Bar */}
+          {showSearch && (
+            <SearchBar
+              placeholder="Search messages..."
+              onSearch={setSearchQuery}
+              onClear={() => setSearchQuery("")}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          )}
+
+          {/* Offline Indicator */}
+          {/* Removed offline indicator as it's no longer needed */}
 
           <View className="mt-2">
             <HR width={deviceWidth} height={2} />
@@ -257,9 +327,9 @@ function GroupChat() {
 
           {/* Messages */}
           <View className="px-2 py-2">
-            {timeline.length > 0 ? (
+            {filteredTimeline.length > 0 ? (
               <View style={styles.messagesContainer}>
-                {timeline.map((msg, index) => (
+                {filteredTimeline.map((msg, index) => (
                   <MessageBubble
                     key={`${msg.id}-${index}`}
                     message={msg.message}
@@ -278,6 +348,12 @@ function GroupChat() {
                     onHelpful={handleHelpful}
                   />
                 ))}
+              </View>
+            ) : searchQuery.trim() ? (
+              <View className="flex-1 justify-center items-center p-5">
+                <Text className="text-gray-400 text-base">
+                  No messages found for "{searchQuery}"
+                </Text>
               </View>
             ) : (
               <View className="flex-1 justify-center items-center p-5">
@@ -463,7 +539,6 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     minHeight: 40,
     justifyContent: "center",
-
   },
   sendButton: {
     width: 40,
@@ -475,6 +550,11 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: "#fff",
     fontSize: 18,
+    fontWeight: "bold",
+  },
+  searchButton: {
+    fontSize: 20,
+    color: "#4169E1",
     fontWeight: "bold",
   },
 });

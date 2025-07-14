@@ -1,17 +1,17 @@
-import { Text, View, StatusBar } from "react-native";
-import { useRouter } from "expo-router";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from "react-native-reanimated";
-import { useEffect } from "react";
-import Rect from "@/assets/icons/introduceRect.svg";
 import Devices from "@/assets/icons/devices.svg";
 import Elipse from "@/assets/icons/introduceEllipse.svg";
+import Rect from "@/assets/icons/introduceRect.svg";
 import MiniButton from "@/components/MiniButton";
 import PaginationDots from "@/components/PaginationDots";
 import { Colors, Strings } from "@/constants";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { StatusBar, Text, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const IntroduceScreen_4 = () => {
   const router = useRouter();

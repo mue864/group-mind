@@ -5,10 +5,6 @@ import { id } from "./index";
 
 const GroupChat = () => {
 
-    // fetch all messages from here
-
-
-    console.log("groupID in GroupChat main: ", id);
     return (
       <View className="flex-1 bg-background relative">
         <View className="justify-center items-center flex-1">

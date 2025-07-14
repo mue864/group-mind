@@ -3,12 +3,20 @@ import Back from "@/assets/icons/Arrow_left.svg";
 import HR from "@/assets/icons/hr2.svg";
 import { messages } from "@/assets/icons/messages";
 import MessageBubble from "@/components/MessageBubble";
+import ShareModal from "@/components/ShareModal";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format, isToday, isYesterday } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { collection, onSnapshot, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   Dimensions,
@@ -21,6 +29,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { TextInput } from "react-native-paper";
+
 type QaResponses = {
   message: string;
   sentBy: string;
@@ -31,6 +40,10 @@ type QaResponses = {
   imageUrl: string | undefined;
   userName: string;
   purpose: string;
+  isHelpful?: boolean;
+  helpfulCount?: number;
+  helpfulUsers?: string[];
+  responseId?: string; // Add this to track individual responses
 };
 
 type TimelineMessage = {
@@ -48,7 +61,8 @@ type TimelineMessage = {
 };
 
 function ViewPost() {
-  const { userInformation, responseQaPost, user, qaPostSent } = useGroupContext();
+  const { userInformation, responseQaPost, user, qaPostSent } =
+    useGroupContext();
 
   const deviceWidth = Dimensions.get("window").width;
 
@@ -61,7 +75,7 @@ function ViewPost() {
   const [isAdmin] = useState(true);
   const [isMod] = useState(false);
   const [timeCheck, setCheckTime] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(false);
   const [post, setPost] = useState("");
   const [userTyping, setUserTyping] = useState(false);
   const [sendButtonClicked, setSendButtonClicked] = useState(false);
@@ -69,7 +83,89 @@ function ViewPost() {
 
   const [qa_Responses, setQA_Responses] = useState<QaResponses[]>([]);
 
+  // Reply functionality state
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
+  const [showReplyInput, setShowReplyInput] = useState(false);
+
   const userAvatar = userInformation?.profilePicture;
+
+  // Handle reply to a message
+  const handleReply = (messageId?: string) => {
+    if (messageId) {
+      setReplyingTo(messageId);
+      setShowReplyInput(true);
+    }
+  };
+
+  // Handle marking response as helpful
+  const handleHelpful = async (responseId?: string) => {
+    if (!responseId || !user || !groupId) return;
+
+    try {
+      const responseRef = doc(
+        db,
+        "groups",
+        groupId.toString(),
+        "qa",
+        postId.toString(),
+        "qa_responses",
+        responseId
+      );
+
+      // Get current response data
+      const responseDoc = await getDoc(responseRef);
+      if (!responseDoc.exists()) return;
+
+      const currentData = responseDoc.data();
+      const currentHelpfulCount = currentData.helpfulCount || 0;
+      const helpfulUsers = currentData.helpfulUsers || [];
+      const isCurrentlyHelpful = helpfulUsers.includes(user.uid);
+
+      // Toggle helpful status
+      if (isCurrentlyHelpful) {
+        // Remove user from helpful users and decrease count
+        await updateDoc(responseRef, {
+          helpfulUsers: helpfulUsers.filter((uid: string) => uid !== user.uid),
+          helpfulCount: Math.max(0, currentHelpfulCount - 1),
+        });
+      } else {
+        // Add user to helpful users and increase count
+        await updateDoc(responseRef, {
+          helpfulUsers: [...helpfulUsers, user.uid],
+          helpfulCount: currentHelpfulCount + 1,
+        });
+      }
+    } catch (error) {
+      console.error("Error marking response as helpful:", error);
+    }
+  };
+
+  // Handle sending reply
+  const handleSendReply = async () => {
+    if (!replyMessage.trim() || !user || !replyingTo) return;
+
+    try {
+      setIsSending(true);
+      await responseQaPost(
+        postId.toString(),
+        replyMessage,
+        isAdmin,
+        isMod,
+        user.uid,
+        Timestamp.now(),
+        groupId.toString()
+      );
+
+      setReplyMessage("");
+      setReplyingTo(null);
+      setShowReplyInput(false);
+    } catch (error) {
+      console.error("Error sending reply:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   // get responses
   function getTimeLabel(dateString: Date) {
@@ -110,6 +206,10 @@ function ViewPost() {
             imageUrl: data.imageUrl,
             userName: data.userName,
             purpose: data.purpose,
+            isHelpful: data.isHelpful || false,
+            helpfulCount: data.helpfulCount || 0,
+            helpfulUsers: data.helpfulUsers || [],
+            responseId: snap.id, // Add the document ID as responseId
           } satisfies QaResponses;
         });
         setQA_Responses(responseData);
@@ -270,6 +370,19 @@ function ViewPost() {
                   isSelf={msg.isSelf}
                   type={msg.type}
                   purpose={msg.purpose}
+                  onReply={handleReply}
+                  onHelpful={handleHelpful}
+                  messageId={msg.id}
+                  responseCount={
+                    msg.type === "question" ? qa_Responses.length : 0
+                  }
+                  isHelpful={
+                    msg.type === "response"
+                      ? qa_Responses
+                          .find((r) => r.responseId === msg.id)
+                          ?.helpfulUsers?.includes(user?.uid || "")
+                      : false
+                  }
                 />
               ))
             ) : (
@@ -279,6 +392,64 @@ function ViewPost() {
             )}
           </View>
         </KeyboardAwareScrollView>
+
+        {/* Reply Input Section */}
+        {showReplyInput && (
+          <View className="px-4 py-2 border-t border-gray-200 bg-blue-50">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-sm text-blue-600 font-medium">
+                Replying to message
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowReplyInput(false);
+                  setReplyingTo(null);
+                  setReplyMessage("");
+                }}
+              >
+                <Text className="text-red-500 text-sm">Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <View className="flex-row items-center">
+              <View className="flex-1 mr-2">
+                <TextInput
+                  value={replyMessage}
+                  onChangeText={setReplyMessage}
+                  mode="outlined"
+                  outlineColor="transparent"
+                  activeOutlineColor="transparent"
+                  cursorColor="#4169E1"
+                  textColor="#1e293b"
+                  placeholder="Type your reply..."
+                  placeholderTextColor="#94a3b8"
+                  className="bg-white rounded-2xl px-4 py-2 text-base"
+                  contentStyle={{ textAlignVertical: "center" }}
+                  style={{ minHeight: 40, maxHeight: 120 }}
+                  multiline
+                  maxLength={500}
+                />
+              </View>
+              <TouchableOpacity
+                className="justify-center items-center p-2"
+                activeOpacity={replyMessage.length === 0 ? 0.5 : 1}
+                disabled={replyMessage.length === 0 || isSending}
+                onPress={handleSendReply}
+              >
+                <View
+                  className={`p-2 rounded-full ${
+                    replyMessage.length > 0 ? "bg-blue-500" : "bg-gray-300"
+                  }`}
+                >
+                  <Image
+                    source={messages.Send}
+                    className="w-6 h-6"
+                    tintColor={replyMessage.length > 0 ? "#ffffff" : "#94a3b8"}
+                  />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <View className="px-4 py-2 border-t border-gray-200 bg-white flex flex-row items-center">
           {/* Add Button */}
@@ -308,7 +479,7 @@ function ViewPost() {
               placeholder="Type your message..."
               placeholderTextColor="#94a3b8"
               className="bg-gray-100 rounded-2xl px-4 py-2 text-base"
-              contentStyle={{ textAlignVertical: 'center' }}
+              contentStyle={{ textAlignVertical: "center" }}
               style={{ minHeight: 40, maxHeight: 120 }}
               multiline
               maxLength={500}
@@ -323,7 +494,7 @@ function ViewPost() {
             disabled={post.length === 0}
             onPress={() => {
               if (post.length === 0 || !user) return;
-              
+
               setIsSending(true);
               setPost("");
               responseQaPost(
@@ -335,23 +506,27 @@ function ViewPost() {
                 Timestamp.now(),
                 groupId.toString()
               )
-              .then(() => {
-                setSendButtonClicked(true);
-               
-                setUserTyping(false);
-              })
-              .catch((error) => {
-                console.error("Error sending message:", error);
-                // Optionally show error to user
-              })
-              .finally(() => {
-                setIsSending(false);
-              });
+                .then(() => {
+                  setSendButtonClicked(true);
+
+                  setUserTyping(false);
+                })
+                .catch((error) => {
+                  console.error("Error sending message:", error);
+                  // Optionally show error to user
+                })
+                .finally(() => {
+                  setIsSending(false);
+                });
             }}
             accessibilityLabel="Send message"
             accessibilityRole="button"
           >
-            <View className={`p-2 rounded-full ${post.length > 0 ? 'bg-blue-500' : 'bg-gray-300'}`}>
+            <View
+              className={`p-2 rounded-full ${
+                post.length > 0 ? "bg-blue-500" : "bg-gray-300"
+              }`}
+            >
               <Image
                 source={messages.Send}
                 className="w-6 h-6"
@@ -360,6 +535,17 @@ function ViewPost() {
             </View>
           </TouchableOpacity>
         </View>
+        <ShareModal
+          visible={isActive}
+          onDismiss={() => setIsActive(!isActive)}
+          onFileUploaded={(fileUrl, fileName) => {
+            // You can handle the uploaded file here
+            // For example, add it to the message or store it in the database
+            console.log("File uploaded:", fileName, fileUrl);
+            // Add the file URL to the current message (clean format)
+            setPost((prev) => prev + (prev ? "\n" : "") + fileUrl);
+          }}
+        />
       </KeyboardAvoidingView>
     </View>
   );

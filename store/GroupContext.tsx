@@ -9,6 +9,7 @@ import {
   FieldValue,
   doc as firestoreDoc,
   getDoc,
+  getDocs,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -25,6 +26,9 @@ export interface Group {
   members: string[];
   admins: string[];
   moderators: string[];
+  groupOwner: string; // Changed from string[] to string
+  joinRequests: string[];
+  blockedUsers: string[];
   callScheduled?: {
     CallTime: Timestamp;
     callType: string;
@@ -45,10 +49,11 @@ interface MessageData {
   imageUrl?: string;
   userName: string;
   purpose: string;
-  type: 'message' | 'question' | 'response';
+  type: "message" | "question" | "response";
   parentMessageId?: string;
   isHelpful?: boolean;
   helpfulCount?: number;
+  helpfulUsers?: string[];
 }
 
 interface SendMessageParams {
@@ -58,7 +63,7 @@ interface SendMessageParams {
   sentBy: string;
   timeSent: Timestamp;
   groupId: string;
-  type: 'message' | 'question' | 'response';
+  type: "message" | "question" | "response";
   parentMessageId?: string;
   userInformation: {
     profilePicture?: string;
@@ -69,12 +74,31 @@ interface SendMessageParams {
 
 interface GroupContextType {
   groups: Group[];
+  allGroups: Group[]; // New state for all available groups
   loading: boolean;
   groupCreating: boolean;
   groupCreated: boolean;
   qaPostSent: boolean;
   error: string | null;
   user: User | null;
+  isJoining: boolean;
+  isSendingJoinRequest: boolean;
+  setGroupCreated: (value: boolean) => void;
+  promoteToModerator: (groupId: string, userId: string) => Promise<void>;
+  demoteModerator: (groupId: string, userId: string) => Promise<void>;
+  promoteToAdmin: (groupId: string, userId: string) => Promise<void>;
+  removeMember: (groupId: string, userId: string) => Promise<void>;
+  blockMember: (groupId: string, userId: string) => Promise<void>;
+  unblockMember: (groupId: string, userId: string) => Promise<void>;
+  approveJoinRequest: (grouId: string, userId: string) => Promise<void>;
+  rejectJoinRequest: (groupId: string, userId: string) => Promise<void>;
+  sendJoinRequest: (groupId: string, userId: string) => Promise<void>;
+  getUserInformation: (userId: string) => Promise<UserInfo | null>;
+  transferOwnership: (
+    groupId: string,
+    ownerId: string,
+    receiverId: string
+  ) => Promise<void>;
   joinGroup: (groupId: string) => Promise<void>;
   leaveGroup: (groupId: string) => Promise<void>;
   createGroup: (
@@ -83,7 +107,8 @@ interface GroupContextType {
     imageUrl: string | null,
     category: string,
     maxGradeLevel: string,
-    onboardingText: string
+    onboardingText: string,
+    isPrivate: boolean
   ) => Promise<void>;
   sendQaPost: (
     groupId: string,
@@ -113,7 +138,7 @@ interface GroupContextType {
     sentBy: string,
     timeSent: Timestamp,
     groupId: string,
-    type?: 'message' | 'question' | 'response',
+    type?: "message" | "question" | "response",
     parentMessageId?: string
   ) => Promise<{ success: boolean; messageId?: string; error?: any }>;
   respondToMessage: (
@@ -123,7 +148,7 @@ interface GroupContextType {
     sentBy: string,
     timeSent: Timestamp,
     groupId: string,
-    parentMessageId: string,
+    parentMessageId: string
   ) => Promise<{ success: boolean; messageId?: string; error?: any }>;
   markResponseHelpful: (
     groupId: string,
@@ -131,8 +156,10 @@ interface GroupContextType {
     responseId: string
   ) => Promise<{ success: boolean; error?: any }>;
   refreshGroups: () => Promise<void>;
+  fetchAllGroups: () => Promise<void>; // New function to fetch all groups
   userInformation: UserInfo | null;
   qaPostID: string;
+  groupID: string;
 }
 
 interface UserInfo {
@@ -149,6 +176,7 @@ const GroupContext = createContext<GroupContextType | undefined>(undefined);
 
 export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [groups, setGroups] = useState<Group[]>([]);
+  const [allGroups, setAllGroups] = useState<Group[]>([]); // New state for all groups
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -159,7 +187,9 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [userInformation, setUserInformation] = useState<UserInfo | null>(null);
   const [qaPostID, setQaPostID] = useState("");
   const [messageSent, setMessageSent] = useState(false);
-
+  const [groupID, setGroupID] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
+  const [isSendingJoinRequest, setIsSendingJoinRequest] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -191,7 +221,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     retriveLocalData();
-    getUserInfo();
+    getCurrentUserInfo();
   }, [user]);
 
   // compare data
@@ -207,7 +237,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
     return false;
   }
-
 
   // Subscribe to real-time updates for user's groups
   useEffect(() => {
@@ -273,17 +302,246 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const joinGroup = async (groupId: string) => {
+  /**
+   * 
+   * @param groupId 
+   * @param userId 
+   * @returns 
+   * 
+   * promoteToModerator: (groupId: string, userId: string) => Promise<void>;
+   demoteModerator: (groupId: string, userId: string) => Promise<void>;
+   promoteToAdmin: (groupId: string, userId: string) => Promise<void>;
+   removeMember: (groupId: string, userId: string) => Promise<void>;
+  blockMember: (groupId: string, userId: string) => Promise<void>;
+  unblockMember: (groupId: string, userId: string) => Promise<void>;
+  approveJoinRequest: (grouId: string, userId: string) => Promise<void>;
+  rejectJoinRequest: (groupId: string, userId: string) => Promise<void>;
+  transferOwnership: (groupId: string, userId: string) => Promise<void>;
+   */
+
+  // Helper to move user between role arrays (atomic update)
+  const moveUserRole = async (
+    groupId: string,
+    userId: string,
+    addTo: keyof Group,
+    removeFrom: (keyof Group)[]
+  ) => {
+    const groupRef = firestoreDoc(db, "groups", groupId);
+    const updateObj: any = {};
+    updateObj[addTo] = arrayUnion(userId);
+    removeFrom.forEach((role) => {
+      updateObj[role] = arrayRemove(userId);
+    });
+    await updateDoc(groupRef, updateObj);
+  };
+
+  const transferOwnership = async (
+    groupId: string,
+    ownerId: string,
+    receiverId: string
+  ) => {
+    if (!user) return;
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        groupOwner: receiverId, // Set new owner directly
+        admins: arrayUnion(receiverId), // Add new owner as admin
+      });
+      // Remove old owner from admins in a separate update
+      await updateDoc(groupRef, {
+        admins: arrayRemove(ownerId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "An error has occured: " + error,
+      });
+    }
+  };
+  const rejectJoinRequest = async (groupId: string, userId: string) => {
     if (!user) return;
 
     try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+
+      await updateDoc(groupRef, {
+        joinRequests: arrayRemove(userId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Unable to reject request: " + error,
+      });
+    }
+  };
+  const approveJoinRequest = async (groupId: string, userId: string) => {
+    if (!user) return;
+
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+
+      await updateDoc(groupRef, {
+        members: arrayUnion(userId),
+        joinRequests: arrayRemove(userId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "An error has occured: " + error,
+      });
+    }
+  };
+  const unblockMember = async (groupId: string, userId: string) => {
+    if (!user) return;
+
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        blockedUsers: arrayRemove(userId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "An error has occured: " + error,
+      });
+    }
+  };
+
+  const sendJoinRequest = async (groupId: string, userId: string) => {
+    if (!user) return;
+    setIsSendingJoinRequest(true);
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        joinRequests: arrayUnion(userId),
+      });
+      setIsSendingJoinRequest(false);
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "An error has occured: " + error,
+      });
+      setIsSendingJoinRequest(false);
+    }
+  };
+
+  const blockMember = async (groupId: string, userId: string) => {
+    if (!user) return;
+
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        blockedUsers: arrayUnion(userId),
+        admins: arrayRemove(userId),
+        moderators: arrayRemove(userId),
+        members: arrayRemove(userId),
+        joinRequests: arrayRemove(userId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "An error has occured: " + error,
+      });
+    }
+  };
+
+  const removeMember = async (groupId: string, userId: string) => {
+    if (!user) return;
+
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        members: arrayRemove(userId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "An error has occured: " + error,
+      });
+    }
+  };
+
+  const demoteModerator = async (groupId: string, userId: string) => {
+    if (!user) return;
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        moderators: arrayRemove(userId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Unable to remove user: " + error,
+      });
+    }
+  };
+
+  const promoteToModerator = async (groupId: string, userId: string) => {
+    if (!user) return;
+
+    try {
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        moderators: arrayUnion(userId),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Failed",
+        text2: "Unable to add user as Moderator: " + error,
+      });
+    }
+  };
+
+  const promoteToAdmin = async (groupId: string, userId: string) => {
+    if (!user) return;
+    // Add to admins, remove from moderators and members
+    await moveUserRole(groupId, userId, "admins", ["moderators", "members"]);
+  };
+
+  const joinGroup = async (groupId: string) => {
+    if (!user) return;
+
+    setIsJoining(true);
+    try {
+      // update user fields to have groupId
       const userRef = firestoreDoc(db, "users", user.uid);
       await updateDoc(userRef, {
         joinedGroups: arrayUnion(groupId),
       });
+      // then update group fields to have userId
+      const groupRef = firestoreDoc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+        members: arrayUnion(user?.uid),
+      });
+
+      setIsJoining(false);
     } catch (err) {
       console.error("Error joining group:", err);
+      setIsJoining(false);
       throw err;
+    }
+  };
+
+  const getUserInformation = async (userId: string) => {
+    try {
+      const userRef = firestoreDoc(db, "users", userId);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        return userDoc.data() as UserInfo;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting user information: ", error);
+      return null;
     }
   };
 
@@ -293,7 +551,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     imageUrl: string | null,
     category: string,
     maxGradeLevel: string,
-    onboardingText: string
+    onboardingText: string,
+    isPrivate: boolean
   ) => {
     try {
       setGroupCreating(true);
@@ -307,13 +566,19 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         onboardingText,
         maxGradeLevel,
         members: [user?.uid],
+        admins: [user?.uid],
+        moderators: [],
+        joinRequests: [],
+        blockedUsers: [],
+        groupOwner: user?.uid,
         createdBy: user?.uid,
         createdAt: serverTimestamp(),
-        admins: [user?.uid],
+        isPrivate,
       };
       await setDoc(groupRef, groupData);
 
       joinGroup(groupRef.id);
+      setGroupID(groupRef.id);
       Toast.show({
         type: "success",
         text1: name,
@@ -340,7 +605,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     sentBy: string,
     groupName: string,
     isMod: boolean,
-    isAdmin: boolean,
+    isAdmin: boolean
   ) => {
     if (!user) return;
     try {
@@ -361,7 +626,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         purpose: userInformation?.purpose,
       };
       await setDoc(qaRef, qaData);
-      setQaPostID(qaRef.id)
+      setQaPostID(qaRef.id);
       setQaPostSent(true);
     } catch (error) {
       console.error("Unable to send post: ", error);
@@ -402,6 +667,9 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         imageUrl: userInformation?.profilePicture,
         purpose: userInformation?.purpose,
         type: "response",
+        isHelpful: false,
+        helpfulCount: 0,
+        helpfulUsers: [],
       };
       await setDoc(responseRef, resposeData);
       setQaPostSent(true);
@@ -417,7 +685,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     sentBy,
     timeSent,
     groupId,
-    type = 'message',
+    type = "message",
     parentMessageId,
     userInformation: userInfoParam,
   }: SendMessageParams) => {
@@ -425,20 +693,20 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       setMessageSent(false);
       let messageRef;
 
-      if (type === 'response' && parentMessageId) {
+      if (type === "response" && parentMessageId) {
         messageRef = firestoreDoc(
           collection(
             db,
-            'groups',
+            "groups",
             groupId.toString(),
-            'messages',
+            "messages",
             parentMessageId.toString(),
-            'responses'
+            "responses"
           )
         );
       } else {
         messageRef = firestoreDoc(
-          collection(db, 'groups', groupId.toString(), 'messages')
+          collection(db, "groups", groupId.toString(), "messages")
         );
       }
 
@@ -450,18 +718,22 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         isAdmin,
         isMod,
         imageUrl: userInfo?.profilePicture,
-        userName: userInfo?.userName || '',
-        purpose: userInfo?.purpose || '',
+        userName: userInfo?.userName || "",
+        purpose: userInfo?.purpose || "",
         type,
         ...(parentMessageId && { parentMessageId }),
-        ...(type === 'response' && { isHelpful: false, helpfulCount: 0 }),
+        ...(type === "response" && {
+          isHelpful: false,
+          helpfulCount: 0,
+          helpfulUsers: [],
+        }),
       };
 
       await setDoc(messageRef, messageData);
       setMessageSent(true);
       return { success: true, messageId: messageRef.id };
     } catch (error) {
-      console.error('An error occurred when sending message: ', error);
+      console.error("An error occurred when sending message: ", error);
       return { success: false, error };
     }
   };
@@ -473,11 +745,11 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     sentBy: string,
     timeSent: Timestamp,
     groupId: string,
-    type: 'message' | 'question' | 'response' = 'message',
+    type: "message" | "question" | "response" = "message",
     parentMessageId?: string
   ) => {
     if (!userInformation) {
-      return { success: false, error: 'User information not available' };
+      return { success: false, error: "User information not available" };
     }
 
     return sendUnifiedMessage({
@@ -504,10 +776,10 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     sentBy: string,
     timeSent: Timestamp,
     groupId: string,
-    parentMessageId: string,
+    parentMessageId: string
   ) => {
     if (!userInformation) {
-      return { success: false, error: 'User information not available' };
+      return { success: false, error: "User information not available" };
     }
 
     return sendUnifiedMessage({
@@ -517,7 +789,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       sentBy,
       timeSent,
       groupId,
-      type: 'response',
+      type: "response",
       parentMessageId,
       userInformation: {
         profilePicture: userInformation.profilePicture,
@@ -535,24 +807,24 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const responseRef = firestoreDoc(
         db,
-        'groups',
+        "groups",
         groupId,
-        'messages',
+        "messages",
         messageId,
-        'responses',
+        "responses",
         responseId
       );
 
-      await updateDoc(responseRef, { 
+      await updateDoc(responseRef, {
         isHelpful: true,
-        helpfulCount: arrayUnion(1) // Increment helpful count
+        helpfulCount: arrayUnion(1), // Increment helpful count
       });
       return { success: true };
     } catch (error) {
-      console.error('Error marking response as helpful:', error);
+      console.error("Error marking response as helpful:", error);
       return { success: false, error };
     }
-  }
+  };
 
   const leaveGroup = async (groupId: string) => {
     if (!user) return;
@@ -603,10 +875,38 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // New function to fetch all available groups for suggestions
+  const fetchAllGroups = async () => {
+    if (!user) return;
 
+    try {
+      const groupsCollection = collection(db, "groups");
+      const groupsSnapshot = await getDocs(groupsCollection);
+
+      const allGroupsData: Group[] = [];
+      groupsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data) {
+          const groupData = { ...data, id: doc.id } as Group;
+          allGroupsData.push(groupData);
+        }
+      });
+
+      setAllGroups(allGroupsData);
+    } catch (error) {
+      console.error("Error fetching all groups:", error);
+    }
+  };
+
+  // Fetch all groups when user changes
+  useEffect(() => {
+    if (user) {
+      fetchAllGroups();
+    }
+  }, [user]);
 
   // get and save the user information locally
-  const getUserInfo = async () => {
+  const getCurrentUserInfo = async () => {
     if (!user) return;
     try {
       const userRef = firestoreDoc(db, "users", user.uid);
@@ -614,7 +914,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (docRef.exists()) {
         const data = docRef.data();
-        const savedData = (data) => {
+        const savedData = (data: any) => {
           return {
             userName: data.userName,
             profilePicture: data.profileImage,
@@ -631,7 +931,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Unable to fetch user data", error);
     }
   };
-
 
   return (
     <GroupContext.Provider
@@ -654,6 +953,23 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         markResponseHelpful,
         userInformation,
         qaPostID,
+        allGroups, // Add allGroups to the context value
+        fetchAllGroups, // Add fetchAllGroups to the context value
+        demoteModerator,
+        rejectJoinRequest,
+        approveJoinRequest,
+        removeMember,
+        promoteToAdmin,
+        promoteToModerator,
+        transferOwnership,
+        blockMember,
+        unblockMember,
+        sendJoinRequest,
+        getUserInformation,
+        groupID,
+        setGroupCreated,
+        isJoining,
+        isSendingJoinRequest,
       }}
     >
       {children}

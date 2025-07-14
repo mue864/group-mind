@@ -1,24 +1,71 @@
-import {Text, TouchableOpacity } from "react-native";
+import { Colors } from "@/constants";
+import React from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
+} from "react-native";
 
-type buttonProps = {
-    buttonText: string,
-    onPress: () => void
+interface ButtonProps {
+  title: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
+  fullWidth?: boolean;
 }
-const Button = ({buttonText, onPress}: buttonProps) => {
-    return ( 
-        <TouchableOpacity 
-        style={{
-            elevation: 4,
-            shadowColor: "black",
-            shadowOffset: {width: 0, height: 2},
-            shadowRadius: 10,
-            
-        }}
-        onPress={onPress}
-        className="bg-primary p-5 rounded-xl shadow-2xl">
-            <Text className="text-background text-center font-bold text-xl font-inter">{buttonText}</Text>
-        </TouchableOpacity>
-     );
-}
- 
+
+const Button: React.FC<ButtonProps> = ({
+  title,
+  onPress,
+  disabled = false,
+  loading = false,
+  style,
+  textStyle,
+  fullWidth = false,
+}) => {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.8}
+      style={[
+        styles.button,
+        fullWidth && { width: "100%" },
+        disabled && { opacity: 0.6 },
+        style,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color="#fff" />
+      ) : (
+        <Text style={[styles.text, textStyle]}>{title}</Text>
+      )}
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+  },
+  text: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+    fontFamily: "Poppins-SemiBold",
+  },
+});
+
 export default Button;

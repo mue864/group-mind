@@ -54,12 +54,11 @@ const Welcome = () => {
         </Text>
       </View>
 
-      <View 
-      className={`absolute right-14 left-14 bottom-14 h-20`}
-      >
-        <Button 
-        onPress={() => router.replace('/(onboarding)/introduceScreen_1')}
-        buttonText={Strings.getStartedButton} />
+      <View className={`absolute right-14 left-14 bottom-14 h-20`}>
+        <Button
+          onPress={() => router.replace("/(onboarding)/introduceScreen_1")}
+          title={Strings.getStartedButton}
+        />
       </View>
     </View>
   );

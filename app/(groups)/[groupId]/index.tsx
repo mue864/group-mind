@@ -65,7 +65,6 @@ function GroupQA() {
     const localMessages = async () => {
       try {
         const cachedLocalData = await AsyncStorage.getItem(`local-${groupId}`);
-        console.log("groupID: ", groupId);
         if (cachedLocalData) {
           console.log("cached messages: ", JSON.parse(cachedLocalData));
           setMessagesById(JSON.parse(cachedLocalData));
@@ -157,17 +156,32 @@ function GroupQA() {
 
   // save groupName locally
   useEffect(() => {
-    if (posts.length === 0 || !groupName) return;
+    if (!groupName) return;
 
     const saveGroupName = async () => {
       try {
         await AsyncStorage.setItem("groupName", groupName.toString()); // change this logic with time
+        console.log("GroupName: ", groupName)
       } catch (error) {
         console.error("Unable to save group name", error);
       }
     };
     saveGroupName();
   }, [posts, groupName]);
+
+  useEffect(() => {
+    if (!groupId) return;
+    
+    const saveGroupID = async() => {
+      try {
+        await AsyncStorage.setItem("groupID", groupId.toString());
+      } catch (error) {
+        console.error("Unable to save group ID", error);
+      }
+    }
+    saveGroupID();
+  }, [groupId]);
+  
 
   // const local and cloud data comparison
   function compareData(localData: QaPost[], cloudData: QaPost[]) {
@@ -189,7 +203,6 @@ function GroupQA() {
     const onlineKeysLength = Object.keys(onlineMessages);
 
     if (localKeysLength !== onlineKeysLength) {
-      console.log("in here");
       setMessagesById(onlineMessages);
       saveLocalMessagesById(onlineMessages);
     }
@@ -287,13 +300,11 @@ function GroupQA() {
               <Back />
             </TouchableOpacity>
 
-            {/* Group Name (centered absolutely) */}
-            {posts.length !== 0 && (
               <Text className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">
                 {/* Group Name issue */}
                 {!groupName ? localGroupName : groupName}
               </Text>
-            )}
+
           </View>
 
           {/* Page Name */}

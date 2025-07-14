@@ -1,11 +1,9 @@
-import Elipse from "@/assets/icons/termsElipse.svg";
-import Rect from "@/assets/icons/termsRect.svg";
 import Button from "@/components/Button";
-import CheckBox from "@/components/CheckBox";
+import EnhancedCheckBox from "@/components/CheckBox";
 import { PrivacyStrings, Strings } from "@/constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 const PrivacyScreen = () => {
   const router = useRouter();
@@ -13,12 +11,11 @@ const PrivacyScreen = () => {
   const styleHeading = "pt-5 font-bold text-xl font-inter";
   const [isPressed, setIsPressed] = useState(false);
   return (
-    <View className="flex-1 relative">
+    <View className="flex-1 bg-white">
       <Text className="text-primary font-poppins-semiBold text-2xl pt-4 mx-5">
         {PrivacyStrings.mainHeading}
       </Text>
-
-      <ScrollView className="mx-5 pt-1 flex-[0.80]">
+      <ScrollView className="flex-1 mx-5 pt-1">
         <Text className="font-inter font-bold text-xl">
           {PrivacyStrings.effectiveDate}
         </Text>
@@ -76,27 +73,33 @@ const PrivacyScreen = () => {
           {PrivacyStrings.policyChangesText}
         </Text>
       </ScrollView>
-
-      <View className="absolute bottom-0 -z-10" pointerEvents="box-none">
-        <Elipse width={360} height={250} />
-      </View>
-      <View className="absolute left-16 top-12 -z-10" pointerEvents="box-none">
-        <Rect width={250} height={250} />
-      </View>
-
-      <Pressable
-        className="absolute bottom-28 left-1/2 -translate-x-1/2"
-        onPress={() => setIsPressed(!isPressed)}
+      <View
+        style={{
+          paddingHorizontal: 24,
+          paddingVertical: 20,
+          backgroundColor: "#F6F8FE",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 4,
+        }}
       >
-        <CheckBox isPressed={isPressed} page="privacy" />
-      </Pressable>
-
-      <View className="absolute right-8 left-8 bottom-5">
+        <EnhancedCheckBox
+          isPressed={isPressed}
+          onPress={() => setIsPressed(!isPressed)}
+          page="privacy"
+        />
+        <View style={{ height: 16 }} />
         <Button
           onPress={() => {
-            isPressed && router.replace("/(auth)/signInScreen");
+            if (isPressed) router.replace("/(auth)/signInScreen");
           }}
-          buttonText={Strings.continueButton}
+          title={Strings.continueButton}
+          disabled={!isPressed}
+          fullWidth
         />
       </View>
     </View>

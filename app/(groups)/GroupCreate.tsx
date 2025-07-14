@@ -1,12 +1,14 @@
 import Camera from "@/assets/icons/camera.svg";
 import groupImages from "@/assets/images/group_images";
+import Button from "@/components/Button";
+import DropDown from "@/components/DropDown";
 import GroupImageModal from "@/components/GroupImageModal";
+import TextBox from "@/components/TextBox";
 import { useGroupContext } from "@/store/GroupContext";
-import { useEffect, useState } from "react";
-import { Image, Pressable, View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { Button, TextInput, Menu } from "react-native-paper";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Image, Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 interface GroupImagesProp {
   groupImage1: string;
@@ -23,7 +25,7 @@ interface GroupImagesProp {
 }
 
 const GroupCreate = () => {
-  const { groupCreating, createGroup, groupCreated } = useGroupContext();
+  const { groupCreating, createGroup, groupCreated, groupID, setGroupCreated } = useGroupContext();
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -33,17 +35,33 @@ const GroupCreate = () => {
   const [grade, setGrade] = useState("");
   const [onboardingText, setOnboardingText] = useState("");
   const [hasGroupNameErrors, setHasGroupNameErrors] = useState(false);
-  const [hasGroupDescriptionErrors, setHasGroupDescriptionErrors] = useState(false);
+  const [hasGroupDescriptionErrors, setHasGroupDescriptionErrors] =
+    useState(false);
   const [groupNameTouched, setGroupNameTouched] = useState(false);
   const [groupDescriptionTouched, setGroupDescriptionTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [privacy, setPrivacy] = useState("");
 
-  const categoryOptions = ["Math", "Science", "History", "English"];
-  const gradeOptions = ["Grade 8", "Grade 9", "Grade 10", "Grade 11"];
-  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
-  const [gradeMenuVisible, setGradeMenuVisible] = useState(false);
+  const categoryOptions = [
+    { label: "Math", value: "Math" },
+    { label: "Science", value: "Science" },
+    { label: "History", value: "History" },
+    { label: "English", value: "English" },
+  ];
+  const gradeOptions = [
+    { label: "Grade 8", value: "Grade 8" },
+    { label: "Grade 9", value: "Grade 9" },
+    { label: "Grade 10", value: "Grade 10" },
+    { label: "Grade 11", value: "Grade 11" },
+  ];
+
+  const privacyOptions =[
+    {label: "Private", value: "Private"},
+    {label: "Public", value: "Public"},
+  ]
+
 
   const router = useRouter();
-
 
   const formValid =
     groupName.length >= 3 &&
@@ -51,184 +69,256 @@ const GroupCreate = () => {
     category &&
     grade &&
     onboardingText &&
-    selectedImage
+    selectedImage;
 
   useEffect(() => {
-    if (groupNameTouched)
-    {
+    if (groupNameTouched) {
       setHasGroupNameErrors(groupName.length < 3);
     }
   }, [groupName, groupNameTouched]);
 
   useEffect(() => {
-    if(groupDescriptionTouched) {
+    if (groupDescriptionTouched) {
       setHasGroupDescriptionErrors(groupDescription.length < 7);
     }
   }, [groupDescription, groupDescriptionTouched]);
 
+  const handleSubmit = () => {
+    setSubmitted(true);
+    if (
+      groupName.length < 3 ||
+      groupDescription.length < 7 ||
+      !category ||
+      !grade ||
+      !onboardingText ||
+      !selectedImage ||
+      !privacy
+    ) {
+      return;
+    }
+    createGroup(
+      groupName,
+      groupDescription,
+      selectedImage,
+      category,
+      grade,
+      onboardingText,
+      privacy === "Private" ? true : false
+    );
+  };
+
+  useEffect(() => {
+    if (groupCreated) {
+      setGroupCreated(false);
+      router.replace({
+        pathname: `/(groups)/[groupId]`,
+        params: {
+          groupId: groupID,
+          groupName: groupName,
+        },
+      });
+    }
+  }, [groupCreated, groupID, router, setGroupCreated, groupName]);
 
   return (
     <KeyboardAwareScrollView
-      style={{ flex: 1, backgroundColor: "#F8F8F8" }} // or bg-background
-      contentContainerStyle={{ alignItems: "center" }}
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      contentContainerStyle={{
+        alignItems: "center",
+        paddingBottom: 40,
+        paddingHorizontal: 20,
+      }}
       enableOnAndroid={true}
       keyboardShouldPersistTaps="handled"
-      extraScrollHeight={100} // This helps push focused inputs fully into view
+      extraScrollHeight={100}
     >
-      <>
-        <Pressable
-          className="items-center mt-6 mb-4 justify-center mx-auto"
-          onPress={() => setModalVisible(true)}
-          style={{ width: 150, height: 150 }}
-        >
-          {selectedImage ? (
-            <Image
-              source={groupImages[selectedImage as keyof GroupImagesProp]}
-              style={{ width: 150, height: 150, borderRadius: 75 }}
-              resizeMode="contain"
-            />
-          ) : (
-            <View
-              className="rounded-md border border-muted bg-secondary/50 justify-center items-center"
-              style={{ width: 150, height: 150 }}
-            >
-              <Camera width={50} height={50} />
-            </View>
-          )}
-        </Pressable>
-
-        <GroupImageModal
-          show={isModalVisible}
-          onDismiss={() => setModalVisible(false)}
-          onImageSelect={setSelectedImage}
-        />
-      </>
-
-      <TextInput
-        label="Group Name"
+      {/* Avatar Picker */}
+      <Pressable
+        style={{
+          alignItems: "center",
+          marginTop: 32,
+          marginBottom: 16,
+          justifyContent: "center",
+          width: 120,
+          height: 120,
+        }}
+        onPress={() => setModalVisible(true)}
+      >
+        {selectedImage ? (
+          <Image
+            source={groupImages[selectedImage as keyof GroupImagesProp]}
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: 60,
+              borderWidth: 1,
+              borderColor: "#9EADD9",
+            }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: "#9EADD9",
+              borderRadius: 60,
+              width: 120,
+              height: 120,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "#F6F8FE",
+            }}
+          >
+            <Camera width={40} height={40} />
+          </View>
+        )}
+      </Pressable>
+      <GroupImageModal
+        show={isModalVisible}
+        onDismiss={() => setModalVisible(false)}
+        onImageSelect={setSelectedImage}
+      />
+      {/* Group Name */}
+      <TextBox
+        placeholder="Group Name"
         value={groupName}
         onChangeText={(text) => {
           setGroupNameTouched(true);
           setGroupName(text);
         }}
-        style={{ width: "85%", margin: 10, height: 60 }}
-        mode="outlined"
-        error={hasGroupNameErrors}
+        errorText={
+          submitted && groupName.length < 3
+            ? "Group name must be at least 3 characters"
+            : undefined
+        }
+        secureTextEntry={false}
       />
-
-      <TextInput
-        label="Group Description"
+      {/* Group Description */}
+      <TextBox
+        placeholder="Group Description"
         value={groupDescription}
         onChangeText={(text) => {
           setGroupDescriptionTouched(true);
           setGroupDescription(text);
         }}
-        mode="outlined"
-        style={{ width: "85%", margin: 10, height: 60 }}
-        error={hasGroupDescriptionErrors}
-      />
-
-      <View
+        errorText={
+          submitted && groupDescription.length < 7
+            ? "Description must be at least 7 characters"
+            : undefined
+        }
+        secureTextEntry={false}
         style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          width: "85%",
+          marginTop: 18,
+          borderColor: groupDescription.length >= 7 ? "#4CAF50" : undefined,
         }}
-      >
-        <View style={{ width: "48%" }}>
-          <Menu
-            visible={categoryMenuVisible}
-            onDismiss={() => setCategoryMenuVisible(false)}
-            anchor={
-              <Pressable onPress={() => setCategoryMenuVisible(true)}>
-                <TextInput
-                  label="Category"
-                  value={category}
-                  mode="outlined"
-                  editable={false}
-                  right={<TextInput.Icon icon="menu-down" />}
-                  pointerEvents="none" // prevents native tap handling so Pressable works
-                />
-              </Pressable>
-            }
+      />
+      {/* Category Dropdown */}
+      <View style={{ width: "100%", marginTop: 18, zIndex: 3000 }}>
+        <DropDown
+          data={categoryOptions}
+          placeholder="Category"
+          zIndex={3000}
+          zIndexInverse={1000}
+          setValue={setCategory}
+          error={submitted && !category}
+        />
+        {submitted && !category && (
+          <Text
+            style={{
+              color: "#ef4444",
+              fontSize: 13,
+              marginTop: 4,
+              marginLeft: 2,
+              fontFamily: "Poppins-SemiBold",
+            }}
           >
-            {categoryOptions.map((option, index) => (
-              <Menu.Item
-                key={index}
-                onPress={() => {
-                  setCategory(option);
-                  setCategoryMenuVisible(false);
-                }}
-                title={option}
-              />
-            ))}
-          </Menu>
-        </View>
-
-        <View style={{ width: "48%" }}>
-          <Menu
-            visible={gradeMenuVisible}
-            onDismiss={() => setGradeMenuVisible(false)}
-            anchor={
-              <Pressable onPress={() => setGradeMenuVisible(true)}>
-                <TextInput
-                  label="Grade Level"
-                  value={grade}
-                  mode="outlined"
-                  editable={false}
-                  right={<TextInput.Icon icon="menu-down" />}
-                  pointerEvents="none"
-                />
-              </Pressable>
-            }
-          >
-            {gradeOptions.map((option, index) => (
-              <Menu.Item
-                key={index}
-                onPress={() => {
-                  setGrade(option);
-                  setGradeMenuVisible(false);
-                }}
-                title={option}
-              />
-            ))}
-          </Menu>
-        </View>
+            Category is required
+          </Text>
+        )}
       </View>
+      {/* Grade Dropdown */}
+      <View style={{ width: "100%", marginTop: 18, zIndex: 2000 }}>
+        <DropDown
+          data={gradeOptions}
+          placeholder="Grade Level"
+          zIndex={2000}
+          zIndexInverse={2000}
+          setValue={setGrade}
+          error={submitted && !grade}
+        />
 
-      <TextInput
-        label="Onboarding Text"
+        {submitted && !grade && (
+          <Text
+            style={{
+              color: "#ef4444",
+              fontSize: 13,
+              marginTop: 4,
+              marginLeft: 2,
+              fontFamily: "Poppins-SemiBold",
+            }}
+          >
+            Grade is required
+          </Text>
+        )}
+      </View>
+      {/* Privacy Dropdown */}
+      <View style={{ width: "100%", marginTop: 18, zIndex: 2000 }}>
+        <DropDown
+          data={privacyOptions}
+          placeholder="Privacy"
+          zIndex={2000}
+          zIndexInverse={2000}
+          setValue={setPrivacy}
+          error={submitted && !privacy}
+        />
+
+        {submitted && !privacy && (
+          <Text
+            style={{
+              color: "#ef4444",
+              fontSize: 13,
+              marginTop: 4,
+              marginLeft: 2,
+              fontFamily: "Poppins-SemiBold",
+            }}
+          >
+            Privacy Options is required
+          </Text>
+        )}
+      </View>
+      {/* Onboarding Text */}
+      <TextBox
+        placeholder="Onboarding Text"
         value={onboardingText}
         onChangeText={setOnboardingText}
-        mode="outlined"
-        style={{ width: "85%", marginVertical: 10, height: 60 }}
+        errorText={
+          submitted && onboardingText.length === 0
+            ? "Onboarding text is required"
+            : undefined
+        }
+        secureTextEntry={false}
+        style={{
+          marginTop: 18,
+          borderColor: onboardingText.length > 0 ? "#4CAF50" : undefined,
+        }}
+      />
+      {/* Create Group Button */}
+      <Button
+        onPress={handleSubmit}
+        title="Create Group"
+        fullWidth
+        disabled={!formValid || groupCreating}
+        loading={groupCreating}
+        style={{ marginTop: 100 }}
       />
 
+      {/* Go Back Button */}
       <Button
-        onPress={() => {
-          createGroup(
-            groupName,
-            groupDescription,
-            selectedImage,
-            category,
-            grade,
-            onboardingText
-          );
-        }}
-        loading={groupCreating}
-        mode="contained"
-        icon="plus"
-        disabled={!formValid || groupCreating}
-        style={{
-          width: "85%",
-          margin: 10,
-          height: 60,
-          
-        }}
-        contentStyle={{ height: 60, justifyContent: "center", alignItems: 'center' }}
-      >
-        Create Group
-      </Button>
+        onPress={() => router.back()}
+        title="Go Back"
+        fullWidth
+        style={{ marginTop: 10 }}
+      />
     </KeyboardAwareScrollView>
   );
 };

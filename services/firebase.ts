@@ -5,10 +5,8 @@ import {
   initializeAuth,
   getReactNativePersistence,
 } from "firebase/auth";
-import {getFirestore} from "firebase/firestore";
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -18,6 +16,7 @@ const firebaseConfig = {
   projectId: "group-mind",
   storageBucket: "group-mind.firebasestorage.app",
   messagingSenderId: "132683689333",
+  databaseURL: "https://group-mind-default-rtdb.firebaseio.com",
   appId: "1:132683689333:web:869db8d46e0f3cfed2373c",
   measurementId: "G-DQL2S9MZT5",
 };
@@ -25,9 +24,15 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Initialize Firebase Auth with AsyncStorage for persistence
 const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-})
+  persistence: getReactNativePersistence(AsyncStorage),
+});
 
+// Initialize Firestore
 const db = getFirestore(app);
-export {auth, db}
+
+// Initialize Realtime Database
+const database = getDatabase(app);
+
+export { auth, db, database };

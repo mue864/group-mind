@@ -1,17 +1,17 @@
-import { Text, View, StatusBar } from "react-native";
-import { useRouter } from "expo-router";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from "react-native-reanimated";
-import { useEffect } from "react";
+import Elipse from "@/assets/icons/introduceEllipse.svg";
 import Rect from "@/assets/icons/introduceRect.svg";
 import WebCam from "@/assets/icons/webcam.svg";
-import Elipse from "@/assets/icons/introduceEllipse.svg";
 import MiniButton from "@/components/MiniButton";
 import PaginationDots from "@/components/PaginationDots";
 import { Colors, Strings } from "@/constants";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { StatusBar, Text, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const IntroduceScreen_3 = () => {
   const router = useRouter();
@@ -35,15 +35,14 @@ const IntroduceScreen_3 = () => {
   }));
 
   const animateWebCam = useAnimatedStyle(() => ({
-   transform: [{translateX: translateX.value}],
+    transform: [{ translateX: translateX.value }],
   }));
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 500 });
     translateY.value = withTiming(0, { duration: 1000 });
-    translateX.value = withTiming(0, {duration: 1000})
+    translateX.value = withTiming(0, { duration: 1000 });
     translateElipseY.value = withTiming(0, { duration: 1000 });
-    
   }, [opacity, translateY, translateElipseY, translateX]);
   return (
     <View className="flex-1">
@@ -86,9 +85,7 @@ const IntroduceScreen_3 = () => {
         />
       </View>
 
-      <Animated.View
-        className="absolute left-10  bottom-14"
-      >
+      <Animated.View className="absolute left-10  bottom-14">
         <MiniButton
           onPress={() => router.push("/(onboarding)/introduceScreen_2")}
           direction="left"

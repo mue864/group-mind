@@ -1,198 +1,268 @@
-import { Text, View, Pressable } from "react-native";
-import Elipse from "@/assets/icons/signupElipse.svg";
-import Rect from "@/assets/icons/signupRect.svg";
-import { Strings } from "@/constants";
-import TextBox from "@/components/TextBox";
 import Button from "@/components/Button";
-import GoogleBtn from "@/assets/icons/google.svg";
-import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
-import { validatePasswords, passwordLength } from "@/constants/passwordValidation";
+import TextBox from "@/components/TextBox";
+import { Strings } from "@/constants";
 import { validateEmail } from "@/constants/emailValidation";
-import Toast from "react-native-toast-message";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  passwordLength,
+  validatePasswords,
+} from "@/constants/passwordValidation";
 import { auth, db } from "@/services/firebase";
-import {doc, setDoc, Timestamp} from "firebase/firestore";
-
+import { FontAwesome6 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
+import Toast from "react-native-toast-message";
 
 const SignUpScreen = () => {
-    const router = useRouter();
+  const router = useRouter();
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassord, setConfirmPassword] = useState("");
-    const [isPasswordMatch, setPasswordMatch] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordMatch, setPasswordMatch] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    const handleSignIn = () => {
-      const isValidEmail = validateEmail({ email });
-      if (!isValidEmail) {
-        Toast.show({
-          type: "error",
-          text1: "Invalid Email",
-          text2: "Please enter a valid email address",
-        });
-      } else if (!isPasswordMatch) {
-        Toast.show({
-          type: "error",
-          text1: "Passwords do not match",
-          text2: "Double check your passwords",
-        });
-      } else {
-        // add signup logic
-        handleUserInfo();
-      }
-    };
-
-    const handleUserInfo = async () => {
-      try {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCred.user;
-
-        await setDoc(doc(db, "users", user.uid), {
-          email: user.email,
-          createdAt: Timestamp.now(),
-          userName: "",
-          level: "",
-          age: "",
-          purpose: "",
-          profileImage: "",
-          subjectsOfInterest: [],
-          joinedGroups: [],
-          resources: [],
-          lastActive: Timestamp.now(),
-          isOnline: false,
-          notificationsEnabled: false,
-          canExplainToPeople: false,
-          isFirstLogin: true,
-          profileComplete: false,
-        });
-        Toast.show({
-          type: 'success',
-          text1: 'Account Created',
-          text2: 'Logging you in'
-        })
-        router.replace("/(auth)/createProfile");
-      } catch(error: any) {
-        
-        let message = "";
-        switch (error.code) {
-          case "auth/invalid-email":
-            message = "Invalid email address";
-            break;
-          case "auth/user-not-found":
-            message = "No account found for this email";
-            break;
-          case "auth/wrong-password":
-            message = "Incorrect password";
-            break;
-          default:
-            message = error.code;
-        }
-
-        Toast.show({
-          type: "error",
-          text1: "Login Failed",
-          text2: message,
-        });
-      }
+  const handleSignUp = () => {
+    const isValidEmail = validateEmail({ email });
+    if (!isValidEmail) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Email",
+        text2: "Please enter a valid email address",
+      });
+      return;
+    }
+    if (!isPasswordMatch) {
+      Toast.show({
+        type: "error",
+        text1: "Passwords do not match",
+        text2: "Double check your password fields",
+      });
+      return;
+    }
+    if (!passwordLength(password)) {
+      Toast.show({
+        type: "error",
+        text1: "Weak Password",
+        text2: "Password must be at least 6 characters",
+      });
+      return;
     }
 
-    useEffect(() => {
-        setPasswordMatch(validatePasswords(password, confirmPassord))
-    }, [password, confirmPassord, isPasswordMatch]);
+    registerUser();
+  };
 
-    return (
-      <View className="flex-1 relative">
-        <View className="absolute left-0">
-          <Elipse width={200} height={200} />
-        </View>
-        <View className="absolute right-0 bottom-20">
-          <Rect width={200} height={200} />
-        </View>
+  const registerUser = async () => {
+    setLoading(true);
+    try {
+      const userCred = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCred.user;
 
-        <View className="mt-10 mb-2">
-          <Text className="text-primary text-center font-poppins-semiBold text-3xl">
-            {Strings.login.createAccountHeading}
-          </Text>
-        </View>
-        <View className="w-44 flex justify-center items-center mx-auto mb-16">
-          <Text className="text-center font-poppins-semiBold">
-            {Strings.login.createAccountSubHeading}
-          </Text>
-        </View>
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        createdAt: Timestamp.now(),
+        userName: "",
+        level: "",
+        age: "",
+        purpose: "",
+        profileImage: "",
+        subjectsOfInterest: [],
+        joinedGroups: [],
+        resources: [],
+        lastActive: Timestamp.now(),
+        isOnline: false,
+        notificationsEnabled: false,
+        canExplainToPeople: false,
+        isFirstLogin: true,
+        profileComplete: false,
+      });
 
-        {/* email box */}
-        <View className="mx-10">
-          <TextBox
-            method={"email"}
-            placeholder={Strings.login.emailPlaceholder}
-            value={email}
-            onChangeText={setEmail}
-            secureTextEntry={false}
-            borderColor={true}
-            setValue={setEmail}
-          />
-        </View>
-        {/* password box */}
-        <View className="mx-10 pt-8">
-          <TextBox
-            method={"password"}
-            placeholder={Strings.login.passwordPlaceholder}
-            onChangeText={setPassword}
-            value={password}
-            secureTextEntry={true}
-            borderColor={
-              password === "" && passwordLength(password)
-                ? true
-                : isPasswordMatch
-            }
-            setValue={setPassword}
-          />
-        </View>
-        {/* confirm password */}
-        <View className="mx-10 pt-8">
-          <TextBox
-            method={"confirm"}
-            placeholder={Strings.login.confirmPasswordPlaceholder}
-            value={confirmPassord}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={true}
-            borderColor={
-              password === "" && passwordLength(password)
-                ? true
-                : isPasswordMatch
-            }
-            setValue={setConfirmPassword}
-          />
-        </View>
+      Toast.show({
+        type: "success",
+        text1: "Account Created!",
+        text2: "Let’s set up your profile 🧠",
+      });
 
-        <View className="mx-10 mt-10">
-          <Button
-            onPress={handleSignIn}
-            buttonText={Strings.login.signUpButton}
-          />
-        </View>
+      router.replace("/(auth)/createProfile");
+    } catch (error: any) {
+      let message = "";
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          message = "Email is already in use";
+          break;
+        case "auth/invalid-email":
+          message = "Invalid email format";
+          break;
+        case "auth/weak-password":
+          message = "Password should be at least 6 characters";
+          break;
+        default:
+          message = error.message;
+      }
 
-        <Pressable
-          className="mt-10"
-          onPress={() => router.push("/(auth)/signInScreen")}
-        >
-          <Text className="font-poppins-semiBold text-center">
+      Toast.show({
+        type: "error",
+        text1: "Signup Failed",
+        text2: message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setPasswordMatch(validatePasswords(password, confirmPassword));
+  }, [password, confirmPassword]);
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={{
+        flex: 1,
+        backgroundColor: "#fff",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+      }}
+    >
+      <Animated.View
+        entering={FadeInUp.duration(500)}
+        style={{ width: "100%", maxWidth: 360, alignItems: "center" }}
+      >
+        <FontAwesome6
+          name="brain"
+          size={42}
+          color="#4169E1"
+          style={{ marginBottom: 28 }}
+        />
+
+        <Text className="text-primary text-center font-poppins-semiBold text-3xl mb-2">
+          {Strings.login.createAccountHeading}
+        </Text>
+
+        <Text className="text-center font-poppins-semiBold text-base text-muted mb-10">
+          {Strings.login.createAccountSubHeading}
+        </Text>
+
+        <TextBox
+          method="email"
+          placeholder={Strings.login.emailPlaceholder}
+          value={email}
+          onChangeText={setEmail}
+          secureTextEntry={false}
+          borderColor
+          setValue={setEmail}
+        />
+
+        <View style={{ height: 18 }} />
+
+        <TextBox
+          method="password"
+          placeholder={Strings.login.passwordPlaceholder}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          borderColor={password.length === 0 || isPasswordMatch}
+          errorText={
+            password.length > 0 && !isPasswordMatch
+              ? "Passwords do not match"
+              : undefined
+          }
+          setValue={setPassword}
+        />
+
+        <View style={{ height: 18 }} />
+
+        <TextBox
+          method="confirm"
+          placeholder={Strings.login.confirmPasswordPlaceholder}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          borderColor={confirmPassword.length === 0 || isPasswordMatch}
+          errorText={
+            confirmPassword.length > 0 && !isPasswordMatch
+              ? "Passwords do not match"
+              : undefined
+          }
+          setValue={setConfirmPassword}
+        />
+
+        <Button
+          onPress={handleSignUp}
+          title={Strings.login.signUpButton}
+          fullWidth
+          disabled={loading}
+          loading={loading}
+          style={{
+            marginTop: 30,
+            marginBottom: 14,
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        />
+
+        <Pressable onPress={() => router.push("/(auth)/signInScreen")}>
+          <Text
+            className="font-poppins-semiBold text-center text-primary"
+            style={{ textDecorationLine: "underline", marginBottom: 18 }}
+          >
             {Strings.login.accountExists}
           </Text>
         </Pressable>
 
-        <View className=" mt-10">
-          <Text className="text-center font-poppins-semiBold font-black text-primary">
-            {Strings.login.continue}
-          </Text>
-        </View>
+        <Text
+          style={{ color: "#9EADD9", fontWeight: "600", marginVertical: 12 }}
+        >
+          or
+        </Text>
 
-        <Pressable className="justify-center items-center mt-10">
-          <GoogleBtn width={90} />
+        <Pressable style={{ width: "100%" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              paddingVertical: 12,
+              backgroundColor: "#fff",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
+            <FontAwesome6
+              name="google"
+              size={18}
+              color="#EA4335"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={{ color: "#222", fontWeight: "500", fontSize: 15 }}>
+              Continue with Google
+            </Text>
+          </View>
         </Pressable>
-      </View>
-    );
-}
- 
+      </Animated.View>
+    </KeyboardAvoidingView>
+  );
+};
+
 export default SignUpScreen;
