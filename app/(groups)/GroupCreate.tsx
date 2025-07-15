@@ -25,7 +25,8 @@ interface GroupImagesProp {
 }
 
 const GroupCreate = () => {
-  const { groupCreating, createGroup, groupCreated, groupID, setGroupCreated } = useGroupContext();
+  const { groupCreating, createGroup, groupCreated, groupID, setGroupCreated } =
+    useGroupContext();
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -34,6 +35,8 @@ const GroupCreate = () => {
   const [category, setCategory] = useState("");
   const [grade, setGrade] = useState("");
   const [onboardingText, setOnboardingText] = useState("");
+  const [onboardingRules, setOnboardingRules] = useState<string[]>([]);
+  const [newRule, setNewRule] = useState("");
   const [hasGroupNameErrors, setHasGroupNameErrors] = useState(false);
   const [hasGroupDescriptionErrors, setHasGroupDescriptionErrors] =
     useState(false);
@@ -55,11 +58,10 @@ const GroupCreate = () => {
     { label: "Grade 11", value: "Grade 11" },
   ];
 
-  const privacyOptions =[
-    {label: "Private", value: "Private"},
-    {label: "Public", value: "Public"},
-  ]
-
+  const privacyOptions = [
+    { label: "Private", value: "Private" },
+    { label: "Public", value: "Public" },
+  ];
 
   const router = useRouter();
 
@@ -69,7 +71,8 @@ const GroupCreate = () => {
     category &&
     grade &&
     onboardingText &&
-    selectedImage;
+    selectedImage &&
+    onboardingRules.length > 0;
 
   useEffect(() => {
     if (groupNameTouched) {
@@ -83,6 +86,16 @@ const GroupCreate = () => {
     }
   }, [groupDescription, groupDescriptionTouched]);
 
+  const handleAddRule = () => {
+    if (newRule.trim().length > 0) {
+      setOnboardingRules([...onboardingRules, newRule.trim()]);
+      setNewRule("");
+    }
+  };
+  const handleRemoveRule = (idx: number) => {
+    setOnboardingRules(onboardingRules.filter((_, i) => i !== idx));
+  };
+
   const handleSubmit = () => {
     setSubmitted(true);
     if (
@@ -92,7 +105,8 @@ const GroupCreate = () => {
       !grade ||
       !onboardingText ||
       !selectedImage ||
-      !privacy
+      !privacy ||
+      onboardingRules.length === 0
     ) {
       return;
     }
@@ -103,7 +117,8 @@ const GroupCreate = () => {
       category,
       grade,
       onboardingText,
-      privacy === "Private" ? true : false
+      privacy === "Private" ? true : false,
+      onboardingRules
     );
   };
 
@@ -302,6 +317,68 @@ const GroupCreate = () => {
           borderColor: onboardingText.length > 0 ? "#4CAF50" : undefined,
         }}
       />
+      {/* Onboarding Rules Input */}
+      <View style={{ width: "100%", marginTop: 18 }}>
+        <Text
+          style={{
+            fontFamily: "Poppins-SemiBold",
+            fontSize: 16,
+            marginBottom: 6,
+          }}
+        >
+          Group Rules
+        </Text>
+        {onboardingRules.map((rule, idx) => (
+          <View
+            key={idx}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 4,
+            }}
+          >
+            <Text style={{ flex: 1, color: "#374151", fontSize: 15 }}>
+              {idx + 1}. {rule}
+            </Text>
+            <Pressable
+              onPress={() => handleRemoveRule(idx)}
+              style={{ marginLeft: 8 }}
+            >
+              <Text style={{ color: "#ef4444", fontSize: 15 }}>Remove</Text>
+            </Pressable>
+          </View>
+        ))}
+        <View
+          style={{ flexDirection: "row", alignItems: "center", marginTop: 6 }}
+        >
+          <TextBox
+            placeholder="Add a rule..."
+            value={newRule}
+            onChangeText={setNewRule}
+            style={{ flex: 1, marginRight: 8 }}
+          />
+          <Button
+            title="Add"
+            onPress={handleAddRule}
+            disabled={newRule.trim().length === 0}
+            style={{ paddingHorizontal: 12, height: 40 }}
+            textStyle={{ fontSize: 15 }}
+          />
+        </View>
+        {submitted && onboardingRules.length === 0 && (
+          <Text
+            style={{
+              color: "#ef4444",
+              fontSize: 13,
+              marginTop: 4,
+              marginLeft: 2,
+              fontFamily: "Poppins-SemiBold",
+            }}
+          >
+            At least one rule is required
+          </Text>
+        )}
+      </View>
       {/* Create Group Button */}
       <Button
         onPress={handleSubmit}

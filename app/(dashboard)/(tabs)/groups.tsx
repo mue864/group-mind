@@ -107,12 +107,14 @@ const Groups = () => {
         name={item.name}
         imageUrl={item.imageUrl}
         groupType={item.createdBy}
+        canJoin={activeTab === "all"}
+        isPrivate={item.isPrivate}
       />
     </View>
   );
 
   const renderEmptyState = () => (
-    <View className="flex-1 justify-center items-center px-8 py-16">
+    <View className="flex-1 justify-center items-center px-8 py-16 bg-white">
       <View className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-8 border border-blue-100">
         <View className="items-center">
           <View className="w-20 h-20 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full items-center justify-center mb-4">
@@ -121,7 +123,7 @@ const Groups = () => {
                 activeTab === "joined" ? "people-outline" : "search-outline"
               }
               size={40}
-              color="white"
+              color="blue"
             />
           </View>
           <Text className="font-bold text-gray-800 text-xl text-center mb-2">
@@ -302,6 +304,8 @@ const Groups = () => {
               renderItem={renderGroupCard}
               ListEmptyComponent={renderEmptyState}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={2}
+              maxToRenderPerBatch={5}
               numColumns={1}
               key={activeTab} // Force re-render when tab changes
             />

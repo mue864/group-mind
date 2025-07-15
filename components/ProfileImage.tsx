@@ -16,6 +16,7 @@ const ProfileImage = ({ imageLocation, size = 150 }: ImageLocationProps) => {
     avatar7: require("@/assets/images/avatars/avatar7.webp"),
     avatar8: require("@/assets/images/avatars/avatar8.webp"),
     avatar9: require("@/assets/images/avatars/avatar9.webp"),
+    avatar10: require("@/assets/images/avatars/avatar10.webp"),
   };
   return (
     <Image

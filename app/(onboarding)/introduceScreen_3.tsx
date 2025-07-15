@@ -4,8 +4,7 @@ import WebCam from "@/assets/icons/webcam.svg";
 import MiniButton from "@/components/MiniButton";
 import PaginationDots from "@/components/PaginationDots";
 import { Colors, Strings } from "@/constants";
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Dimensions, StatusBar, Text, View } from "react-native";
 import Animated, {
   Extrapolate,
@@ -17,9 +16,17 @@ import Animated, {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const IntroduceScreen_3 = () => {
-  const router = useRouter();
+type IntroduceScreen3Props = {
+  isActive: boolean;
+  onNext: () => void;
+  onBack: () => void;
+};
 
+const IntroduceScreen_3 = ({
+  isActive,
+  onNext,
+  onBack,
+}: IntroduceScreen3Props) => {
   // Animation values
   const bgProgress = useSharedValue(0);
   const iconProgress = useSharedValue(0);
@@ -27,17 +34,25 @@ const IntroduceScreen_3 = () => {
   const buttonProgress = useSharedValue(0);
 
   useEffect(() => {
-    bgProgress.value = withTiming(1, { duration: 600 });
-    setTimeout(() => {
-      iconProgress.value = withTiming(1, { duration: 500 });
-    }, 200);
-    setTimeout(() => {
-      textProgress.value = withTiming(1, { duration: 500 });
-    }, 400);
-    setTimeout(() => {
-      buttonProgress.value = withTiming(1, { duration: 500 });
-    }, 600);
-  }, []);
+    if (isActive) {
+      bgProgress.value = withTiming(1, { duration: 600 });
+      setTimeout(() => {
+        iconProgress.value = withTiming(1, { duration: 500 });
+      }, 200);
+      setTimeout(() => {
+        textProgress.value = withTiming(1, { duration: 500 });
+      }, 400);
+      setTimeout(() => {
+        buttonProgress.value = withTiming(1, { duration: 500 });
+      }, 600);
+    } else {
+      // Reset for when not active
+      bgProgress.value = 0;
+      iconProgress.value = 0;
+      textProgress.value = 0;
+      buttonProgress.value = 0;
+    }
+  }, [isActive]);
 
   // Background animations
   const rectAnimatedStyle = useAnimatedStyle(() => {
@@ -137,13 +152,6 @@ const IntroduceScreen_3 = () => {
     };
   });
 
-  const handleNext = () => {
-    router.push("/(onboarding)/introduceScreen_4");
-  };
-  const handleBack = () => {
-    router.push("/(onboarding)/introduceScreen_2");
-  };
-
   return (
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
@@ -216,11 +224,11 @@ const IntroduceScreen_3 = () => {
         style={buttonAnimatedStyle}
       >
         <View className="flex-row items-end w-full justify-between pb-4">
-          <MiniButton onPress={handleBack} direction="left" />
+          <MiniButton onPress={onBack} direction="left" />
           <View className="flex-1 pb-5 items-center">
             <PaginationDots total={4} currentIndex={2} />
           </View>
-          <MiniButton onPress={handleNext} direction="right" />
+          <MiniButton onPress={onNext} direction="right" />
         </View>
       </Animated.View>
     </View>

@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import Toast from "react-native-toast-message";
+import { StatusBar } from "expo-status-bar";
 
 const SignInScreen = () => {
   const router = useRouter();
@@ -68,6 +69,7 @@ const SignInScreen = () => {
         paddingHorizontal: 20,
       }}
     >
+      <StatusBar style="dark" backgroundColor="#F8FAFF" translucent={false} />
       <Animated.View
         entering={FadeInUp.duration(500)}
         style={{ width: "100%", maxWidth: 360, alignItems: "center" }}

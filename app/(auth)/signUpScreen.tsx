@@ -158,47 +158,38 @@ const SignUpScreen = () => {
         </Text>
 
         <TextBox
-          method="email"
           placeholder={Strings.login.emailPlaceholder}
           value={email}
           onChangeText={setEmail}
           secureTextEntry={false}
-          borderColor
-          setValue={setEmail}
         />
 
         <View style={{ height: 18 }} />
 
         <TextBox
-          method="password"
           placeholder={Strings.login.passwordPlaceholder}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          borderColor={password.length === 0 || isPasswordMatch}
           errorText={
             password.length > 0 && !isPasswordMatch
               ? "Passwords do not match"
               : undefined
           }
-          setValue={setPassword}
         />
 
         <View style={{ height: 18 }} />
 
         <TextBox
-          method="confirm"
           placeholder={Strings.login.confirmPasswordPlaceholder}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
-          borderColor={confirmPassword.length === 0 || isPasswordMatch}
           errorText={
             confirmPassword.length > 0 && !isPasswordMatch
               ? "Passwords do not match"
               : undefined
           }
-          setValue={setConfirmPassword}
         />
 
         <Button

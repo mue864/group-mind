@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
   Modal,
+  Pressable,
   ScrollView,
   StatusBar,
   Text,
@@ -568,22 +569,26 @@ const GroupSettings = () => {
               )}
             </View>
             {/* Action button */}
-            {!isSelf && (
-              <TouchableOpacity
-                className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center border border-gray-200"
-                onPress={() => {
-                  setSelectedUser(userId);
-                  setMenuOptions(buildMenuOptions(userId, role));
-                  setMenuVisible(true);
-                }}
-              >
-                <Ionicons
-                  name="ellipsis-horizontal"
-                  size={16}
-                  color="#6B7280"
-                />
-              </TouchableOpacity>
-            )}
+            {!isSelf &&
+              (currentRole === "admins" ||
+                currentRole === "moderators" ||
+                currentRole === "groupOwner") && (
+                <Pressable
+                  onPress={() => {
+                    setSelectedUser(userId);
+                    setMenuOptions(buildMenuOptions(userId, role));
+                    setMenuVisible(true);
+                  }}
+                  style={{ padding: 8, marginLeft: 8 }}
+                  accessibilityLabel="Open member actions menu"
+                >
+                  <Ionicons
+                    name="ellipsis-horizontal-circle"
+                    size={22}
+                    color="#6B7280"
+                  />
+                </Pressable>
+              )}
           </View>
         </View>
       </AnimatedTouchableOpacity>

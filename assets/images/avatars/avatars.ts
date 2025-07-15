@@ -7,6 +7,7 @@ import avatar6 from "./avatar6.webp";
 import avatar7 from "./avatar7.webp";
 import avatar8 from "./avatar8.webp";
 import avatar9 from "./avatar9.webp";
+import avatar10 from "./avatar10.webp";
 
 export default {
     avatar1,
@@ -18,4 +19,5 @@ export default {
     avatar7,
     avatar8,
     avatar9,
+    avatar10,
 }

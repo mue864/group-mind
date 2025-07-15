@@ -22,6 +22,7 @@ const ImageModal = ({
     avatar7: require("@/assets/images/avatars/avatar7.webp"),
     avatar8: require("@/assets/images/avatars/avatar8.webp"),
     avatar9: require("@/assets/images/avatars/avatar9.webp"),
+    avatar10: require("@/assets/images/avatars/avatar10.webp"),
   };
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
 
@@ -60,7 +61,7 @@ const ImageModal = ({
           </View>
 
           <View className="mt-10">
-            <Button buttonText="Continue" onPress={handleContinue} />
+            <Button title="Continue" onPress={handleContinue} />
           </View>
         </View>
       </View>

@@ -226,7 +226,7 @@ const Home = () => {
 
       if (item.type === "qaPostsHeader") {
         return (
-          <View className="mx-4 mt-6">
+          <View className="mx-4 mt-6 mb-5">
             <View className="flex-row items-center justify-between">
               <View>
                 <Text className="font-inter font-bold text-xl text-gray-800">
@@ -239,9 +239,9 @@ const Home = () => {
               {recentQaPosts.length > 0 && (
                 <TouchableOpacity
                   onPress={() => router.push("/(dashboard)/(tabs)/groups")}
-                  className="bg-blue-50 rounded-full px-3 py-1"
+                  className="bg-blue-400 rounded-full px-3 py-1"
                 >
-                  <Text className="text-blue-600 font-inter font-semibold text-sm">
+                  <Text className="text-white font-inter  text-sm ">
                     View All
                   </Text>
                 </TouchableOpacity>
@@ -303,7 +303,7 @@ const Home = () => {
 
       if (item.type === "suggestedHeader") {
         return (
-          <View className="mx-4">
+          <View className="mx-4 mb-4">
             <Text className="font-inter font-bold text-xl mt-3">
               Groups You May be Interested In
             </Text>
@@ -345,14 +345,13 @@ const Home = () => {
       return null;
     },
     [
-      scheduledGroups,
       renderScheduledCard,
       renderScheduledCardDots,
-      suggestedGroups,
       userID,
       handleUserScroll,
       router,
       recentQaPosts,
+      scheduledGroups
     ]
   );
 
@@ -438,8 +437,8 @@ const Home = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderMainContent}
           removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          initialNumToRender={5}
+          maxToRenderPerBatch={5}
+          initialNumToRender={3}
           windowSize={5}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: 100}}

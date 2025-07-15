@@ -107,7 +107,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
       if (!isSendingJoinRequest) {
         // Group ID for navigation
         router.push({
-          pathname: "/(groups)/[groupId]",
+          pathname: "/(group_onboarding)/[groupId]",
           params: {
             groupId: group.id,
             groupName: group.name,
@@ -118,7 +118,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
       joinGroup(group.id);
       if (!isJoining) {
         router.push({
-          pathname: "/(groups)/[groupId]",
+          pathname: "/(group_onboarding)/[groupId]",
           params: {
             groupId: group.id,
             groupName: group.name,
@@ -236,7 +236,9 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
           </View>
           {/* Action Section */}
           <View className="flex-row items-center justify-between pt-4 border-t border-gray-100">
-            <View className="flex-row items-center">
+            <View
+              className={`${showConfirm ? "hidden" : "flex-row items-center"}`}
+            >
               <View className="flex-row items-center">
                 <View className="w-8 h-8 bg-green-100 rounded-full items-center justify-center mr-3">
                   <Ionicons name="school" size={16} color="#22c55e" />
@@ -249,30 +251,32 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
             {/* Group Button or Confirmation UI */}
             <View className="flex-row items-center">
               {showConfirm ? (
-                <View className="w-full -mx-10 bg-white rounded-xl border border-blue-200 px-4 py-5 shadow-md flex-col items-center justify-center">
-                  <Text className="font-bold text-base mb-1 text-center">
-                    {confirmTitle}
-                  </Text>
-                  <Text className="text-gray-700 text-sm mb-4 text-center">
-                    {confirmMessage}
-                  </Text>
-                  <View className="flex-row justify-center items-center gap-3">
-                    <TouchableOpacity
-                      onPress={handleConfirm}
-                      className="bg-blue-500 rounded-lg px-4 py-2 mx-2"
-                    >
-                      <Text className="text-white font-semibold text-sm">
-                        {confirmButtonText}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={handleCancel}
-                      className="bg-gray-100 rounded-lg px-4 py-2 mx-2"
-                    >
-                      <Text className="text-gray-700 font-semibold text-sm">
-                        Cancel
-                      </Text>
-                    </TouchableOpacity>
+                <View className="flex-1 justify-center items-center">
+                  <View className="bg-white rounded-xl border border-blue-200 px-4 py-5 shadow-md w-80 max-w-xs flex-col items-center justify-center -mx-10">
+                    <Text className="font-bold text-base mb-1 text-center">
+                      {confirmTitle}
+                    </Text>
+                    <Text className="text-gray-700 text-sm mb-4 text-center">
+                      {confirmMessage}
+                    </Text>
+                    <View className="flex-row justify-center items-center gap-3">
+                      <TouchableOpacity
+                        onPress={handleConfirm}
+                        className="bg-blue-500 rounded-lg px-4 py-2 mx-2"
+                      >
+                        <Text className="text-white font-semibold text-sm">
+                          {confirmButtonText}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={handleCancel}
+                        className="bg-gray-100 rounded-lg px-4 py-2 mx-2"
+                      >
+                        <Text className="text-gray-700 font-semibold text-sm">
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               ) : (
@@ -280,24 +284,17 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
                   onPress={handleJoinPress}
                   activeOpacity={0.85}
                 >
-                  <LinearGradient
-                    colors={getGroupTypeColor()}
-                    className="rounded-full px-5 py-3"
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    <View className="flex-row items-center">
-                      <Ionicons
-                        name="add"
-                        size={16}
-                        color="white"
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text className="text-white font-bold text-sm">
-                        {buttonText}
-                      </Text>
-                    </View>
-                  </LinearGradient>
+                  <View className="bg-blue-500 rounded-full px-5 py-3 flex-row items-center">
+                    <Ionicons
+                      name="add"
+                      size={16}
+                      color="white"
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text className="text-white font-bold text-sm">
+                      {buttonText}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               )}
             </View>

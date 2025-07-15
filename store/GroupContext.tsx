@@ -108,7 +108,8 @@ interface GroupContextType {
     category: string,
     maxGradeLevel: string,
     onboardingText: string,
-    isPrivate: boolean
+    isPrivate: boolean,
+    onboardingRules: string[] // NEW
   ) => Promise<void>;
   sendQaPost: (
     groupId: string,
@@ -159,6 +160,15 @@ interface GroupContextType {
   userInformation: UserInfo | null;
   qaPostID: string;
   groupID: string;
+  getCurrentUserInfo: () => Promise<void>;
+  setGroupOnboardingCompleted: (
+    userId: string,
+    groupId: string
+  ) => Promise<void>;
+  checkGroupOnboardingCompleted: (
+    userId: string,
+    groupId: string
+  ) => Promise<boolean>;
 }
 
 interface UserInfo {
@@ -551,7 +561,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     category: string,
     maxGradeLevel: string,
     onboardingText: string,
-    isPrivate: boolean
+    isPrivate: boolean,
+    onboardingRules: string[] // NEW
   ) => {
     try {
       setGroupCreating(true);
@@ -563,6 +574,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         category,
         imageUrl,
         onboardingText,
+        onboardingRules, // NEW
         maxGradeLevel,
         members: [user?.uid],
         admins: [user?.uid],
@@ -953,6 +965,25 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Utility to set onboardingCompleted for a user in a group
+  const setGroupOnboardingCompleted = async (
+    userId: string,
+    groupId: string
+  ) => {
+    const membershipRef = firestoreDoc(db, "users", userId, "groups", groupId);
+    await setDoc(membershipRef, { onboardingCompleted: true }, { merge: true });
+  };
+
+  // Utility to check onboardingCompleted for a user in a group
+  const checkGroupOnboardingCompleted = async (
+    userId: string,
+    groupId: string
+  ) => {
+    const membershipRef = firestoreDoc(db, "users", userId, "groups", groupId);
+    const docSnap = await getDoc(membershipRef);
+    return docSnap.exists() && docSnap.data().onboardingCompleted === true;
+  };
+
   return (
     <GroupContext.Provider
       value={{
@@ -991,6 +1022,9 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         setGroupCreated,
         isJoining,
         isSendingJoinRequest,
+        getCurrentUserInfo, // <-- add this
+        setGroupOnboardingCompleted,
+        checkGroupOnboardingCompleted,
       }}
     >
       {children}

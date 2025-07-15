@@ -2,10 +2,8 @@ import Check from "@/assets/icons/chat-check.svg";
 import Elipse from "@/assets/icons/introduceEllipse.svg";
 import Rect from "@/assets/icons/introduceRect.svg";
 import MiniButton from "@/components/MiniButton";
-import PaginationDots from "@/components/PaginationDots";
 import { Colors, Strings } from "@/constants";
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Dimensions, StatusBar, Text, View } from "react-native";
 import Animated, {
   Extrapolate,
@@ -17,9 +15,17 @@ import Animated, {
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const IntroduceScreen_1 = () => {
-  const router = useRouter();
+type IntroduceScreen1Props = {
+  isActive: boolean;
+  onNext: () => void;
+  onBack: () => void;
+};
 
+const IntroduceScreen_1 = ({
+  isActive,
+  onNext,
+  onBack,
+}: IntroduceScreen1Props) => {
   // Animation values
   const bgProgress = useSharedValue(0);
   const iconProgress = useSharedValue(0);
@@ -28,17 +34,25 @@ const IntroduceScreen_1 = () => {
 
   // Animate on mount
   useEffect(() => {
-    bgProgress.value = withTiming(1, { duration: 600 });
-    setTimeout(() => {
-      iconProgress.value = withTiming(1, { duration: 500 });
-    }, 200);
-    setTimeout(() => {
-      textProgress.value = withTiming(1, { duration: 500 });
-    }, 400);
-    setTimeout(() => {
-      buttonProgress.value = withTiming(1, { duration: 500 });
-    }, 600);
-  }, []);
+    if (isActive) {
+      bgProgress.value = withTiming(1, { duration: 600 });
+      setTimeout(() => {
+        iconProgress.value = withTiming(1, { duration: 500 });
+      }, 200);
+      setTimeout(() => {
+        textProgress.value = withTiming(1, { duration: 500 });
+      }, 400);
+      setTimeout(() => {
+        buttonProgress.value = withTiming(1, { duration: 500 });
+      }, 600);
+    } else {
+      // Reset for when not active
+      bgProgress.value = 0;
+      iconProgress.value = 0;
+      textProgress.value = 0;
+      buttonProgress.value = 0;
+    }
+  }, [isActive]);
 
   // Background animations
   const rectAnimatedStyle = useAnimatedStyle(() => {
@@ -138,10 +152,6 @@ const IntroduceScreen_1 = () => {
     };
   });
 
-  const handleNext = () => {
-    router.push("/(onboarding)/introduceScreen_2");
-  };
-
   return (
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
@@ -214,8 +224,7 @@ const IntroduceScreen_1 = () => {
         style={buttonAnimatedStyle}
       >
         <View className="flex-row items-end w-full pb-4">
-          
-          <MiniButton onPress={handleNext} direction="right" />
+          <MiniButton onPress={onNext} direction="right" />
         </View>
       </Animated.View>
     </View>

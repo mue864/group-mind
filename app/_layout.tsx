@@ -67,7 +67,11 @@ const RootLayout = () => {
             {/* Wrap everything in a view that sets the background color */}
             <View className="flex-1 ">
               {/* Place StatusBar OUTSIDE SafeAreaView */}
-              <StatusBar style="dark" translucent />
+              <StatusBar
+                style="dark"
+                backgroundColor="#F8FAFF"
+                translucent={false}
+              />
 
               <SafeAreaView className="flex-1">
                 <View onLayout={onLayoutRootView} className="flex-1">
