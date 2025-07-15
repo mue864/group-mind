@@ -92,8 +92,7 @@ class AgoraService {
   private constructor() {
     // Initialize in debug mode if in development
     if (__DEV__) {
-      console.log("AgoraService: Initializing in debug mode");
-      console.log("AgoraService: App ID configured:", this.APP_ID);
+      // Initializing in debug mode
     }
   }
 
@@ -116,12 +115,12 @@ class AgoraService {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log("AgoraService: Already initialized, skipping...");
+      // Already initialized, skipping
       return;
     }
 
     try {
-      console.log("AgoraService: Creating RTC engine...");
+      // Creating RTC engine
 
       // Create RTC engine instance
       this.engine = createAgoraRtcEngine();
@@ -139,7 +138,7 @@ class AgoraService {
       this.engine.startPreview();
 
       this.isInitialized = true;
-      console.log("AgoraService: Engine initialized successfully");
+      // Engine initialized successfully
     } catch (error) {
       console.error("AgoraService: Failed to initialize engine:", error);
       throw error;
@@ -156,7 +155,7 @@ class AgoraService {
       return;
     }
 
-    console.log("AgoraService: Setting up event handlers...");
+    // Setting up event handlers
 
     this.eventHandler = {
       /**
@@ -271,7 +270,7 @@ class AgoraService {
 
     // Register the event handler with the engine
     this.engine.registerEventHandler(this.eventHandler);
-    console.log("AgoraService: Event handlers registered successfully");
+    // Event handlers registered successfully
   }
 
   /**
@@ -288,12 +287,12 @@ class AgoraService {
     uid?: number
   ): Promise<void> {
     if (!this.engine || !this.isInitialized) {
-      console.log("AgoraService: Engine not initialized, initializing now...");
+      // Engine not initialized, initializing now
       await this.initialize();
     }
 
     try {
-      console.log("AgoraService: Joining channel:", channel);
+      // Joining channel
 
       // Join the channel with specified configuration
       this.engine?.joinChannel(token || "", channel, uid || 0, {
@@ -305,7 +304,7 @@ class AgoraService {
         autoSubscribeVideo: true,
       });
 
-      console.log("AgoraService: Join channel request sent successfully");
+      // Join channel request sent successfully
     } catch (error) {
       console.error("AgoraService: Failed to join channel:", error);
       throw error;

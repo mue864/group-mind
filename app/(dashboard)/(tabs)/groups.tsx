@@ -229,9 +229,9 @@ const Groups = () => {
           onStateChange={onStateChange}
           onPress={() => {
             if (open) {
-              console.log("Open");
+              // FAB opened
             } else {
-              console.log("Closed");
+              // FAB closed
             }
           }}
         />

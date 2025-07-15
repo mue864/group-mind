@@ -63,28 +63,20 @@ export const PermissionTest: React.FC = () => {
     setTestResults((prev) => ({ ...prev, directMedia: "Testing..." }));
 
     try {
-      console.log("Testing direct media access...");
+      // Testing direct media access
 
       // Test audio only
       const audioStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
-      console.log(
-        "Audio access successful:",
-        audioStream.getAudioTracks().length,
-        "tracks"
-      );
+      // Audio access successful
       audioStream.getTracks().forEach((track) => track.stop());
 
       // Test video only
       const videoStream = await navigator.mediaDevices.getUserMedia({
         video: true,
       });
-      console.log(
-        "Video access successful:",
-        videoStream.getVideoTracks().length,
-        "tracks"
-      );
+      // Video access successful
       videoStream.getTracks().forEach((track) => track.stop());
 
       // Test both
@@ -92,10 +84,7 @@ export const PermissionTest: React.FC = () => {
         audio: true,
         video: true,
       });
-      console.log("Both access successful:", {
-        audio: bothStream.getAudioTracks().length,
-        video: bothStream.getVideoTracks().length,
-      });
+      // Both audio and video access successful
       bothStream.getTracks().forEach((track) => track.stop());
 
       setTestResults((prev) => ({
@@ -117,7 +106,7 @@ export const PermissionTest: React.FC = () => {
     setTestResults((prev) => ({ ...prev, webrtcService: "Testing..." }));
 
     try {
-      console.log("Testing WebRTC service...");
+      // Testing WebRTC service
 
       // Test the service directly
       const stream = await webrtcService.initializeCall(
@@ -129,10 +118,7 @@ export const PermissionTest: React.FC = () => {
         "video"
       );
 
-      console.log("WebRTC service test successful:", {
-        audioTracks: stream.getAudioTracks().length,
-        videoTracks: stream.getVideoTracks().length,
-      });
+      // WebRTC service test successful
 
       // Clean up
       stream.getTracks().forEach((track) => track.stop());
@@ -173,9 +159,6 @@ export const PermissionTest: React.FC = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Permission Test Tool</Text>
-      <Text style={styles.subtitle}>
-        Use this to debug camera/microphone issues
-      </Text>
 
       <View className="space-y-4">
         <TouchableOpacity
@@ -231,28 +214,34 @@ export const PermissionTest: React.FC = () => {
       {/* Test Results */}
       <View className="mt-6 space-y-2">
         <Text className="text-lg font-bold text-gray-800">Test Results:</Text>
-        
+
         {testResults.permissions && (
           <View className="bg-gray-100 p-3 rounded-lg">
-            <Text className="font-semibold text-gray-700">Permission Request:</Text>
+            <Text className="font-semibold text-gray-700">
+              Permission Request:
+            </Text>
             <Text className="text-gray-600">{testResults.permissions}</Text>
           </View>
         )}
-        
+
         {testResults.unified && (
           <View className="bg-gray-100 p-3 rounded-lg">
-            <Text className="font-semibold text-gray-700">Permission Check:</Text>
+            <Text className="font-semibold text-gray-700">
+              Permission Check:
+            </Text>
             <Text className="text-gray-600">{testResults.unified}</Text>
           </View>
         )}
-        
+
         {testResults.directMedia && (
           <View className="bg-gray-100 p-3 rounded-lg">
-            <Text className="font-semibold text-gray-700">Direct Media Access:</Text>
+            <Text className="font-semibold text-gray-700">
+              Direct Media Access:
+            </Text>
             <Text className="text-gray-600">{testResults.directMedia}</Text>
           </View>
         )}
-        
+
         {testResults.webrtcService && (
           <View className="bg-gray-100 p-3 rounded-lg">
             <Text className="font-semibold text-gray-700">WebRTC Service:</Text>

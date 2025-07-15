@@ -1,8 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, Alert } from "react-native";
+import {auth} from "@/services/firebase";
+import { signOut } from "firebase/auth";
 
 const Settings = () => {
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.replace("/(auth)/signInScreen");
+    } catch (err) {
+      Alert.alert("Error", "Unable to sign you out");
+    }
+  }
+
   const settingsOptions = [
     {
       title: "Permission Test",
@@ -22,28 +34,32 @@ const Settings = () => {
       title: "Account",
       description: "Account and security settings",
       icon: "shield-outline",
-      onPress: () => console.log("Account settings"),
+      onPress: () =>
+        Alert.alert("In progress", "Still under maintainance, usatye"),
       color: "#F59E0B",
     },
     {
       title: "Notifications",
       description: "Manage notification preferences",
       icon: "notifications-outline",
-      onPress: () => console.log("Notifications"),
+      onPress: () =>
+        Alert.alert("Chimbomira", "Still under maintainance, usatye"),
       color: "#EF4444",
     },
     {
       title: "Privacy",
       description: "Privacy and data settings",
       icon: "lock-closed-outline",
-      onPress: () => console.log("Privacy"),
+      onPress: () =>
+        Alert.alert("In progress", "Still under maintainance, usatye"),
       color: "#8B5CF6",
     },
     {
       title: "Help & Support",
       description: "Get help and contact support",
       icon: "help-circle-outline",
-      onPress: () => console.log("Help"),
+      onPress: () =>
+        Alert.alert("No help is coming", "Still under maintainance, usatye"),
       color: "#06B6D4",
     },
   ];
@@ -56,7 +72,7 @@ const Settings = () => {
       </View>
 
       <ScrollView className="flex-1 px-4 pt-4">
-        <View className="space-y-3">
+        <View className="gap-3">
           {settingsOptions.map((option, index) => (
             <TouchableOpacity
               key={index}
@@ -87,7 +103,7 @@ const Settings = () => {
 
         <View className="py-6">
           <TouchableOpacity
-            onPress={() => console.log("Sign out")}
+            onPress={handleSignOut}
             className="bg-red-500 p-4 rounded-xl"
             activeOpacity={0.7}
           >

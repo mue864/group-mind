@@ -3,10 +3,11 @@ import Chat from "@/assets/icons/chat.svg";
 import QApostCard from "@/components/QApostCard";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
 import { FAB, Portal, Provider } from "react-native-paper";
@@ -15,7 +16,7 @@ export type QaPost = {
   id: string;
   message: string;
   timeSent: Timestamp;
-  responseFrom?: [];
+  responseFrom: [];
   responseTo: [];
   isAnswered?: boolean;
   type: string;
@@ -55,7 +56,7 @@ function GroupQA() {
         if (cachedQaGroups) {
           setPosts(JSON.parse(cachedQaGroups));
         } else {
-          console.log("no data");
+          // No cached data available
         }
       } catch (error) {
         console.error("Error fetching local data:", error);
@@ -66,10 +67,9 @@ function GroupQA() {
       try {
         const cachedLocalData = await AsyncStorage.getItem(`local-${groupId}`);
         if (cachedLocalData) {
-          console.log("cached messages: ", JSON.parse(cachedLocalData));
           setMessagesById(JSON.parse(cachedLocalData));
         } else {
-          console.log("Unable to fetch data");
+          // No cached messages available
         }
       } catch (error) {
         console.error("There has been an error in fetching messages: ", error);
@@ -82,7 +82,7 @@ function GroupQA() {
         if (cachedGroupName) {
           setLocalGroupName(cachedGroupName);
         } else {
-          console.log("no group name");
+          // No cached group name available
         }
       } catch (error) {
         console.error("Error fetching group name: ", error);
@@ -161,7 +161,6 @@ function GroupQA() {
     const saveGroupName = async () => {
       try {
         await AsyncStorage.setItem("groupName", groupName.toString()); // change this logic with time
-        console.log("GroupName: ", groupName)
       } catch (error) {
         console.error("Unable to save group name", error);
       }
@@ -171,17 +170,16 @@ function GroupQA() {
 
   useEffect(() => {
     if (!groupId) return;
-    
-    const saveGroupID = async() => {
+
+    const saveGroupID = async () => {
       try {
         await AsyncStorage.setItem("groupID", groupId.toString());
       } catch (error) {
         console.error("Unable to save group ID", error);
       }
-    }
+    };
     saveGroupID();
   }, [groupId]);
-  
 
   // const local and cloud data comparison
   function compareData(localData: QaPost[], cloudData: QaPost[]) {
@@ -217,10 +215,9 @@ function GroupQA() {
         JSON.stringify(onlineMessages)
       );
     } catch (error) {
-      console.log("Unable to save messages", error);
+      console.error("Unable to save messages", error);
     }
   };
-
 
   // caching post data
   const localSaveData = async (groupId: string, postData: QaPost[]) => {
@@ -241,7 +238,7 @@ function GroupQA() {
   }, [posts]);
 
   const renderPosts = useCallback(
-    ({ item }) => (
+    ({ item }: { item: QaPost }) => (
       <View>
         <QApostCard
           post={item.message}
@@ -253,7 +250,7 @@ function GroupQA() {
         />
       </View>
     ),
-    []
+    [groupId]
   );
 
   return (
@@ -261,6 +258,7 @@ function GroupQA() {
       <Portal>
         <FAB.Group
           open={open}
+          visible={true}
           icon={open ? "close" : () => <Chat width={25} height={25} />}
           color="#fff"
           label="Post Question"
@@ -278,7 +276,7 @@ function GroupQA() {
             if (!open) {
               setOpen(true);
             } else {
-              console.log("Pressed");
+              // FAB closed
             }
           }}
           style={{
@@ -300,11 +298,18 @@ function GroupQA() {
               <Back />
             </TouchableOpacity>
 
-              <Text className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">
-                {/* Group Name issue */}
-                {!groupName ? localGroupName : groupName}
-              </Text>
+            <Text className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">
+              {/* Group Name issue */}
+              {!groupName ? localGroupName : groupName}
+            </Text>
 
+            <TouchableOpacity
+              onPress={() =>
+                router.push(`/(settings)/(group_settings)/${groupId}`)
+              }
+            >
+              <Ionicons name="settings-outline" size={30} />
+            </TouchableOpacity>
           </View>
 
           {/* Page Name */}
@@ -315,12 +320,20 @@ function GroupQA() {
           </View>
 
           <View style={{ flex: 1 }}>
-            <FlatList
-              data={sortedPosts}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderPosts}
-              contentContainerStyle={{ paddingBottom: 120 }}
-            />
+            {sortedPosts.length > 0 ? (
+              <FlatList
+                data={sortedPosts}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderPosts}
+                contentContainerStyle={{ paddingBottom: 120 }}
+              />
+            ) : (
+              <View className="flex-1 items-center justify-center">
+                <Text className="font-poppins text-gray-500 ">
+                  No Posts Yet.
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </Portal>

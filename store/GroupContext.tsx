@@ -119,8 +119,7 @@ interface GroupContextType {
     sentBy: string,
     groupName: string,
     isMod: boolean,
-    isAdmin: boolean,
-    postID: string
+    isAdmin: boolean
   ) => Promise<void>;
   responseQaPost: (
     postId: string,
@@ -170,6 +169,7 @@ interface UserInfo {
   joinedGroups: [];
   canExplainToPeople: boolean;
   userID: string;
+  bio?: string;
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
@@ -217,7 +217,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         // data to be compared with the online data
         setSavedLocalData(fixedTimeStamps);
       } catch (error) {
-        console.log("Unable to retrive group data: ", error);
+        console.error("Unable to retrieve group data: ", error);
       }
     };
     retriveLocalData();
@@ -272,7 +272,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
               const validGroups = results.filter((g): g is Group => g !== null); // says g is of type Group and filter out any null values, i.e. groups that don't exist (g !== null)
               compareData(savedLocalData, validGroups);
 
-              console.log("data fetched from web");
               setLoading(false);
             };
             fetchGroups();
@@ -672,6 +671,28 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         helpfulUsers: [],
       };
       await setDoc(responseRef, resposeData);
+
+      // Get the original post to check if the sender is the original poster
+      const parentPostRef = firestoreDoc(
+        db,
+        "groups",
+        groupId.toString(),
+        "qa",
+        postId.toString()
+      );
+      const parentPostDoc = await getDoc(parentPostRef);
+
+      if (parentPostDoc.exists()) {
+        const parentPostData = parentPostDoc.data();
+        const originalPosterId = parentPostData.sentBy;
+
+        // Only add to responseFrom array if the sender is NOT the original poster
+        if (sentBy !== originalPosterId) {
+          await updateDoc(parentPostRef, {
+            responseFrom: arrayUnion(user.uid),
+          });
+        }
+      }
       setQaPostSent(true);
     } catch (error) {
       console.error("An error occured when sending response: ", error);

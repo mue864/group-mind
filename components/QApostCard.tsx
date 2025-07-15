@@ -123,7 +123,7 @@ function QApostCard({
                       hasResponses ? "text-green-600" : "text-gray-500"
                     }`}
                   >
-                    {responseCount} {responseCount === 1 ? "Answer" : "Answers"}
+                    {responseCount} {responseCount <= 1 ? "Answer" : "Answers"}
                   </Text>
                 </View>
               </View>

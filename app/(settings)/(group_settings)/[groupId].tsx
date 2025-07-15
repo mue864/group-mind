@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useMemo, useState } from "react";
@@ -17,7 +16,6 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   interpolate,
-  SlideInRight,
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
@@ -104,9 +102,25 @@ const GroupSettings = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuOptions, setMenuOptions] = useState<MenuOption[]>([]);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+
+  // At the top of your GroupSettings component
+  const handleCloseMenu = () => {
+    setMenuVisible(false);
+    // Add these two lines to reset the state
+    setSelectedUser(null);
+    setMenuOptions([]);
+  };
+
+  // Add this useEffect hook in your GroupSettings component
+  useEffect(() => {
+    // Open the modal only when a user has been selected and there are options to show.
+    if (selectedUser && menuOptions.length > 0) {
+      setMenuVisible(true);
+    }
+  }, [selectedUser, menuOptions]); // This effect runs when these states change
 
   const scrollY = useSharedValue(0);
-
 
   const {
     user,
@@ -135,14 +149,18 @@ const GroupSettings = () => {
       try {
         const groupRef = doc(db, "groups", groupId.toString());
         const groupSnapshot = await getDoc(groupRef);
+
         if (groupSnapshot.exists()) {
           setGroupData({
             ...groupSnapshot.data(),
             id: groupSnapshot.id,
           } as GroupData);
+        } else {
+          setLoadingError("Group not found");
         }
       } catch (error) {
         console.error("Error fetching group:", error);
+        setLoadingError("Failed to load group");
       }
     };
 
@@ -483,7 +501,7 @@ const GroupSettings = () => {
 
   const handleMenuAction = (action: () => void) => {
     action();
-    setMenuVisible(false);
+    handleCloseMenu();
   };
 
   // Animated styles
@@ -515,7 +533,6 @@ const GroupSettings = () => {
           if (!isSelf) {
             setSelectedUser(userId);
             setMenuOptions(buildMenuOptions(userId, role));
-            setMenuVisible(true);
           }
         }}
       >
@@ -644,10 +661,27 @@ const GroupSettings = () => {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
         <View className="bg-white rounded-2xl p-8 shadow-sm">
-          <Ionicons name="hourglass-outline" size={48} color="#6B7280" />
-          <Text className="font-poppins-medium text-gray-600 mt-4">
-            Loading group...
-          </Text>
+          {loadingError ? (
+            <>
+              <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+              <Text className="font-poppins-medium text-red-600 mt-4 text-center">
+                {loadingError}
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                className="mt-4 bg-blue-500 px-6 py-3 rounded-full"
+              >
+                <Text className="font-poppins-medium text-white">Go Back</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Ionicons name="hourglass-outline" size={48} color="#6B7280" />
+              <Text className="font-poppins-medium text-gray-600 mt-4">
+                Loading group...
+              </Text>
+            </>
+          )}
         </View>
       </View>
     );
@@ -769,71 +803,126 @@ const GroupSettings = () => {
       />
 
       {/* Member Actions Menu */}
-      <Modal visible={menuVisible} transparent animationType="fade">
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          onPress={() => setMenuVisible(false)}
-        >
-          <BlurView intensity={20} style={{ flex: 1 }}>
-            <View className="flex-1 justify-end p-6">
-              <Animated.View
-                entering={SlideInRight}
-                className="bg-white rounded-3xl shadow-lg overflow-hidden"
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseMenu}
+        presentationStyle="overFullScreen"
+        statusBarTranslucent={true}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setMenuVisible(false)}
+          >
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 20,
+              }}
+            >
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: 24,
+                  minWidth: 300,
+                  maxWidth: "90%",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 16,
+                  elevation: 12,
+                }}
               >
                 <View className="p-6">
+                  {/* User Info Header */}
                   <View className="flex-row items-center mb-4">
-                    <View className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center mr-3">
-                      <Ionicons
-                        name="person-circle"
-                        size={32}
-                        color="#6B7280"
-                      />
+                    <View className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center mr-3 overflow-hidden">
+                      {selectedUser && userProfiles[selectedUser] ? (
+                        <ProfileImage
+                          imageLocation={
+                            userProfiles[selectedUser].profileImage
+                          }
+                        />
+                      ) : (
+                        <Ionicons
+                          name="person-circle"
+                          size={32}
+                          color="#6B7280"
+                        />
+                      )}
                     </View>
                     <View className="flex-1">
                       <Text className="font-poppins-semiBold text-lg text-gray-900">
                         {selectedUser && getDisplayName(selectedUser)}
                       </Text>
                       <Text className="font-poppins text-sm text-gray-500">
-                        Member
+                        {selectedUser && getUserRole(selectedUser)
+                          ? ROLE_CONFIG[
+                              getUserRole(
+                                selectedUser
+                              ) as keyof typeof ROLE_CONFIG
+                            ]?.label
+                          : "Member"}
                       </Text>
                     </View>
                   </View>
 
-                  {menuOptions.map((option, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => handleMenuAction(option.action)}
-                      className="flex-row items-center py-4 border-b border-gray-100 last:border-b-0"
-                    >
-                      <View
-                        className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                  {/* Menu Options */}
+                  {menuOptions.length > 0 ? (
+                    menuOptions.map((option, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => handleMenuAction(option.action)}
+                        className="flex-row items-center py-4"
                         style={{
-                          backgroundColor: option.destructive
-                            ? "#FEF2F2"
-                            : "#F3F4F6",
+                          borderBottomWidth:
+                            index < menuOptions.length - 1 ? 1 : 0,
+                          borderBottomColor: "#F3F4F6",
                         }}
                       >
-                        <Ionicons
-                          name={option.icon}
-                          size={18}
-                          color={option.destructive ? "#EF4444" : "#6B7280"}
-                        />
-                      </View>
-                      <Text
-                        className="font-poppins-medium text-base"
-                        style={{
-                          color: option.destructive ? "#EF4444" : "#374151",
-                        }}
-                      >
-                        {option.label}
+                        <View
+                          className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                          style={{
+                            backgroundColor: option.destructive
+                              ? "#FEF2F2"
+                              : "#F3F4F6",
+                          }}
+                        >
+                          <Ionicons
+                            name={option.icon as any}
+                            size={18}
+                            color={option.destructive ? "#EF4444" : "#6B7280"}
+                          />
+                        </View>
+                        <Text
+                          className="font-poppins-medium text-base"
+                          style={{
+                            color: option.destructive ? "#EF4444" : "#374151",
+                          }}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View className="py-4 items-center">
+                      <Text className="font-poppins text-gray-500">
+                        No actions available
                       </Text>
-                    </TouchableOpacity>
-                  ))}
+                    </View>
+                  )}
                 </View>
-              </Animated.View>
+              </TouchableOpacity>
             </View>
-          </BlurView>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );

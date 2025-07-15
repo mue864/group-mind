@@ -1,9 +1,9 @@
 /**
  * VideoCall Component
- * 
+ *
  * This component provides a complete video calling interface using Agora's React Native SDK.
  * It handles both audio and video calls with comprehensive controls and participant management.
- * 
+ *
  * Features:
  * - Local and remote video rendering
  * - Audio/video controls (mute, camera toggle, camera switch)
@@ -12,7 +12,7 @@
  * - Call invitation integration
  * - Responsive layout for different screen sizes
  * - Accessibility support
- * 
+ *
  * @author GroupMind Team
  * @version 1.0.0
  */
@@ -41,10 +41,10 @@ const agoraService = AgoraService.getInstance();
  * Props interface for VideoCall component
  */
 interface VideoCallProps {
-  channelName: string;           // Channel name for the call
-  onEndCall: () => void;         // Callback when call ends
-  callType: "audio" | "video";   // Type of call (audio or video)
-  groupName?: string;            // Optional group name for display
+  channelName: string; // Channel name for the call
+  onEndCall: () => void; // Callback when call ends
+  callType: "audio" | "video"; // Type of call (audio or video)
+  groupName?: string; // Optional group name for display
 }
 
 // Get screen dimensions for responsive layout
@@ -52,7 +52,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 /**
  * VideoCall Component - Main video calling interface
- * 
+ *
  * This component renders the complete video calling experience including:
  * - Video streams for all participants
  * - Call controls (mute, video, camera switch, invite, end call)
@@ -67,7 +67,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
 }) => {
   // Get user context for authentication and user info
   const { user, userInformation } = useGroupContext();
-  
+
   // State management for call participants and controls
   const [participants, setParticipants] = useState<CallParticipant[]>([]);
   const [isLocalVideoEnabled, setIsLocalVideoEnabled] = useState(
@@ -89,7 +89,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
   useEffect(() => {
     const initializeCall = async () => {
       try {
-        console.log("VideoCall: Initializing call for channel:", channelName);
+        // Initializing call for channel
         setIsConnecting(true);
 
         // Set up callbacks for participant updates and connection state
@@ -106,7 +106,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
         }
 
         setIsConnecting(false);
-        console.log("VideoCall: Call initialized successfully");
+        // Call initialized successfully
       } catch (error) {
         console.error("VideoCall: Failed to initialize call:", error);
         Alert.alert("Error", "Failed to join the call. Please try again.");
@@ -118,7 +118,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
 
     // Cleanup will be handled by the parent component
     return () => {
-      console.log("VideoCall: Component unmounting");
+      // Component unmounting
     };
   }, [channelName, callType]);
 
@@ -129,8 +129,8 @@ const VideoCall: React.FC<VideoCallProps> = ({
   const handleToggleVideo = async () => {
     try {
       const newState = !isLocalVideoEnabled;
-      console.log("VideoCall: Toggling video:", newState);
-      
+      // Toggling video
+
       await agoraService.enableLocalVideo(newState);
       setIsLocalVideoEnabled(newState);
     } catch (error) {
@@ -145,8 +145,8 @@ const VideoCall: React.FC<VideoCallProps> = ({
   const handleToggleAudio = async () => {
     try {
       const newState = !isLocalAudioEnabled;
-      console.log("VideoCall: Toggling audio:", newState);
-      
+      // Toggling audio
+
       await agoraService.enableLocalAudio(newState);
       setIsLocalAudioEnabled(newState);
     } catch (error) {
@@ -160,7 +160,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
    */
   const handleSwitchCamera = async () => {
     try {
-      console.log("VideoCall: Switching camera");
+      // Switching camera
       await agoraService.switchCamera();
     } catch (error) {
       console.error("VideoCall: Failed to switch camera:", error);
@@ -173,7 +173,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
    */
   const handleEndCall = async () => {
     try {
-      console.log("VideoCall: Ending call");
+      // Ending call
       await agoraService.leaveChannel();
       onEndCall();
     } catch (error) {
@@ -185,7 +185,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
   /**
    * Get human-readable connection status text
    * Maps Agora connection state codes to user-friendly messages
-   * 
+   *
    * @returns Connection status string
    */
   const getConnectionStatusText = (): string => {
@@ -204,7 +204,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
   /**
    * Render local video stream or placeholder
    * Shows actual video feed or avatar placeholder based on video state
-   * 
+   *
    * @returns Local video component
    */
   const renderLocalVideo = () => {
@@ -231,7 +231,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
   /**
    * Render remote video streams or waiting message
    * Shows video feeds for all remote participants or waiting message
-   * 
+   *
    * @returns Remote videos component
    */
   const renderRemoteVideos = () => {
@@ -318,7 +318,9 @@ const VideoCall: React.FC<VideoCallProps> = ({
             !isLocalAudioEnabled && styles.controlButtonDisabled,
           ]}
           onPress={handleToggleAudio}
-          accessibilityLabel={isLocalAudioEnabled ? "Mute microphone" : "Unmute microphone"}
+          accessibilityLabel={
+            isLocalAudioEnabled ? "Mute microphone" : "Unmute microphone"
+          }
           accessibilityRole="button"
         >
           <Ionicons
@@ -337,7 +339,9 @@ const VideoCall: React.FC<VideoCallProps> = ({
                 !isLocalVideoEnabled && styles.controlButtonDisabled,
               ]}
               onPress={handleToggleVideo}
-              accessibilityLabel={isLocalVideoEnabled ? "Turn off camera" : "Turn on camera"}
+              accessibilityLabel={
+                isLocalVideoEnabled ? "Turn off camera" : "Turn on camera"
+              }
               accessibilityRole="button"
             >
               <Ionicons

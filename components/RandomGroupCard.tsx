@@ -105,13 +105,13 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
       if (!userID) return;
       sendJoinRequest(group.id, userID); // this awaits
       if (!isSendingJoinRequest) {
-        console.log(groupId);
+        // Group ID for navigation
         router.push({
           pathname: "/(groups)/[groupId]",
           params: {
             groupId: group.id,
             groupName: group.name,
-          }
+          },
         });
       }
     } else {
@@ -122,7 +122,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
           params: {
             groupId: group.id,
             groupName: group.name,
-          }
+          },
         });
       }
     }

@@ -3,100 +3,137 @@ import EnhancedCheckBox from "@/components/CheckBox";
 import { Strings, TosStrings } from "@/constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Dimensions, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 const TermsScreen = () => {
-  const screenHeight = Dimensions.get("window").height;
-  const scrollViewHeight = screenHeight * 0.1;
   const router = useRouter();
-  const styleParagraph = "font-inter pt-5";
-  const styleHeading = "pt-5 font-bold text-xl font-inter";
   const [isPressed, setIsPressed] = useState(false);
-  return (
-    <View className="flex-1 bg-white">
-      <Text className="text-primary font-poppins-semiBold text-2xl pt-8 mx-5">
-        {TosStrings.termsOfServiceHeading}
+
+  const Section = ({
+    title,
+    children,
+  }: {
+    title: string;
+    children: React.ReactNode;
+  }) => (
+    <View className="mb-6">
+      <Text className="text-gray-900 font-inter font-semibold text-lg mb-3 leading-relaxed">
+        {title}
       </Text>
-      <ScrollView className="flex-1 mx-5 pt-1">
-        <Text className="font-inter font-bold text-xl">
-          {TosStrings.effectiveDate}
+      {children}
+    </View>
+  );
+
+  const Paragraph = ({
+    children,
+    className = "",
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <Text
+      className={`text-gray-700 font-inter text-base leading-relaxed mb-3 ${className}`}
+    >
+      {children}
+    </Text>
+  );
+
+  const BulletList = ({ items }: { items: string[] }) => (
+    <View className="ml-2 mb-3">
+      {items.map((item, index) => (
+        <View key={index} className="flex-row items-start mb-1">
+          <View className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2.5 mr-3" />
+          <Text className="text-gray-700 font-inter text-base leading-relaxed flex-1">
+            {item}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+
+  return (
+    <View className="flex-1 bg-gray-50">
+      {/* Header */}
+      <View className="bg-white px-6 pt-6 pb-4 border-b border-gray-100">
+        <Text className="text-primary font-poppins-semiBold text-3xl leading-tight">
+          {TosStrings.termsOfServiceHeading}
         </Text>
-        <Text className="pt-2">{TosStrings.termsIntro}</Text>
+      </View>
 
-        {/* Description of Service */}
-        <Text className={styleHeading}>{TosStrings.dosHeading}</Text>
-        <Text className={styleParagraph}>{TosStrings.dosParagraph}</Text>
-
-        {TosStrings.dosList.map((item, index) => (
-          <Text key={index}> • {item}</Text>
-        ))}
-        <Text className="pt-2">{TosStrings.dosLastParagraph}</Text>
-
-        {/* Account Registration */}
-        <Text className={styleHeading}>{TosStrings.accRegHeading}</Text>
-        <Text className={styleParagraph}>{TosStrings.accRegParagraph}</Text>
-
-        {TosStrings.accRegList.map((item, index) => (
-          <Text key={index}> • {item}</Text>
-        ))}
-        <Text className="pt-2">{TosStrings.accRegLastParagraph}</Text>
-
-        {/* Data Privacy */}
-        <Text className={styleHeading}>{TosStrings.dataPrivacyHeading}</Text>
-        <Text className={styleParagraph}>
-          {TosStrings.dataPrivacyParagraph}
-        </Text>
-
-        {/* User Conduct */}
-        <Text className={styleHeading}>{TosStrings.userConductHeading}</Text>
-        <Text className={styleParagraph}>
-          {TosStrings.userConductParagraph}
-        </Text>
-        {TosStrings.userConductList.map((item, index) => (
-          <Text key={index}> • {item}</Text>
-        ))}
-
-        <Text className="pt-2">{TosStrings.userConductLastParagraph}</Text>
-
-        {/* Report Abuse */}
-        <Text className={styleHeading}>{TosStrings.reportAbuseHeading}</Text>
-        <Text className={styleParagraph}>
-          {TosStrings.reportAbuseParagraph}
-        </Text>
-
-        {/* Limitation of Liability */}
-
-        <Text className={styleHeading}>
-          {TosStrings.limitationOfLiabilityHeading}
-        </Text>
-        <Text className={styleParagraph}>
-          {TosStrings.limitationOfLiabilityParagraph}
-        </Text>
-
-        {/* change of terms */}
-        <Text className={styleHeading}>{TosStrings.cotHeading}</Text>
-        <Text className={styleParagraph}>{TosStrings.cotParagraph}</Text>
-      </ScrollView>
-      <View
-        style={{
-          paddingHorizontal: 24,
-          paddingVertical: 20,
-          backgroundColor: "#F6F8FE",
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          elevation: 4,
-        }}
+      {/* Content */}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 20 }}
+        showsVerticalScrollIndicator={false}
       >
-        <EnhancedCheckBox
-          isPressed={isPressed}
-          onPress={() => setIsPressed(!isPressed)}
-          page="tos"
-        />
-        <View style={{ height: 16 }} />
+        <View className="bg-white rounded-xl p-6 mb-6 shadow-sm">
+          <Text className="text-gray-900 font-inter font-semibold text-lg mb-2">
+            {TosStrings.effectiveDate}
+          </Text>
+          <Paragraph>{TosStrings.termsIntro}</Paragraph>
+        </View>
+
+        <View className="bg-white rounded-xl p-6 shadow-sm">
+          <Section title={TosStrings.dosHeading}>
+            <Paragraph>{TosStrings.dosParagraph}</Paragraph>
+            <BulletList items={TosStrings.dosList} />
+            <Paragraph>{TosStrings.dosLastParagraph}</Paragraph>
+          </Section>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={TosStrings.accRegHeading}>
+              <Paragraph>{TosStrings.accRegParagraph}</Paragraph>
+              <BulletList items={TosStrings.accRegList} />
+              <Paragraph>{TosStrings.accRegLastParagraph}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={TosStrings.dataPrivacyHeading}>
+              <Paragraph>{TosStrings.dataPrivacyParagraph}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={TosStrings.userConductHeading}>
+              <Paragraph>{TosStrings.userConductParagraph}</Paragraph>
+              <BulletList items={TosStrings.userConductList} />
+              <Paragraph>{TosStrings.userConductLastParagraph}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={TosStrings.reportAbuseHeading}>
+              <Paragraph>{TosStrings.reportAbuseParagraph}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={TosStrings.limitationOfLiabilityHeading}>
+              <Paragraph>{TosStrings.limitationOfLiabilityParagraph}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={TosStrings.cotHeading}>
+              <Paragraph>{TosStrings.cotParagraph}</Paragraph>
+            </Section>
+          </View>
+        </View>
+
+        {/* Bottom spacing for footer */}
+        <View className="h-24" />
+      </ScrollView>
+
+      {/* Footer */}
+      <View className="bg-white px-6 pt-6 pb-8 border-t border-gray-100">
+        <View className="mb-4">
+          <EnhancedCheckBox
+            isPressed={isPressed}
+            onPress={() => setIsPressed(!isPressed)}
+            page="tos"
+          />
+        </View>
         <Button
           onPress={() => {
             if (isPressed) router.push("/(auth)/privacyScreen");

@@ -1,9 +1,8 @@
+import ProfileIcon from "@/components/ProfileIcon";
 import { useNavigationState } from "@react-navigation/native";
 import { Drawer } from "expo-router/drawer";
-import { TouchableOpacity } from "react-native";
-import SearchIcon from "@/components/SearchIcon";
 
-function getActiveRouteName(state) {
+function getActiveRouteName(state: any) {
   if (!state) return null;
   const route = state.routes[state.index];
   // If the route has nested state, drill down
@@ -28,9 +27,9 @@ const DrawerLayout = () => {
       case "liveSession":
         return "Live Sessions";
       case "profile":
-        return "Profile"
+        return "Profile";
       case "settings":
-        return "Settings" 
+        return "Settings";
       default:
         return "GroupMind";
     }
@@ -46,35 +45,32 @@ const DrawerLayout = () => {
         drawerType: "front",
         drawerStyle: { width: 240 },
         headerStyle: {
-            elevation: 0, // Android
-            shadowOpacity: 0, // iOS
-            borderBottomWidth: 0, // iOS
+          elevation: 0, // Android
+          shadowOpacity: 0, // iOS
+          borderBottomWidth: 0, // iOS
         },
         headerTitleStyle: {
           fontFamily: "Inter",
           fontWeight: 800,
-          fontSize: 22
-        }
+          fontSize: 22,
+        },
       }}
     >
       <Drawer.Screen
         name="(tabs)"
-        options={{ headerTitle: headerTitle, drawerLabel: "Home", headerRight: () => (
-          <TouchableOpacity
-          onPress={()=> console.log("search page")}
-          className="mx-3"
-          >
-            <SearchIcon />
-          </TouchableOpacity>
-        ) }}
+        options={{
+          headerTitle: headerTitle,
+          drawerLabel: "Home",
+          headerRight: () => <ProfileIcon />,
+        }}
       />
-      <Drawer.Screen 
-      name="profile"
-      options={{headerTitle: headerTitle, drawerLabel: "Profile"}}
+      <Drawer.Screen
+        name="profile"
+        options={{ headerTitle: headerTitle, drawerLabel: "Profile" }}
       />
-      <Drawer.Screen 
-      name="settings"
-      options={{headerTitle: headerTitle, drawerLabel: "Settings"}}
+      <Drawer.Screen
+        name="settings"
+        options={{ headerTitle: headerTitle, drawerLabel: "Settings" }}
       />
     </Drawer>
   );

@@ -17,10 +17,11 @@ import {
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Text,
@@ -63,6 +64,7 @@ type TimelineMessage = {
 function ViewPost() {
   const { userInformation, responseQaPost, user, qaPostSent } =
     useGroupContext();
+  const scrollViewRef = useRef<KeyboardAwareScrollView>(null);
 
   const deviceWidth = Dimensions.get("window").width;
 
@@ -80,6 +82,7 @@ function ViewPost() {
   const [userTyping, setUserTyping] = useState(false);
   const [sendButtonClicked, setSendButtonClicked] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const [qa_Responses, setQA_Responses] = useState<QaResponses[]>([]);
 
@@ -89,6 +92,40 @@ function ViewPost() {
   const [showReplyInput, setShowReplyInput] = useState(false);
 
   const userAvatar = userInformation?.profilePicture;
+
+  // Keyboard listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setKeyboardVisible(true);
+        // Scroll to bottom when keyboard appears
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd(true);
+        }, 100);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (timeline.length > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd(true);
+      }, 100);
+    }
+  }, [timeline.length]);
 
   // Handle reply to a message
   const handleReply = (messageId?: string) => {
@@ -227,7 +264,8 @@ function ViewPost() {
         );
 
         if (localSavedMessages) {
-          setMessagesById(JSON.parse(localSavedMessages));
+          const parsedMessages = JSON.parse(localSavedMessages);
+          setMessagesById(parsedMessages);
         }
       } catch (error) {
         console.error("An error has occured: ", error);
@@ -237,28 +275,14 @@ function ViewPost() {
     fetchLocalMessagesData();
   }, [groupId]);
 
-  // checking if this is the originator of the msgs
-
-  // fetch group name
-  useEffect(() => {
-    const fetchGroupName = async () => {
-      if (!user) return;
-      try {
-        await AsyncStorage.getItem("groupName");
-      } catch (error) {
-        console.error("There has been an error: ", error);
-      }
-    };
-
-    fetchGroupName();
-  }, [groupId, user]);
-
   // Combine the original post with its responses
   useEffect(() => {
     if (!messagesByID || !qa_Responses || !postId) return;
 
     const rawPost = messagesByID[postId.toString()];
     if (!rawPost) return;
+
+    // Check if user can edit the post
 
     // Create the original question message
     const originalMessage: TimelineMessage = {
@@ -277,19 +301,24 @@ function ViewPost() {
 
     // Process responses
     const responseMessages: TimelineMessage[] = qa_Responses.map(
-      (response, index) => ({
-        id: `response-${index}`,
-        message: response.message,
-        sentBy: response.sentBy,
-        timeSent: response.timeSent,
-        imageUrl: response.imageUrl,
-        isSelf: user?.uid === response.sentBy,
-        isAdmin: response.isAdmin,
-        isMod: response.isMod,
-        type: "response",
-        userName: response.userName || "Anonymous",
-        purpose: response.purpose || "",
-      })
+      (response, index) => {
+        const isResponseFromSelf = user?.uid === response.sentBy;
+        // Process response message
+
+        return {
+          id: `response-${index}`,
+          message: response.message,
+          sentBy: response.sentBy,
+          timeSent: response.timeSent,
+          imageUrl: response.imageUrl,
+          isSelf: isResponseFromSelf,
+          isAdmin: response.isAdmin,
+          isMod: response.isMod,
+          type: "response",
+          userName: response.userName || "Anonymous",
+          purpose: response.purpose || "",
+        };
+      }
     );
 
     // Combine and sort by time
@@ -322,41 +351,52 @@ function ViewPost() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 35}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 30}
       >
         <KeyboardAwareScrollView
-          className="flex-1 pb-[90px]"
+          ref={scrollViewRef}
+          className="flex-1"
           enableOnAndroid={true}
+          enableAutomaticScroll={true}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          extraScrollHeight={Platform.OS === "ios" ? 150 : 50}
+          extraHeight={Platform.OS === "ios" ? 150 : 100}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: keyboardVisible ? 5 : 30,
+          }}
         >
-          <View className="flex flex-row items-center justify-between mx-4 mt-4 relative">
-            <TouchableOpacity
-              onPress={() => router.push(`/(groups)/${groupId}`)}
-              activeOpacity={0.7}
-            >
+          {/* Header */}
+          <View className="flex flex-row items-center justify-between mx-4 mt-4">
+            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
               <Back />
             </TouchableOpacity>
-
-            <Text className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">
-              Q&A Thread
-            </Text>
+            <Text className="text-2xl font-bold">Q&A Post</Text>
+            <View className="w-8" />
           </View>
 
           <View className="mt-2">
             <HR width={deviceWidth} height={2} />
           </View>
 
-          {/* Time Card */}
+          {/* Original Post */}
           {authorMessage && (
-            <View className="flex items-center justify-center mt-5 ">
-              <View className="bg-primary w-24  rounded-2xl p-1 justify-center items-center shadow-md shadow-black ">
-                <Text className="text-white font-bold font-inter">
-                  {timeCheck}
+            <View className="mx-4 mt-4 p-4 bg-white rounded-lg shadow-sm">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-lg font-semibold text-gray-800">
+                  Original Question
                 </Text>
+                <Text className="text-sm text-gray-500">{messageTime}</Text>
               </View>
+              <Text className="text-gray-700 leading-relaxed">
+                {authorMessage}
+              </Text>
             </View>
           )}
-          <View className="px-2 py-2">
+
+          {/* Messages */}
+          <View className="px-2 py-2 flex-1">
             {timeline.length > 0 ? (
               timeline.map((msg) => (
                 <MessageBubble
@@ -374,7 +414,15 @@ function ViewPost() {
                   onHelpful={handleHelpful}
                   messageId={msg.id}
                   responseCount={
-                    msg.type === "question" ? qa_Responses.length : 0
+                    msg.type === "question"
+                      ? qa_Responses.filter(
+                          (response) =>
+                            response.sentBy !==
+                              messagesByID[postId.toString()]?.sentBy &&
+                            response.type === "response" &&
+                            !response.message.toLowerCase().includes("?") // Exclude follow-up questions (messages containing question marks)
+                        ).length // Only count actual answers from other users, not follow-up questions
+                      : 0
                   }
                   isHelpful={
                     msg.type === "response"
@@ -395,7 +443,10 @@ function ViewPost() {
 
         {/* Reply Input Section */}
         {showReplyInput && (
-          <View className="px-4 py-2 border-t border-gray-200 bg-blue-50">
+          <View
+            className="px-4 py-3 border-t border-gray-200 bg-blue-50"
+            style={{ paddingBottom: Platform.OS === "ios" ? 25 : 15 }}
+          >
             <View className="flex-row items-center justify-between mb-2">
               <Text className="text-sm text-blue-600 font-medium">
                 Replying to message
@@ -451,7 +502,11 @@ function ViewPost() {
           </View>
         )}
 
-        <View className="px-4 py-2 border-t border-gray-200 bg-white flex flex-row items-center">
+        {/* Main Input Area */}
+        <View
+          className="px-4 py-3 border-t border-gray-200 bg-white flex flex-row items-center"
+          style={{ paddingBottom: Platform.OS === "ios" ? 30 : 20 }}
+        >
           {/* Add Button */}
           <TouchableOpacity
             className="justify-center items-center p-2"
@@ -541,7 +596,7 @@ function ViewPost() {
           onFileUploaded={(fileUrl, fileName) => {
             // You can handle the uploaded file here
             // For example, add it to the message or store it in the database
-            console.log("File uploaded:", fileName, fileUrl);
+            // File uploaded successfully
             // Add the file URL to the current message (clean format)
             setPost((prev) => prev + (prev ? "\n" : "") + fileUrl);
           }}

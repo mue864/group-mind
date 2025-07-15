@@ -55,7 +55,7 @@ export default function GroupCallScreen() {
   useEffect(() => {
     // Check if user is authenticated
     if (!user || !userInformation) {
-      console.log("GroupCallScreen: User not authenticated, redirecting");
+      // User not authenticated, redirecting
       Alert.alert(
         "Authentication Required",
         "Please sign in to join the call.",
@@ -66,7 +66,7 @@ export default function GroupCallScreen() {
 
     // Check if groupId is provided
     if (!groupId) {
-      console.log("GroupCallScreen: Group ID missing, redirecting");
+      // Group ID missing, redirecting
       Alert.alert("Invalid Call", "Group ID is missing.", [
         { text: "OK", onPress: () => router.back() },
       ]);
@@ -76,9 +76,9 @@ export default function GroupCallScreen() {
     // Initialize Agora service for video calling
     const initializeAgora = async () => {
       try {
-        console.log("GroupCallScreen: Initializing Agora service");
+        // Initializing Agora service
         await agoraService.initialize();
-        console.log("GroupCallScreen: Agora service initialized successfully");
+        // Agora service initialized successfully
       } catch (error) {
         console.error("GroupCallScreen: Failed to initialize Agora:", error);
         Alert.alert(
@@ -98,7 +98,7 @@ export default function GroupCallScreen() {
    */
   const handleEndCall = async () => {
     try {
-      console.log("GroupCallScreen: Ending call");
+      // Ending call
       await agoraService.destroy();
       Alert.alert("Call Ended", "You have left the call.", [
         {
@@ -119,7 +119,7 @@ export default function GroupCallScreen() {
    * @param type - Type of call to start (audio or video)
    */
   const handleStartCall = (type: "audio" | "video") => {
-    console.log("GroupCallScreen: Starting", type, "call");
+    // Starting call
     setCallType(type);
     setIsInCall(true);
   };

@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert, TextInput } from 'react-native';
-import { useRouter } from 'expo-router';
-import { getAuth } from 'firebase/auth';
-import { MaterialIcons } from '@expo/vector-icons';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '../../../services/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
+import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { getAuth } from "firebase/auth";
+import {
+  addDoc,
+  collection,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  Timestamp,
+  where,
+} from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Toast from "react-native-toast-message";
+import { db } from "../../../services/firebase";
 
 type ScheduledCall = {
   id: string;
@@ -14,93 +29,92 @@ type ScheduledCall = {
   scheduledTime: Timestamp;
   groupId: string;
   createdBy: string;
-  status: 'scheduled' | 'in-progress' | 'completed';
+  status: "scheduled" | "in-progress" | "completed";
 };
 
 export default function GroupScheduleSession() {
-
   const [isLoading, setIsLoading] = useState(false);
   const [scheduledCalls, setScheduledCalls] = useState<ScheduledCall[]>([]);
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [callTitle, setCallTitle] = useState('');
+  const [scheduledTime, setScheduledTime] = useState("");
+  const [callTitle, setCallTitle] = useState("");
   const router = useRouter();
   const auth = getAuth();
   const currentUser = auth.currentUser;
-  const [groupID, setGroupID] = useState('');
+  const [groupID, setGroupID] = useState("");
 
   useEffect(() => {
     try {
-        const fetchGroupID = async () => {
-            const groupID = await AsyncStorage.getItem("groupID");
-            if (groupID) {
-                setGroupID(groupID);
-            }
+      const fetchGroupID = async () => {
+        const groupID = await AsyncStorage.getItem("groupID");
+        if (groupID) {
+          setGroupID(groupID);
         }
-        fetchGroupID();
+      };
+      fetchGroupID();
     } catch (error) {
-        console.error("Error fecthing groupID ", error);
+      console.error("Error fecthing groupID ", error);
     }
-  }, [])
+  }, []);
 
-  const handleStartCall = async (callType: 'audio' | 'video' = 'video') => {
+  const handleStartCall = async (callType: "audio" | "video" = "video") => {
     if (!currentUser) {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Please sign in to start a call"
-      })
+        text2: "Please sign in to start a call",
+      });
       return;
     }
     setIsLoading(true);
-    
+
     try {
       // Create call session in Firebase
-      await addDoc(collection(db, 'activeCalls'), {
+      await addDoc(collection(db, "activeCalls"), {
         groupId: groupID,
         createdBy: currentUser.uid,
         callType,
         startedAt: serverTimestamp(),
-        status: 'active',
-        participants: [currentUser.uid]
+        status: "active",
+        participants: [currentUser.uid],
       });
-      
+
       setIsLoading(false);
       router.push(`/(groups)/${groupID}/call?type=${callType}`);
     } catch (error) {
-      console.error('Error starting call:', error);
+      console.error("Error starting call:", error);
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to start call. Please try again."
+        text2: "Failed to start call. Please try again.",
       });
       setIsLoading(false);
     }
   };
 
-  console.log("GroupId: ", groupID);
+  // Group ID for session management
   useEffect(() => {
     if (!groupID) return;
-    
+
     const q = query(
-      collection(db, 'scheduledCalls'),
-      where('groupId', '==', groupID),
-      where('status', 'in', ['scheduled', 'in-progress'])
+      collection(db, "scheduledCalls"),
+      where("groupId", "==", groupID),
+      where("status", "in", ["scheduled", "in-progress"])
     );
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const calls = snapshot.docs.map(doc => ({
+      const calls = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as ScheduledCall[];
-      
+
       // Sort by scheduled time
-      const sortedCalls = [...calls].sort((a, b) => 
-        a.scheduledTime.seconds - b.scheduledTime.seconds
+      const sortedCalls = [...calls].sort(
+        (a, b) => a.scheduledTime.seconds - b.scheduledTime.seconds
       );
-      
+
       setScheduledCalls(sortedCalls);
     });
-    
+
     return () => unsubscribe();
   }, [groupID]);
 
@@ -109,8 +123,8 @@ export default function GroupScheduleSession() {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Please enter a title and select a time for the call"
-      })
+        text2: "Please enter a title and select a time for the call",
+      });
       return;
     }
 
@@ -118,36 +132,36 @@ export default function GroupScheduleSession() {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "You must be signed in to schedule a call"
-      })
+        text2: "You must be signed in to schedule a call",
+      });
       return;
     }
 
     setIsLoading(true);
     try {
-      await addDoc(collection(db, 'scheduledCalls'), {
+      await addDoc(collection(db, "scheduledCalls"), {
         groupId: groupID,
         title: callTitle,
         scheduledTime: Timestamp.fromDate(new Date(scheduledTime)),
         createdBy: currentUser.uid,
         createdAt: serverTimestamp(),
-        status: 'scheduled' as const
+        status: "scheduled" as const,
       });
-      
-      setCallTitle('');
-      setScheduledTime('');
+
+      setCallTitle("");
+      setScheduledTime("");
       Toast.show({
         type: "success",
         text1: "Success",
-        text2: "Call scheduled successfully!"
-      })
+        text2: "Call scheduled successfully!",
+      });
     } catch (error) {
-      console.error('Error scheduling call:', error);
+      console.error("Error scheduling call:", error);
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to schedule call. Please try again."
-      })
+        text2: "Failed to schedule call. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +179,9 @@ export default function GroupScheduleSession() {
     <View className="flex-1 bg-gray-100">
       <ScrollView className="flex-1 p-4">
         <View className="mb-6 p-4 bg-white rounded-lg shadow">
-          <Text className="text-xl font-bold mb-4 text-gray-800">Schedule a Call</Text>
+          <Text className="text-xl font-bold mb-4 text-gray-800">
+            Schedule a Call
+          </Text>
           <TextInput
             className="border border-gray-300 rounded-md p-3 mb-3 text-gray-800 bg-white"
             value={callTitle}
@@ -190,14 +206,25 @@ export default function GroupScheduleSession() {
           </TouchableOpacity>
         </View>
         <View className="mb-6 p-4 bg-white rounded-lg shadow">
-          <Text className="text-xl font-bold mb-4 text-gray-800">Scheduled Calls</Text>
+          <Text className="text-xl font-bold mb-4 text-gray-800">
+            Scheduled Calls
+          </Text>
           {scheduledCalls.length === 0 ? (
-            <Text className="text-gray-500 text-center py-4">No scheduled calls</Text>
+            <Text className="text-gray-500 text-center py-4">
+              No scheduled calls
+            </Text>
           ) : (
-            scheduledCalls.map(call => (
-              <View key={call.id} className="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
-                <Text className="text-lg font-semibold text-gray-800">{call.title}</Text>
-                <Text className="text-gray-600 mb-3">{call.scheduledTime.toDate().toLocaleString()}</Text>
+            scheduledCalls.map((call) => (
+              <View
+                key={call.id}
+                className="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200"
+              >
+                <Text className="text-lg font-semibold text-gray-800">
+                  {call.title}
+                </Text>
+                <Text className="text-gray-600 mb-3">
+                  {call.scheduledTime.toDate().toLocaleString()}
+                </Text>
                 <TouchableOpacity
                   className="bg-green-600 py-2 px-4 rounded-md"
                   onPress={() => router.push(`/call/group-${groupID}`)}
@@ -209,13 +236,17 @@ export default function GroupScheduleSession() {
           )}
         </View>
         <View className="p-4 bg-white rounded-lg shadow">
-          <Text className="text-xl font-bold mb-2 text-gray-800">Start a Call</Text>
-          <Text className="text-gray-600 mb-4">Connect with your group members through video and audio</Text>
-          
+          <Text className="text-xl font-bold mb-2 text-gray-800">
+            Start a Call
+          </Text>
+          <Text className="text-gray-600 mb-4">
+            Connect with your group members through video and audio
+          </Text>
+
           {/* Video Call Button */}
           <TouchableOpacity
             className="flex-row items-center justify-center bg-green-600 py-3 px-6 rounded-lg mb-3"
-            onPress={() => handleStartCall('video')}
+            onPress={() => handleStartCall("video")}
             disabled={isLoading}
           >
             {isLoading ? (
@@ -223,15 +254,17 @@ export default function GroupScheduleSession() {
             ) : (
               <>
                 <MaterialIcons name="video-call" size={24} color="#fff" />
-                <Text className="text-white font-semibold ml-2">Start Video Call</Text>
+                <Text className="text-white font-semibold ml-2">
+                  Start Video Call
+                </Text>
               </>
             )}
           </TouchableOpacity>
-          
+
           {/* Audio Call Button */}
           <TouchableOpacity
             className="flex-row items-center justify-center bg-blue-600 py-3 px-6 rounded-lg"
-            onPress={() => handleStartCall('audio')}
+            onPress={() => handleStartCall("audio")}
             disabled={isLoading}
           >
             {isLoading ? (
@@ -239,7 +272,9 @@ export default function GroupScheduleSession() {
             ) : (
               <>
                 <MaterialIcons name="call" size={24} color="#fff" />
-                <Text className="text-white font-semibold ml-2">Start Audio Call</Text>
+                <Text className="text-white font-semibold ml-2">
+                  Start Audio Call
+                </Text>
               </>
             )}
           </TouchableOpacity>

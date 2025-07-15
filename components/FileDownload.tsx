@@ -45,7 +45,7 @@ const FileDownload: React.FC<FileDownloadProps> = ({
             const progress =
               downloadProgress.totalBytesWritten /
               downloadProgress.totalBytesExpectedToWrite;
-            console.log(`Download progress: ${progress * 100}%`);
+            // Download progress updated
           }
         );
 

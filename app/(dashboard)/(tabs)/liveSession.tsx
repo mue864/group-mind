@@ -16,22 +16,26 @@ const LiveSession = () => {
     {
       title: "Test Permissions",
       description: "Check camera and microphone access",
-      icon: "camera-outline",
+      icon: "camera-outline" as const,
       onPress: () => router.push("/(settings)/permissionTest"),
       color: "#4169E1",
     },
     {
-      title: "Start Test Call",
-      description: "Test WebRTC functionality",
-      icon: "call-outline",
-      onPress: () => console.log("Start test call"),
+      title: "Test Call",
+      description: "initialization prob with Expo",
+      icon: "call-outline" as const,
+      onPress: () => {
+        // Start test call functionality
+      },
       color: "#10B981",
     },
     {
       title: "Join Session",
-      description: "Join an existing session",
-      icon: "people-outline",
-      onPress: () => console.log("Join session"),
+      description: "Wont work so far",
+      icon: "people-outline" as const,
+      onPress: () => {
+        // Join session functionality
+      },
       color: "#F59E0B",
     },
   ];
@@ -44,11 +48,15 @@ const LiveSession = () => {
       <View className="bg-white pt-12 pb-4 px-4 border-b border-gray-200">
         <Text className="text-2xl font-bold text-gray-800">Live Sessions</Text>
         <Text className="text-gray-600 mt-1">
-          Manage your video calls and sessions
+          Expo Go is giving me troubles with WebRTC, will implement after full
+          development when app is ejected
         </Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-4">
+      <ScrollView
+        className="flex-1 px-4 pt-4"
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* Quick Actions */}
         <View className="mb-6">
           <Text className="text-lg font-semibold text-gray-800 mb-3">

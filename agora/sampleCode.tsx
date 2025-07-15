@@ -1,25 +1,25 @@
 // Import React Hooks
-import React, { useRef, useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 // Import user interface elements
 import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
-  Switch,
 } from "react-native";
 // Import components related to obtaining Android device permissions
 import { PermissionsAndroid, Platform } from "react-native";
 // Import Agora SDK
 import {
-  createAgoraRtcEngine,
   ChannelProfileType,
   ClientRoleType,
+  createAgoraRtcEngine,
   IRtcEngine,
-  RtcSurfaceView,
-  RtcConnection,
   IRtcEngineEventHandler,
+  RtcConnection,
+  RtcSurfaceView,
   VideoSourceType,
 } from "react-native-agora";
 
@@ -125,7 +125,7 @@ const App = () => {
         });
       }
     } catch (e) {
-      console.log(e);
+      // Error occurred during join
     }
   };
 
@@ -138,7 +138,7 @@ const App = () => {
       setIsJoined(false);
       showMessage("Left the channel");
     } catch (e) {
-      console.log(e);
+      // Error occurred during leave
     }
   };
 

@@ -20,8 +20,7 @@ import {
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { TextInput, Modal } from "react-native-paper";
-
+import { TextInput } from "react-native-paper";
 
 interface Avatars {
   avatar1: string;
@@ -77,7 +76,7 @@ const CreatePost = () => {
     setCheckTime(getTimeLabel(now));
   }, []);
 
-  function getTimeLabel(dateString) {
+  function getTimeLabel(dateString: Date) {
     const date = new Date(dateString);
 
     if (isToday(date)) {
@@ -107,15 +106,12 @@ const CreatePost = () => {
       groupId,
       message,
       timeSent,
-      responseFrom,
-      responseTo,
       isAnswered,
       type,
       sentBy,
       groupName,
       isMod,
-      isAdmin,
-      qaPostID
+      isAdmin
     );
   };
 
@@ -134,7 +130,7 @@ const CreatePost = () => {
     fetchGroupName();
   }, [groupId, user]);
 
-  console.log("groupName: ", groupName);
+  // Group name for post creation
 
   return (
     <View className="flex-1 bg-[#F5F6FA]">
@@ -265,10 +261,10 @@ const CreatePost = () => {
             </View>
           </View>
         </KeyboardAwareScrollView>
-        
-        <ShareModal 
-        visible={isActive}
-        onDismiss={() => setIsActive(!isActive)}
+
+        <ShareModal
+          visible={isActive}
+          onDismiss={() => setIsActive(!isActive)}
         />
 
         <View className="px-4 py-2 border-t border-gray-200 bg-white flex flex-row items-center">
@@ -299,7 +295,7 @@ const CreatePost = () => {
               placeholder="Type your question..."
               placeholderTextColor="#94a3b8"
               className="bg-gray-100 rounded-2xl px-4 py-2 text-base"
-              contentStyle={{ textAlignVertical: 'center' }}
+              contentStyle={{ textAlignVertical: "center" }}
               style={{ minHeight: 40, maxHeight: 120 }}
               multiline
               maxLength={500}
@@ -327,14 +323,18 @@ const CreatePost = () => {
                 "question",
                 user.uid,
                 groupName
-              );              
+              );
               setSendButtonClicked(true);
               setUserTyping(false);
             }}
             accessibilityLabel="Send question"
             accessibilityRole="button"
           >
-            <View className={`p-2 rounded-full ${post.length > 0 ? 'bg-blue-500' : 'bg-gray-300'}`}>
+            <View
+              className={`p-2 rounded-full ${
+                post.length > 0 ? "bg-blue-500" : "bg-gray-300"
+              }`}
+            >
               <Image
                 source={messages.Send}
                 className="w-6 h-6"

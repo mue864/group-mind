@@ -85,8 +85,7 @@ const ShareModal = ({
     try {
       // Set uploading state to show loading UI
       setIsUploading(true);
-      console.log("Starting Cloudinary upload...");
-      console.log("File URI:", file.uri);
+      // Starting Cloudinary upload
 
       // Create FormData for multipart upload
       const formData = new FormData();
@@ -104,7 +103,7 @@ const ShareModal = ({
       // Optional: Organize files in a folder structure
       formData.append("folder", "groupmind-files");
 
-      console.log("Uploading to Cloudinary...");
+      // Uploading to Cloudinary
 
       // Send POST request to Cloudinary upload API
       const response = await fetch(
@@ -122,7 +121,7 @@ const ShareModal = ({
 
       // Parse response to get file URL
       const data = await response.json();
-      console.log("✅ File uploaded to Cloudinary:", data.secure_url);
+      // File uploaded to Cloudinary successfully
 
       // Show success message to user
       Alert.alert("Upload successful", "File uploaded successfully!");
@@ -168,7 +167,7 @@ const ShareModal = ({
 
       if (!result.canceled) {
         const file = result.assets[0];
-        console.log("🖼️ Image picked:", file);
+        // Image picked successfully
 
         // Set selected file for preview
         setSelectedFile({
@@ -178,7 +177,7 @@ const ShareModal = ({
           mimeType: file.mimeType,
         });
       } else {
-        console.log("User cancelled image picking");
+        // User cancelled image picking
       }
     } catch (err) {
       console.error("Image picking error:", err);
@@ -211,7 +210,7 @@ const ShareModal = ({
 
       if (!result.canceled) {
         const file = result.assets[0];
-        console.log("📄 File picked:", file);
+        // File picked successfully
 
         // Set selected file for preview
         setSelectedFile({
@@ -221,7 +220,7 @@ const ShareModal = ({
           mimeType: file.mimeType,
         });
       } else {
-        console.log("User cancelled file picking");
+        // User cancelled file picking
       }
     } catch (err) {
       console.error("File picking error:", err);

@@ -7,92 +7,111 @@ import { ScrollView, Text, View } from "react-native";
 
 const PrivacyScreen = () => {
   const router = useRouter();
-  const styleParagraph = "font-inter pt-5";
-  const styleHeading = "pt-5 font-bold text-xl font-inter";
   const [isPressed, setIsPressed] = useState(false);
-  return (
-    <View className="flex-1 bg-white">
-      <Text className="text-primary font-poppins-semiBold text-2xl pt-4 mx-5">
-        {PrivacyStrings.mainHeading}
+
+  const Section = ({ title, children }) => (
+    <View className="mb-6">
+      <Text className="text-gray-900 font-inter font-semibold text-lg mb-3 leading-relaxed">
+        {title}
       </Text>
-      <ScrollView className="flex-1 mx-5 pt-1">
-        <Text className="font-inter font-bold text-xl">
-          {PrivacyStrings.effectiveDate}
-        </Text>
-        <Text className="pt-2">{PrivacyStrings.summary}</Text>
+      {children}
+    </View>
+  );
 
-        {/* info collected*/}
-        <Text className={styleHeading}>
-          {PrivacyStrings.infoWeCollectHeading}
-        </Text>
-        <Text className={styleParagraph}>
-          {PrivacyStrings.infoWeCollectText1}
-        </Text>
+  const Paragraph = ({ children, className = "" }) => (
+    <Text
+      className={`text-gray-700 font-inter text-base leading-relaxed mb-3 ${className}`}
+    >
+      {children}
+    </Text>
+  );
 
-        {PrivacyStrings.infoWeCollectList.map((item, index) => (
-          <Text key={index}> • {item}</Text>
-        ))}
-        <Text className="pt-2">{PrivacyStrings.infoWeCollectText2}</Text>
+  const BulletList = ({ items }) => (
+    <View className="ml-2 mb-3">
+      {items.map((item, index) => (
+        <View key={index} className="flex-row items-start mb-1">
+          <View className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2.5 mr-3" />
+          <Text className="text-gray-700 font-inter text-base leading-relaxed flex-1">
+            {item}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
 
-        {/* Personal Data Storage */}
-        <Text className={styleHeading}>
-          {PrivacyStrings.personalDataStorageHeading}
+  return (
+    <View className="flex-1 bg-gray-50">
+      {/* Header */}
+      <View className="bg-white px-6 pt-6 pb-4 border-b border-gray-100">
+        <Text className="text-primary font-poppins-semiBold text-3xl leading-tight">
+          {PrivacyStrings.mainHeading}
         </Text>
-        <Text className={styleParagraph}>
-          {PrivacyStrings.personalDataStorageText}
-        </Text>
+      </View>
 
-        {/* 3rd Party Services */}
-        <Text className={styleHeading}>{PrivacyStrings.thirdPartyHeading}</Text>
-        <Text className={styleParagraph}>
-          {PrivacyStrings.thirdPartyServicesText}
-        </Text>
-
-        {/* User responsibility */}
-        <Text className={styleHeading}>
-          {PrivacyStrings.userResponsibilityHeading}
-        </Text>
-        <Text className={styleParagraph}>
-          {PrivacyStrings.userResponsibilityText}
-        </Text>
-
-        {/* Report Abuse */}
-        <Text className={styleHeading}>
-          {PrivacyStrings.abuseReportingHeading}
-        </Text>
-        <Text className={styleParagraph}>
-          {PrivacyStrings.abuseReportingText}
-        </Text>
-
-        {/* Policy changes */}
-
-        <Text className={styleHeading}>
-          {PrivacyStrings.policyChangesHeading}
-        </Text>
-        <Text className={styleParagraph}>
-          {PrivacyStrings.policyChangesText}
-        </Text>
-      </ScrollView>
-      <View
-        style={{
-          paddingHorizontal: 24,
-          paddingVertical: 20,
-          backgroundColor: "#F6F8FE",
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          elevation: 4,
-        }}
+      {/* Content */}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 20 }}
+        showsVerticalScrollIndicator={false}
       >
-        <EnhancedCheckBox
-          isPressed={isPressed}
-          onPress={() => setIsPressed(!isPressed)}
-          page="privacy"
-        />
-        <View style={{ height: 16 }} />
+        <View className="bg-white rounded-xl p-6 mb-6 shadow-sm">
+          <Text className="text-gray-900 font-inter font-semibold text-lg mb-2">
+            {PrivacyStrings.effectiveDate}
+          </Text>
+          <Paragraph>{PrivacyStrings.summary}</Paragraph>
+        </View>
+
+        <View className="bg-white rounded-xl p-6 space-y-6">
+          <Section title={PrivacyStrings.infoWeCollectHeading}>
+            <Paragraph>{PrivacyStrings.infoWeCollectText1}</Paragraph>
+            <BulletList items={PrivacyStrings.infoWeCollectList} />
+            <Paragraph>{PrivacyStrings.infoWeCollectText2}</Paragraph>
+          </Section>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={PrivacyStrings.personalDataStorageHeading}>
+              <Paragraph>{PrivacyStrings.personalDataStorageText}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={PrivacyStrings.thirdPartyHeading}>
+              <Paragraph>{PrivacyStrings.thirdPartyServicesText}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={PrivacyStrings.userResponsibilityHeading}>
+              <Paragraph>{PrivacyStrings.userResponsibilityText}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={PrivacyStrings.abuseReportingHeading}>
+              <Paragraph>{PrivacyStrings.abuseReportingText}</Paragraph>
+            </Section>
+          </View>
+
+          <View className="border-t border-gray-100 pt-6">
+            <Section title={PrivacyStrings.policyChangesHeading}>
+              <Paragraph>{PrivacyStrings.policyChangesText}</Paragraph>
+            </Section>
+          </View>
+        </View>
+
+        {/* Bottom spacing for footer */}
+        <View className="h-24" />
+      </ScrollView>
+
+      {/* Footer */}
+      <View className="bg-white px-6 py-5 border-t border-gray-100">
+        <View className="mb-4">
+          <EnhancedCheckBox
+            isPressed={isPressed}
+            onPress={() => setIsPressed(!isPressed)}
+            page="privacy"
+          />
+        </View>
         <Button
           onPress={() => {
             if (isPressed) router.replace("/(auth)/signInScreen");

@@ -9,15 +9,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   collection,
+  doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
   Timestamp,
 } from "firebase/firestore";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Dimensions,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -49,12 +52,13 @@ type TimelineMessage = {
 function GroupChat() {
   const { user, sendMessage } = useGroupContext();
   const { groupId } = useLocalSearchParams();
+  const scrollViewRef = useRef<KeyboardAwareScrollView>(null);
 
   const deviceWidth = Dimensions.get("window").width;
 
   const [timeline, setTimeline] = useState<TimelineMessage[]>([]);
-  const [isAdmin] = useState(true);
-  const [isMod] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isMod, setIsMod] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"message" | "question">(
@@ -64,22 +68,78 @@ function GroupChat() {
   const [groupName, setGroupName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Fetch group name
+  // Keyboard listeners
   useEffect(() => {
-    if (!groupId) return;
-    try {
-      const fetchGroupName = async () => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      (event) => {
+        setKeyboardVisible(true);
+        // More aggressive scrolling when keyboard appears
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd(true);
+        }, 150);
+        // Additional scroll after a longer delay to ensure it's visible
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd(true);
+        }, 300);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
+
+  // Fetch group data and determine user role
+  useEffect(() => {
+    if (!groupId || !user) return;
+
+    const fetchGroupData = async () => {
+      try {
+        // Fetch group name from AsyncStorage
         const groupName = await AsyncStorage.getItem(`groupName`);
-        console.log(groupName);
-        if (!groupName) return;
-        setGroupName(groupName?.toString());
-      };
-      fetchGroupName();
-    } catch (error) {
-      console.log(error);
-    }
-  }, [groupId]);
+        if (groupName) {
+          setGroupName(groupName.toString());
+        }
+
+        // Fetch group data from Firestore to determine user role
+        const groupRef = doc(db, "groups", groupId.toString());
+        const groupSnapshot = await getDoc(groupRef);
+
+        if (groupSnapshot.exists()) {
+          const groupData = groupSnapshot.data();
+
+          // Determine user role
+          if (groupData.groupOwner === user.uid) {
+            setIsAdmin(true);
+            setIsMod(false);
+          } else if (groupData.admins?.includes(user.uid)) {
+            setIsAdmin(true);
+            setIsMod(false);
+          } else if (groupData.moderators?.includes(user.uid)) {
+            setIsAdmin(false);
+            setIsMod(true);
+          } else {
+            setIsAdmin(false);
+            setIsMod(false);
+          }
+        }
+      } catch (error) {
+        console.log("Error fetching group data:", error);
+      }
+    };
+
+    fetchGroupData();
+  }, [groupId, user]);
 
   // Load messages with offline support using existing AsyncStorage approach
   useEffect(() => {
@@ -107,6 +167,18 @@ function GroupChat() {
           async (snapshot) => {
             const messagesData = [];
 
+            // Fetch group data to determine user roles
+            let groupData = null;
+            try {
+              const groupRef = doc(db, "groups", groupId.toString());
+              const groupSnapshot = await getDoc(groupRef);
+              if (groupSnapshot.exists()) {
+                groupData = groupSnapshot.data();
+              }
+            } catch (error) {
+              console.log("Error fetching group data for roles:", error);
+            }
+
             for (const doc of snapshot.docs) {
               const data = doc.data();
 
@@ -129,14 +201,31 @@ function GroupChat() {
                 }
               }
 
+              // Determine user role from group data
+              let isAdmin = false;
+              let isMod = false;
+              if (groupData) {
+                const userId = data.sentBy;
+                if (groupData.groupOwner === userId) {
+                  isAdmin = true;
+                  isMod = false;
+                } else if (groupData.admins?.includes(userId)) {
+                  isAdmin = true;
+                  isMod = false;
+                } else if (groupData.moderators?.includes(userId)) {
+                  isAdmin = false;
+                  isMod = true;
+                }
+              }
+
               const messageData = {
                 id: doc.id,
                 message: data.message || "",
                 sentBy: data.sentBy || "",
                 timeSent: data.timeSent || Timestamp.now(),
                 isSelf: data.sentBy === user.uid,
-                isAdmin: data.isAdmin || false,
-                isMod: data.isMod || false,
+                isAdmin: isAdmin,
+                isMod: isMod,
                 imageUrl: data.imageUrl,
                 userName: data.userName || "Unknown User",
                 purpose: data.purpose || "",
@@ -174,6 +263,15 @@ function GroupChat() {
 
     loadMessages();
   }, [user, groupId]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (timeline.length > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd(true);
+      }, 100);
+    }
+  }, [timeline.length]);
 
   // Filter messages based on search query
   const filteredTimeline = useMemo(() => {
@@ -254,7 +352,7 @@ function GroupChat() {
   const handleHelpful = (messageId?: string) => {
     if (messageId) {
       // Implement helpful marking logic
-      console.log("Mark as helpful:", messageId);
+      // Mark as helpful action
       // You can call markResponseHelpful here
     }
   };
@@ -267,14 +365,22 @@ function GroupChat() {
     <View className="flex-1 bg-[#F5F6FA]">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1, justifyContent: "space-between" }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 35}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 50}
       >
         <KeyboardAwareScrollView
-          className="flex-1 pb-[90px]"
+          ref={scrollViewRef}
+          className="flex-1"
           enableOnAndroid={true}
+          enableAutomaticScroll={true}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          extraScrollHeight={Platform.OS === "ios" ? 100 : 50}
+          extraHeight={Platform.OS === "ios" ? 100 : 50}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: 40,
+          }}
         >
           {/* Header */}
           <View className="flex flex-row items-center justify-between mx-4 mt-4 relative">
@@ -326,7 +432,7 @@ function GroupChat() {
           </View>
 
           {/* Messages */}
-          <View className="px-2 py-2">
+          <View className="px-2 py-2 flex-1">
             {filteredTimeline.length > 0 ? (
               <View style={styles.messagesContainer}>
                 {filteredTimeline.map((msg, index) => (
@@ -352,7 +458,7 @@ function GroupChat() {
             ) : searchQuery.trim() ? (
               <View className="flex-1 justify-center items-center p-5">
                 <Text className="text-gray-400 text-base">
-                  No messages found for "{searchQuery}"
+                  No messages found for &quot;{searchQuery}&quot;
                 </Text>
               </View>
             ) : (
@@ -474,7 +580,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
-    padding: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    // Remove any marginBottom or extra bottom padding
   },
   typeSelector: {
     flexDirection: "row",

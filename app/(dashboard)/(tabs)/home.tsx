@@ -442,6 +442,7 @@ const Home = () => {
           initialNumToRender={5}
           windowSize={5}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: 100}}
         />
       )}
     </View>

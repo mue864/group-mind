@@ -81,7 +81,7 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
    */
   const handleShareCall = async () => {
     try {
-      console.log("CallInvitation: Sharing call invitation");
+      // Sharing call invitation
       setIsSharing(true);
 
       // Generate the call link
@@ -101,7 +101,7 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
 
       // Handle share result
       if (result.action === Share.sharedAction) {
-        console.log("CallInvitation: Call invitation shared successfully");
+        // Call invitation shared successfully
         Alert.alert("Success", "Call invitation shared successfully!");
       }
     } catch (error) {
@@ -121,7 +121,7 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
    */
   const handleCopyLink = async () => {
     try {
-      console.log("CallInvitation: Copying call link");
+      // Copying call link
       const callLink = generateCallLink();
 
       // For now, we'll just show the link
@@ -145,7 +145,7 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
    * Placeholder for future push notification implementation
    */
   const handleSendNotification = () => {
-    console.log("CallInvitation: Send notifications requested");
+    // Send notifications requested
 
     // In a real app, you would send push notifications to group members
     Alert.alert(

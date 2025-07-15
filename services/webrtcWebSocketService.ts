@@ -123,7 +123,7 @@ class WebRTCWebSocketService {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log("Connected to signaling server");
+        // Connected to signaling server
         this.reconnectAttempts = 0;
         resolve();
       };
@@ -138,7 +138,7 @@ class WebRTCWebSocketService {
       };
 
       this.ws.onclose = () => {
-        console.log("Disconnected from signaling server");
+        // Disconnected from signaling server
         this.handleDisconnection();
       };
 
@@ -153,18 +153,18 @@ class WebRTCWebSocketService {
   private handleSignalingMessage(data: any) {
     switch (data.type) {
       case "welcome":
-        console.log("Welcome to room:", data.roomId);
+        // Welcome to room
         this.onParticipantUpdate?.(data.participants);
         break;
 
       case "participant-joined":
-        console.log("Participant joined:", data.userName);
+        // Participant joined
         this.createPeerConnection(data.userId);
         this.onParticipantUpdate?.(data.participants);
         break;
 
       case "participant-left":
-        console.log("Participant left:", data.userName);
+        // Participant left
         this.removePeerConnection(data.userId);
         this.onParticipantUpdate?.(data.participants);
         break;
@@ -190,7 +190,7 @@ class WebRTCWebSocketService {
         break;
 
       default:
-        console.log("Unknown signaling message type:", data.type);
+      // Unknown signaling message type
     }
   }
 

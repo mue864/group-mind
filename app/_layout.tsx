@@ -65,7 +65,7 @@ const RootLayout = () => {
         <GroupProvider>
           <Post>
             {/* Wrap everything in a view that sets the background color */}
-            <View className="flex-1 bg-[#F5F6FA]">
+            <View className="flex-1 ">
               {/* Place StatusBar OUTSIDE SafeAreaView */}
               <StatusBar style="dark" translucent />
 
