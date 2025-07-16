@@ -1,26 +1,40 @@
-import { groupIcons } from "@/assets/icons/groups";
 import { Tabs } from "expo-router";
-import { Image, Text, View } from "react-native";
+import { BookOpenText, MessageSquare, Users, Video } from "lucide-react-native";
+import { memo } from "react";
+import { Text, View } from "react-native";
 
-const TabBarIcon = ({ name, focus, color, icon }) => {
-  return (
-    <View className="w-40 justify-center items-center mt-7">
-      <Image
-        source={icon}
-        tintColor={color}
-        resizeMode="contain"
-        className="w-10 h-10"
-      />
-      <Text
-        className={`${
-          focus ? "text-primary" : "text-[#757474]"
-        } font-poppins-semiBold text-sm `}
-      >
-        {name}
-      </Text>
-    </View>
-  );
-};
+const TabIcon = memo(
+  ({
+    color,
+    focused,
+    icon,
+    name,
+  }: {
+    color: string;
+    focused: boolean;
+    icon: any;
+    name: string;
+  }) => {
+    const IconComponent = icon;
+    return (
+      <View className="w-20 justify-center items-center mt-6">
+        <IconComponent color={color} size={28} />
+        <Text
+          className={`${
+            focused ? "text-primary" : "text-[#757474]"
+          } font-poppins-semiBold text-xs`}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
+          {name}
+        </Text>
+      </View>
+    );
+  }
+);
+TabIcon.displayName = "TabIcon";
+
 const GroupMenuLayout = () => {
   return (
     <Tabs
@@ -28,7 +42,7 @@ const GroupMenuLayout = () => {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          height: 75,
+          height: 65,
           position: "absolute",
           bottom: 8,
           marginLeft: 15,
@@ -47,12 +61,13 @@ const GroupMenuLayout = () => {
         name="index"
         options={{
           title: "Q&A",
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabBarIcon
-              icon={groupIcons.qa}
-              color={color}
-              focus={focused}
+          tabBarAccessibilityLabel: "Q&A tab",
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
               name="Q&A"
+              icon={MessageSquare}
+              focused={focused}
+              color={color}
             />
           ),
         }}
@@ -61,13 +76,9 @@ const GroupMenuLayout = () => {
         name="groupChat"
         options={{
           title: "Group Chat",
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabBarIcon
-              icon={groupIcons.chat}
-              color={color}
-              focus={focused}
-              name="Group Chat"
-            />
+          tabBarAccessibilityLabel: "Chat tab",
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="Chat" icon={Users} focused={focused} color={color} />
           ),
         }}
       />
@@ -75,27 +86,24 @@ const GroupMenuLayout = () => {
         name="groupResources"
         options={{
           title: "Resources",
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabBarIcon
-              icon={groupIcons.resources}
-              color={color}
-              focus={focused}
+          tabBarAccessibilityLabel: "Resources tab",
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
               name="Resources"
+              icon={BookOpenText}
+              focused={focused}
+              color={color}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="sessions"
+        name="live"
         options={{
-          title: "Schedule Session",
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabBarIcon
-              icon={groupIcons.sessions}
-              color={color}
-              focus={focused}
-              name="Sessions"
-            />
+          title: "Live",
+          tabBarAccessibilityLabel: "Live tab",
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="Live" icon={Video} focused={focused} color={color} />
           ),
         }}
       />

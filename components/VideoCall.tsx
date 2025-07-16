@@ -88,25 +88,41 @@ const VideoCall: React.FC<VideoCallProps> = ({
    */
   useEffect(() => {
     const initializeCall = async () => {
+      console.log(
+        "Joining channel:",
+        channelName,
+        "as user:",
+        userInformation?.userID
+      );
       try {
-        // Initializing call for channel
         setIsConnecting(true);
-
-        // Set up callbacks for participant updates and connection state
         agoraService.setParticipantUpdateCallback(setParticipants);
         agoraService.setConnectionStateCallback(setConnectionState);
 
-        // Join the specified channel
-        await agoraService.joinChannel(channelName);
+        // Generate a unique numeric UID for Agora
+        let uid = 0;
+        if (userInformation?.userID) {
+          // Try to parse as int, or hash string to int if needed
+          const parsed = parseInt(
+            userInformation.userID.replace(/\D/g, "").slice(-8)
+          );
+          uid =
+            !isNaN(parsed) && parsed > 0
+              ? parsed
+              : Math.floor(Math.random() * 1000000);
+        } else {
+          uid = Math.floor(Math.random() * 1000000);
+        }
+        console.log("Agora UID:", uid);
 
-        // Set initial video/audio state based on call type
+        await agoraService.joinChannel(channelName, undefined, uid);
+
         if (callType === "audio") {
           await agoraService.enableLocalVideo(false);
           setIsLocalVideoEnabled(false);
         }
 
         setIsConnecting(false);
-        // Call initialized successfully
       } catch (error) {
         console.error("VideoCall: Failed to initialize call:", error);
         Alert.alert("Error", "Failed to join the call. Please try again.");
@@ -115,11 +131,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
     };
 
     initializeCall();
-
-    // Cleanup will be handled by the parent component
-    return () => {
-      // Component unmounting
-    };
+    return () => {};
   }, [channelName, callType]);
 
   /**

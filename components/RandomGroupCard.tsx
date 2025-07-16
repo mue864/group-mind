@@ -168,21 +168,21 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
               end={{ x: 1, y: 0 }}
             >
               <View className="flex-row items-center">
-                <Text className="text-white text-sm mr-1">🎓</Text>
-                <Text className="text-white text-xs font-bold">Join</Text>
+                <Text className="text-white font-inter text-sm mr-1">🎓</Text>
+                <Text className="text-white font-inter text-xs font-bold">Join</Text>
               </View>
             </LinearGradient>
           </View>
           {/* Group Name Overlay */}
           <View className="absolute bottom-4 left-4 right-4">
             <Text
-              className="text-white font-bold text-xl mb-1"
+              className="text-white font-poppins-semiBold text-xl mb-1"
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {group.name}
             </Text>
-            <Text className="text-white/80 text-sm">
+            <Text className="text-white/80 text-sm font-inter">
               {groupType || "Study Group"}
             </Text>
           </View>
@@ -204,10 +204,10 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
                 </View>
               )}
               <View className="flex-1">
-                <Text className="font-bold text-gray-800 text-base mb-1">
+                <Text className=" text-gray-800 text-base font-poppins-semiBold mb-1">
                   {isLoading ? "Loading..." : groupCreatorName}
                 </Text>
-                <Text className="text-gray-500 text-sm font-medium">
+                <Text className="text-gray-500 text-sm font-poppins-semiBold">
                   Group Creator
                 </Text>
               </View>
@@ -218,7 +218,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
                 <View className="w-6 h-6 bg-blue-100 rounded-full items-center justify-center mr-2">
                   <Ionicons name="people" size={14} color="#3b82f6" />
                 </View>
-                <Text className="text-blue-600 font-bold text-sm">
+                <Text className="text-blue-600 font-poppins-semiBold text-sm">
                   {group.members?.length || 0}
                 </Text>
               </View>
@@ -227,7 +227,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
           {/* Description */}
           <View className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-4 mb-4 border border-gray-100">
             <Text
-              className="text-gray-700 text-sm leading-5"
+              className="text-gray-700 text-sm leading-5 font-inter"
               numberOfLines={2}
               ellipsizeMode="tail"
             >
@@ -243,7 +243,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
                 <View className="w-8 h-8 bg-green-100 rounded-full items-center justify-center mr-3">
                   <Ionicons name="school" size={16} color="#22c55e" />
                 </View>
-                <Text className="text-gray-600 text-sm font-semibold">
+                <Text className="text-gray-600 text-sm font-poppins-semiBold">
                   {groupType || "Study Group"}
                 </Text>
               </View>
@@ -253,10 +253,10 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
               {showConfirm ? (
                 <View className="flex-1 justify-center items-center">
                   <View className="bg-white rounded-xl border border-blue-200 px-4 py-5 shadow-md w-80 max-w-xs flex-col items-center justify-center -mx-10">
-                    <Text className="font-bold text-base mb-1 text-center">
+                    <Text className="font-poppins-semiBold text-base mb-1 text-center">
                       {confirmTitle}
                     </Text>
-                    <Text className="text-gray-700 text-sm mb-4 text-center">
+                    <Text className="text-gray-700 text-sm mb-4 text-center font-inter">
                       {confirmMessage}
                     </Text>
                     <View className="flex-row justify-center items-center gap-3">
@@ -264,7 +264,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
                         onPress={handleConfirm}
                         className="bg-blue-500 rounded-lg px-4 py-2 mx-2"
                       >
-                        <Text className="text-white font-semibold text-sm">
+                        <Text className="text-white text-sm font-poppins-semiBold">
                           {confirmButtonText}
                         </Text>
                       </TouchableOpacity>
@@ -272,7 +272,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
                         onPress={handleCancel}
                         className="bg-gray-100 rounded-lg px-4 py-2 mx-2"
                       >
-                        <Text className="text-gray-700 font-semibold text-sm">
+                        <Text className="text-gray-700 font-poppins-semiBold text-sm">
                           Cancel
                         </Text>
                       </TouchableOpacity>
@@ -291,7 +291,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
                       color="white"
                       style={{ marginRight: 4 }}
                     />
-                    <Text className="text-white font-bold text-sm">
+                    <Text className="text-white font-poppins-semiBold text-sm">
                       {buttonText}
                     </Text>
                   </View>

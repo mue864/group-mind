@@ -13,6 +13,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -123,6 +124,13 @@ const SignUpScreen = () => {
     }
   };
 
+  const handleGooglePress = () => {
+    Alert.alert(
+      "Not yet implemented",
+      "Use Email and password signup for now."
+    )
+  }
+
   useEffect(() => {
     setPasswordMatch(validatePasswords(password, confirmPassword));
   }, [password, confirmPassword]);
@@ -222,7 +230,9 @@ const SignUpScreen = () => {
           or
         </Text>
 
-        <Pressable style={{ width: "100%" }}>
+        <Pressable style={{ width: "100%" }}
+        onPress={handleGooglePress}
+        >
           <View
             style={{
               flexDirection: "row",

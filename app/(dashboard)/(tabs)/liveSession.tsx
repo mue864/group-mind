@@ -48,8 +48,7 @@ const LiveSession = () => {
       <View className="bg-white pt-12 pb-4 px-4 border-b border-gray-200">
         <Text className="text-2xl font-bold text-gray-800">Live Sessions</Text>
         <Text className="text-gray-600 mt-1">
-          Expo Go is giving me troubles with WebRTC, will implement after full
-          development when app is ejected
+          Navigate to groups then sessions
         </Text>
       </View>
 
@@ -58,7 +57,7 @@ const LiveSession = () => {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* Quick Actions */}
-        <View className="mb-6">
+        {/* <View className="mb-6">
           <Text className="text-lg font-semibold text-gray-800 mb-3">
             Quick Actions
           </Text>
@@ -94,7 +93,7 @@ const LiveSession = () => {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </View> */}
 
         {/* Active Sessions */}
         <View className="mb-6">

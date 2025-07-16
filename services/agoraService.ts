@@ -84,7 +84,10 @@ class AgoraService {
 
   // Agora App ID from your configuration
   // Replace with your actual App ID from Agora Console
-  private readonly APP_ID = "e7f6e9aeecf14b2ba10e3f40be9f56e7";
+  private readonly APP_ID = "6789f301a9b14fbd855543bc208187b3";
+  // Temp token for testing
+  private readonly TEMP_TOKEN =
+    "007eJxTYMh7UPn/u67p5/k7n/6+fiPzyOaDzpdMrBbz5zHdWqy+qdJVgcHM3MIyzdjAMNEyydAkLSnFwtTU1MQ4KdnIwMLQwjzJWKS5PKMhkJFBQNWdmZEBAkF8AwaF9KL80gJdg/y8JG9TE9MAv8iUiEzPoCAvC39dQ3NTIzMzI0MLYwNLQ12LzKSSkkoGBgDIViyl";
 
   /**
    * Private constructor to enforce singleton pattern
@@ -126,7 +129,7 @@ class AgoraService {
       this.engine = createAgoraRtcEngine();
 
       // Initialize with App ID
-      await this.engine.initialize({ appId: this.APP_ID });
+      this.engine.initialize({ appId: this.APP_ID });
 
       // Set up event handlers for real-time callbacks
       this.setupEventHandlers();
@@ -162,16 +165,20 @@ class AgoraService {
        * Called when local user successfully joins the channel
        */
       onJoinChannelSuccess: (connection: RtcConnection, elapsed: number) => {
-        console.log(
-          "AgoraService: Local user joined channel:",
-          connection.channelId,
-          "elapsed:",
-          elapsed
-        );
+        console.log("[Agora] onJoinChannelSuccess:", {
+          channelId: connection.channelId,
+          localUid: connection.localUid,
+          elapsed,
+        });
         this.currentChannel = connection.channelId || null;
-
         // Add local user to participants list
-        this.addParticipant(0, true, true, true, "You");
+        this.addParticipant(
+          typeof connection.localUid === "number" ? connection.localUid : 0,
+          true,
+          true,
+          true,
+          "You"
+        );
       },
 
       /**
@@ -182,12 +189,11 @@ class AgoraService {
         uid: number,
         elapsed: number
       ) => {
-        console.log(
-          "AgoraService: Remote user joined:",
+        console.log("[Agora] onUserJoined:", {
+          channelId: connection.channelId,
           uid,
-          "elapsed:",
-          elapsed
-        );
+          elapsed,
+        });
         this.addParticipant(uid, false, true, true, `User ${uid}`);
       },
 
@@ -199,12 +205,11 @@ class AgoraService {
         uid: number,
         reason: number
       ) => {
-        console.log(
-          "AgoraService: Remote user offline:",
+        console.log("[Agora] onUserOffline:", {
+          channelId: connection.channelId,
           uid,
-          "reason:",
-          reason
-        );
+          reason,
+        });
         this.removeParticipant(uid);
       },
 
@@ -216,12 +221,11 @@ class AgoraService {
         state: number,
         reason: number
       ) => {
-        console.log(
-          "AgoraService: Connection state changed:",
+        console.log("[Agora] onConnectionStateChanged:", {
+          channelId: connection.channelId,
           state,
-          "reason:",
-          reason
-        );
+          reason,
+        });
         if (this.onConnectionStateChange) {
           this.onConnectionStateChange(state);
         }
@@ -237,12 +241,13 @@ class AgoraService {
         reason: number,
         elapsed: number
       ) => {
-        console.log(
-          "AgoraService: Remote video state changed:",
+        console.log("[Agora] onRemoteVideoStateChanged:", {
+          channelId: connection.channelId,
           remoteUid,
-          "state:",
-          state
-        );
+          state,
+          reason,
+          elapsed,
+        });
         // State 2 = enabled, other states = disabled
         this.updateParticipantVideo(remoteUid, state === 2);
       },
@@ -257,12 +262,13 @@ class AgoraService {
         reason: number,
         elapsed: number
       ) => {
-        console.log(
-          "AgoraService: Remote audio state changed:",
+        console.log("[Agora] onRemoteAudioStateChanged:", {
+          channelId: connection.channelId,
           remoteUid,
-          "state:",
-          state
-        );
+          state,
+          reason,
+          elapsed,
+        });
         // State 2 = enabled, other states = disabled
         this.updateParticipantAudio(remoteUid, state === 2);
       },
@@ -293,9 +299,8 @@ class AgoraService {
 
     try {
       // Joining channel
-
-      // Join the channel with specified configuration
-      this.engine?.joinChannel(token || "", channel, uid || 0, {
+      // Always use the provided temp token for now
+      this.engine?.joinChannel(this.TEMP_TOKEN, channel, uid || 0, {
         channelProfile: ChannelProfileType.ChannelProfileCommunication,
         clientRoleType: ClientRoleType.ClientRoleBroadcaster,
         publishMicrophoneTrack: true,
@@ -303,7 +308,6 @@ class AgoraService {
         autoSubscribeAudio: true,
         autoSubscribeVideo: true,
       });
-
       // Join channel request sent successfully
     } catch (error) {
       console.error("AgoraService: Failed to join channel:", error);
@@ -601,9 +605,11 @@ class AgoraService {
         await this.leaveChannel();
       }
 
-      // Destroy the engine
+      // Destroy/release the engine
       if (this.engine) {
-        this.engine.destroy();
+        if (typeof this.engine.release === "function") {
+          this.engine.release();
+        }
         this.engine = null;
       }
 

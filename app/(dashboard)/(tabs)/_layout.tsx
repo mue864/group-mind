@@ -1,33 +1,39 @@
-import { memo } from "react";
-import tab from "@/assets/icons/tab";
 import { Tabs } from "expo-router";
-import { Image, Text, View, Platform } from "react-native";
+import { Book, Home, Users, Video, BookOpenText } from "lucide-react-native";
+import { memo } from "react";
+import { Platform, Text, View } from "react-native";
 
 // Memoized TabIcon for better performance
-const TabIcon = memo(({ color, focused, icon, name }) => {
-  return (
-    <View className="w-20 justify-center items-center mt-5">
-      <Image
-        source={icon}
-        resizeMode="contain"
-        className="w-10 h-10"
-        tintColor={color}
-        accessibilityRole="image"
-        accessibilityLabel={`${name} tab icon`}
-      />
-      <Text
-        className={`${
-          focused ? "text-primary" : "text-[#757474]"
-        } font-poppins-semiBold text-sm `}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.8}
-      >
-        {name}
-      </Text>
-    </View>
-  );
-});
+const TabIcon = memo(
+  ({
+    color,
+    focused,
+    icon,
+    name,
+  }: {
+    color: string;
+    focused: boolean;
+    icon: any;
+    name: string;
+  }) => {
+    const IconComponent = icon;
+    return (
+      <View className="w-20 justify-center items-center mt-2">
+        <IconComponent color={color} size={28} />
+        <Text
+          className={`${
+            focused ? "text-primary" : "text-[#757474]"
+          } font-poppins-semiBold text-xs`}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
+          {name}
+        </Text>
+      </View>
+    );
+  }
+);
 
 TabIcon.displayName = "TabIcon";
 
@@ -37,25 +43,25 @@ const TAB_CONFIG = [
     name: "home",
     title: "Dashboard",
     label: "Home",
-    icon: tab.home,
+    icon: Home,
   },
   {
     name: "groups",
     title: "Groups",
     label: "Groups",
-    icon: tab.groups,
+    icon: Users,
   },
   {
     name: "resources",
     title: "Resources",
     label: "Resources",
-    icon: tab.resources,
+    icon: BookOpenText,
   },
   {
     name: "liveSession",
     title: "Live Sessions",
     label: "Live",
-    icon: tab.sessions,
+    icon: Video,
   },
 ];
 
@@ -68,7 +74,7 @@ const DashboardLayout = () => {
         tabBarShowLabel: false,
         tabBarStyle: {
           borderRadius: 16,
-          height: Platform.OS === "ios" ? 85 : 75,
+          height: Platform.OS === "ios" ? 85 : 65,
           position: "absolute",
           bottom: Platform.OS === "ios" ? 25 : 15,
           left: 15,

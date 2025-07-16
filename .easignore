@@ -1,0 +1,92 @@
+# EAS Ignore File
+# This file tells EAS Build which files/folders to exclude from upload.
+# Be more aggressive than .gitignore for faster, smaller builds.
+
+# Node modules (EAS installs dependencies itself)
+node_modules/
+
+# Version control
+.git/
+.github/
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Build output and caches
+build/
+dist/
+out/
+coverage/
+.expo/
+.expo-shared/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test output and test files
+__tests__/
+*.test.js
+*.test.ts
+*.test.tsx
+
+# Android/iOS build artifacts and caches
+android/.gradle/
+android/.cxx/
+android/.externalNativeBuild/
+android/app/build/
+ios/build/
+ios/Pods/
+
+# Keystores, credentials, and sensitive files
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.der
+*.cer
+*.crt
+*.pem
+
+# Archives and compressed files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# Log, temp, and backup files
+*.log
+*.tmp
+*.bak
+
+# Lock files (optional, EAS can use these if you want reproducible builds)
+# package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Miscellaneous
+*.lock
+
+# Ignore local documentation and markdown files (optional)
+documentation/
+*.md
+
+# Ignore sample code and unused scripts (customize as needed)
+agora/sampleCode.tsx
+try.ts 
+
+# Ignore additional unnecessary files
+expo-env.d.ts
+declarations.d.ts
+nativewind-env.d.ts
+nativewind.d.ts
+firebase.d.ts
+template.md
+dev-log.md
+README.md 
+

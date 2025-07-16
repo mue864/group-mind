@@ -31,7 +31,6 @@ const MyComponent = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleFileUploaded = (fileUrl: string, fileName: string) => {
-    console.log("File uploaded:", fileName, fileUrl);
     // Handle the uploaded file (save to database, etc.)
   };
 

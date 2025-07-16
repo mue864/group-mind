@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -58,6 +59,13 @@ const SignInScreen = () => {
     }
   };
 
+  const handleGooglePress  = () => {
+    Alert.alert(
+      "Not Yet Implemented",
+      "Use email/password signin for now"
+    )
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -93,10 +101,7 @@ const SignInScreen = () => {
           placeholder={Strings.login.emailPlaceholder}
           value={email}
           onChangeText={setEmail}
-          method="email"
           secureTextEntry={false}
-          borderColor
-          setValue={setEmail}
         />
 
         <View style={{ height: 18 }} />
@@ -105,10 +110,7 @@ const SignInScreen = () => {
           placeholder={Strings.login.passwordPlaceholder}
           value={password}
           onChangeText={setPassword}
-          method="password"
           secureTextEntry
-          borderColor
-          setValue={setPassword}
         />
 
         <Button
@@ -141,7 +143,9 @@ const SignInScreen = () => {
           or
         </Text>
 
-        <Pressable style={{ width: "100%" }}>
+        <Pressable style={{ width: "100%" }}
+        onPress={handleGooglePress}
+        >
           <View
             style={{
               flexDirection: "row",

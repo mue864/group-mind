@@ -210,13 +210,15 @@ const GroupCard = ({
           {/* Enhanced Group Name Overlay */}
           <View className="absolute bottom-4 left-4 right-4">
             <Text
-              className="text-white font-bold text-xl mb-1"
+              className="text-white font-poppins-semiBold text-xl mb-1"
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {name}
             </Text>
-            <Text className="text-white/80 text-sm">Study Group</Text>
+            <Text className="text-white/80 text-sm font-inter">
+              Group
+            </Text>
           </View>
         </View>
 
@@ -258,12 +260,10 @@ const GroupCard = ({
               )}
 
               <View className="flex-1">
-                <Text className="font-bold text-gray-800 text-base mb-1">
-                  {isLoading
-                    ? "Loading..."
-                    : groupCreatorName || "Unknown Creator"}
+                <Text className="text-gray-800 text-base font-poppins-semiBold mb-1">
+                  {isLoading ? "Loading..." : groupCreatorName}
                 </Text>
-                <Text className="text-gray-500 text-sm font-medium">
+                <Text className="text-gray-500 text-sm font-poppins-semiBold">
                   Group Creator
                 </Text>
               </View>
@@ -275,8 +275,8 @@ const GroupCard = ({
                 <View className="w-6 h-6 bg-blue-100 rounded-full items-center justify-center mr-2">
                   <Ionicons name="people" size={14} color="#3b82f6" />
                 </View>
-                <Text className="text-blue-600 font-bold text-sm">
-                  {members.length}
+                <Text className="text-blue-600 font-poppins-semiBold text-sm">
+                  {members?.length || 0}
                 </Text>
               </View>
             </View>
@@ -285,7 +285,7 @@ const GroupCard = ({
           {/* Enhanced Description */}
           <View className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-4 mb-4 border border-gray-100">
             <Text
-              className="text-gray-700 text-sm leading-5"
+              className="text-gray-700 text-sm leading-5 font-inter"
               numberOfLines={2}
               ellipsizeMode="tail"
             >

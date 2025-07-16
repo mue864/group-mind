@@ -9,7 +9,6 @@ import { Colors } from "@/constants";
 import { useInterval } from "@/hooks/useInterval";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
-import { usePostContext } from "@/store/PostContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
@@ -18,6 +17,7 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  RefreshControl,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -45,14 +45,29 @@ type QaPost = {
 
 const Home = () => {
   const router = useRouter();
-  const { groups, allGroups, loading, user } = useGroupContext();
+  const { groups, allGroups, loading, user, refreshGroups, fetchAllGroups } =
+    useGroupContext();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const screenWidth = Dimensions.get("window").width;
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   const [qaPosts, setQaPosts] = useState<QaPost[]>([]);
   const [qaLoading, setQaLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const userID = user?.uid;
+
+  // Refresh function for pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Refresh both user groups and all groups
+      await Promise.all([refreshGroups(), fetchAllGroups()]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshGroups, fetchAllGroups]);
 
   // Fetch Q&A posts from all user's groups
   useEffect(() => {
@@ -201,7 +216,7 @@ const Home = () => {
 
   // Create a single FlatList with all content
   const renderMainContent = useCallback(
-    ({ item }: {item: any}) => {
+    ({ item }: { item: any }) => {
       if (item.type === "scheduledCards") {
         return (
           <View>
@@ -229,7 +244,7 @@ const Home = () => {
           <View className="mx-4 mt-6 mb-5">
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="font-inter font-bold text-xl text-gray-800">
+                <Text className="font-poppins-semiBold text-xl text-gray-800">
                   Recent Q&A
                 </Text>
                 <Text className="font-inter text-gray-500 text-sm mt-1">
@@ -272,16 +287,12 @@ const Home = () => {
             <View className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6 border border-gray-100">
               <View className="items-center">
                 <View className="w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full items-center justify-center mb-4">
-                  <Ionicons
-                    name="help-circle-outline"
-                    size={32}
-                    color="white"
-                  />
+                  <Ionicons name="help-circle-outline" size={32} color="blue" />
                 </View>
-                <Text className="font-bold text-gray-800 text-lg text-center mb-2">
+                <Text className="font-poppins-semiBold text-gray-800 text-lg text-center mb-2">
                   No Q&A Posts Yet
                 </Text>
-                <Text className="text-gray-600 text-center text-sm leading-5 mb-4">
+                <Text className="text-gray-600 text-center font-inter text-sm leading-5 mb-4">
                   Start asking questions in your study groups to see them here!
                 </Text>
                 <TouchableOpacity
@@ -304,7 +315,7 @@ const Home = () => {
       if (item.type === "suggestedHeader") {
         return (
           <View className="mx-4 mb-4">
-            <Text className="font-inter font-bold text-xl mt-3">
+            <Text className="font-poppins-semiBold text-xl mt-3">
               Groups You May be Interested In
             </Text>
             <Text className="font-inter text-gray-500 text-sm mt-1">
@@ -334,7 +345,7 @@ const Home = () => {
           >
             <View className="flex-row items-center justify-center">
               <Ionicons name="search" size={20} color="#4169E1" />
-              <Text className="text-blue-600 font-inter font-semibold text-lg ml-2">
+              <Text className="text-blue-600 font-poppins-semiBold text-lg ml-2">
                 Explore More Groups
               </Text>
             </View>
@@ -351,7 +362,7 @@ const Home = () => {
       handleUserScroll,
       router,
       recentQaPosts,
-      scheduledGroups
+      scheduledGroups,
     ]
   );
 
@@ -441,7 +452,11 @@ const Home = () => {
           initialNumToRender={3}
           windowSize={5}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 100}}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          key={`home-${groups.length}-${suggestedGroups.length}`} // Force re-render when groups update
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       )}
     </View>

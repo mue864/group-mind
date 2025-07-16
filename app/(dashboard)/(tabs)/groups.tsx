@@ -3,9 +3,10 @@ import { useGroupContext } from "@/store/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Dimensions,
+  RefreshControl,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -45,7 +46,7 @@ const TabButton: React.FC<TabButtonProps> = ({
         >
           <View className="flex-row items-center justify-center">
             <Text
-              className={`font-bold text-base ${
+              className={` text-base font-poppins-semiBold ${
                 isActive ? "text-white" : "text-gray-600"
               }`}
             >
@@ -80,11 +81,26 @@ const TabButton: React.FC<TabButtonProps> = ({
 
 const Groups = () => {
   const router = useRouter();
-  const { groups, allGroups, user, loading } = useGroupContext();
+  const { groups, allGroups, user, loading, refreshGroups, fetchAllGroups } =
+    useGroupContext();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"joined" | "all">("joined");
+  const [refreshing, setRefreshing] = useState(false);
 
   const onStateChange = ({ open }: { open: boolean }) => setOpen(open);
+
+  // Refresh function for pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Refresh both user groups and all groups
+      await Promise.all([refreshGroups(), fetchAllGroups()]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshGroups, fetchAllGroups]);
 
   // Separate joined groups from all groups
   const joinedGroups = useMemo(() => {
@@ -243,7 +259,7 @@ const Groups = () => {
         <StatusBar barStyle={"dark-content"} />
 
         {/* Enhanced Header with tabs */}
-        <View className="bg-white border-b border-gray-100 pt-12 pb-6">
+        <View className="bg-white border-b border-gray-100 pt-5 pb-6">
           <LinearGradient
             colors={["#667eea", "#764ba2"]}
             className="absolute top-0 left-0 right-0 h-1"
@@ -251,10 +267,10 @@ const Groups = () => {
 
           <View className="flex-row justify-between items-center px-6 mb-6">
             <View>
-              <Text className="text-3xl font-bold text-gray-800 mb-1">
+              <Text className="text-3xl font-poppins-semiBold text-gray-800 mb-1">
                 Groups
               </Text>
-              <Text className="text-gray-500 text-base">
+              <Text className="text-gray-500 text-base font-poppins">
                 {activeTab === "joined"
                   ? "Your study communities"
                   : "Discover new groups"}
@@ -307,7 +323,14 @@ const Groups = () => {
               initialNumToRender={2}
               maxToRenderPerBatch={5}
               numColumns={1}
-              key={activeTab} // Force re-render when tab changes
+              key={`${activeTab}-${
+                activeTab === "joined"
+                  ? joinedGroups.length
+                  : availableGroups.length
+              }`} // Force re-render when tab changes or groups update
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
             />
           )}
         </View>

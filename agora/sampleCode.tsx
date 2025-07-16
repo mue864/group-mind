@@ -24,10 +24,11 @@ import {
 } from "react-native-agora";
 
 // Define basic information
-const appId = "<-- Insert App ID -->";
-const token = "<-- Insert Token -->";
-const channelName = "<-- Insert Channel Name -->";
-const localUid = 0; // Local user Uid, no need to modify
+const appId = "6789f301a9b14fbd855543bc208187b3";
+const token =
+  "007eJxTYMh7UPn/u67p5/k7n/6+fiPzyOaDzpdMrBbz5zHdWqy+qdJVgcHM3MIyzdjAMNEyydAkLSnFwtTU1MQ4KdnIwMLQwjzJWKS5PKMhkJFBQNWdmZEBAkF8AwaF9KL80gJdg/y8JG9TE9MAv8iUiEzPoCAvC39dQ3NTIzMzI0MLYwNLQ12LzKSSkkoGBgDIViyl";
+const channelName = "test"; // Use the same string on both devices
+const localUid = 0; // Set to a unique number per device for testing, e.g., 1 for device A, 2 for device B
 
 const App = () => {
   const agoraEngineRef = useRef<IRtcEngine>(); // IRtcEngine instance
@@ -43,8 +44,10 @@ const App = () => {
       setupEventHandler();
     };
     init();
+    // Cleanup on unmount
     return () => {
-      cleanupAgoraEngine(); // Ensure this is synchronous
+      agoraEngineRef.current?.unregisterEventHandler(eventHandler.current!);
+      agoraEngineRef.current?.release();
     };
   }, []); // Empty dependency array ensures it runs only once
 
@@ -140,13 +143,6 @@ const App = () => {
     } catch (e) {
       // Error occurred during leave
     }
-  };
-
-  const cleanupAgoraEngine = () => {
-    return () => {
-      agoraEngineRef.current?.unregisterEventHandler(eventHandler.current!);
-      agoraEngineRef.current?.release();
-    };
   };
 
   // Render user interface

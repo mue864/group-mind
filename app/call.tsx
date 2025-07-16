@@ -35,8 +35,8 @@ const agoraService = AgoraService.getInstance();
  * actual video calling experience.
  */
 export default function GroupCallScreen() {
-  // Get group ID from route parameters
-  const { groupId } = useLocalSearchParams();
+  // Get group ID and channel from route parameters
+  const { groupId, channel, type } = useLocalSearchParams();
 
   // Get user context for authentication and user info
   const { user, userInformation } = useGroupContext();
@@ -45,8 +45,11 @@ export default function GroupCallScreen() {
   const groupName = "Group"; // You can get this from your group context if needed
 
   // State management for call type and call status
-  const [callType, setCallType] = useState<"audio" | "video">("video");
+  const [callType, setCallType] = useState<"audio" | "video">(
+    (type as "audio" | "video") || "video"
+  );
   const [isInCall, setIsInCall] = useState(false);
+  const [agoraUid, setAgoraUid] = useState<number | null>(null);
 
   /**
    * Initialize Agora service and validate user authentication
@@ -64,33 +67,31 @@ export default function GroupCallScreen() {
       return;
     }
 
-    // Check if groupId is provided
-    if (!groupId) {
-      // Group ID missing, redirecting
-      Alert.alert("Invalid Call", "Group ID is missing.", [
+    // Check if groupId and channel are provided
+    if (!groupId || !channel) {
+      // Required parameters missing, redirecting
+      Alert.alert("Invalid Call", "Call parameters are missing.", [
         { text: "OK", onPress: () => router.back() },
       ]);
       return;
     }
 
-    // Initialize Agora service for video calling
-    const initializeAgora = async () => {
-      try {
-        // Initializing Agora service
-        await agoraService.initialize();
-        // Agora service initialized successfully
-      } catch (error) {
-        console.error("GroupCallScreen: Failed to initialize Agora:", error);
-        Alert.alert(
-          "Call Error",
-          "Failed to initialize video calling. Please try again.",
-          [{ text: "OK", onPress: () => router.back() }]
-        );
-      }
-    };
-
-    initializeAgora();
-  }, [user, userInformation, groupId]);
+    // Generate a unique numeric UID for Agora
+    let uid = 0;
+    if (userInformation?.userID) {
+      const parsed = parseInt(
+        userInformation.userID.replace(/\D/g, "").slice(-8)
+      );
+      uid =
+        !isNaN(parsed) && parsed > 0
+          ? parsed
+          : Math.floor(Math.random() * 1000000);
+    } else {
+      uid = Math.floor(Math.random() * 1000000);
+    }
+    setAgoraUid(uid);
+    console.log("Agora UID:", uid);
+  }, [user, userInformation, groupId, channel]);
 
   /**
    * Handle call ending
@@ -116,46 +117,29 @@ export default function GroupCallScreen() {
    * Start a call with the specified type
    * Transitions from call selection to actual call interface
    *
-   * @param type - Type of call to start (audio or video)
+   * @param callType - Type of call to start (audio or video)
    */
-  const handleStartCall = (type: "audio" | "video") => {
+  const handleStartCall = (callType: "audio" | "video") => {
     // Starting call
-    setCallType(type);
+    setCallType(callType);
     setIsInCall(true);
   };
 
   // Render call type selection interface if not in call
   if (!isInCall) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#F5F6FA",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <View className="flex-1 bg-background justify-center items-center">
         {/* Status bar for call selection screen */}
         <StatusBar style="dark" />
 
         {/* Call type selection container */}
-        <View style={{ padding: 20, alignItems: "center" }}>
+        <View className="p-5 items-center">
           {/* Screen title */}
-          <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
-            Start Group Call
-          </Text>
+          <Text className="text-2xl font-bold mb-5">Start Group Call</Text>
 
           {/* Video call button */}
           <TouchableOpacity
-            style={{
-              backgroundColor: "#4169E1",
-              paddingHorizontal: 30,
-              paddingVertical: 15,
-              borderRadius: 25,
-              marginBottom: 15,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
+            className="bg-primary px-8 py-4 rounded-full mb-4 flex-row items-center"
             onPress={() => handleStartCall("video")}
             accessibilityLabel="Start video call"
             accessibilityRole="button"
@@ -166,21 +150,14 @@ export default function GroupCallScreen() {
               color="#fff"
               style={{ marginRight: 10 }}
             />
-            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
+            <Text className="text-white text-base font-semibold">
               Start Video Call
             </Text>
           </TouchableOpacity>
 
           {/* Audio call button */}
           <TouchableOpacity
-            style={{
-              backgroundColor: "#059669",
-              paddingHorizontal: 30,
-              paddingVertical: 15,
-              borderRadius: 25,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
+            className="bg-emerald-600 px-8 py-4 rounded-full flex-row items-center"
             onPress={() => handleStartCall("audio")}
             accessibilityLabel="Start audio call"
             accessibilityRole="button"
@@ -191,7 +168,7 @@ export default function GroupCallScreen() {
               color="#fff"
               style={{ marginRight: 10 }}
             />
-            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
+            <Text className="text-white text-base font-semibold">
               Start Audio Call
             </Text>
           </TouchableOpacity>
@@ -200,19 +177,18 @@ export default function GroupCallScreen() {
     );
   }
 
-  // Render video call interface when call is active
-  return (
-    <View style={{ flex: 1 }}>
-      {/* Hide status bar for immersive call experience */}
-      <StatusBar hidden />
-
-      {/* VideoCall component with call configuration */}
-      <VideoCall
-        channelName={`group-${groupId}`}
-        onEndCall={handleEndCall}
-        callType={callType}
-        groupName={groupName}
-      />
-    </View>
-  );
+  // Render the actual video call interface
+  if (isInCall && agoraUid !== null) {
+    return (
+      <View className="flex-1">
+        <StatusBar style="light" />
+        <VideoCall
+          channelName={channel as string}
+          callType={callType}
+          onEndCall={handleEndCall}
+          groupName={groupName}
+        />
+      </View>
+    );
+  }
 }

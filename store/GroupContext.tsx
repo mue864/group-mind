@@ -3,6 +3,7 @@ import { reviveTimestamps } from "@/utils/formatDate";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
+  addDoc,
   arrayRemove,
   arrayUnion,
   collection,
@@ -169,6 +170,17 @@ interface GroupContextType {
     userId: string,
     groupId: string
   ) => Promise<boolean>;
+  saveGroupResource: (params: {
+    groupId: string;
+    name: string;
+    url: string;
+    type: string;
+    uploadedBy: string;
+    uploadedByUserName: string;
+    uploadedAt: Timestamp;
+    fileSize?: number;
+  }) => Promise<void>;
+  getAllUserResources: (userId: string | undefined) => Promise<any[]>;
 }
 
 interface UserInfo {
@@ -908,24 +920,34 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // New function to fetch all available groups for suggestions
+  // Real-time listener for all groups to detect new group creation
   const fetchAllGroups = async () => {
     if (!user) return;
 
     try {
       const groupsCollection = collection(db, "groups");
-      const groupsSnapshot = await getDocs(groupsCollection);
 
-      const allGroupsData: Group[] = [];
-      groupsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data) {
-          const groupData = { ...data, id: doc.id } as Group;
-          allGroupsData.push(groupData);
+      // Use real-time listener instead of one-time fetch
+      const unsubscribe = onSnapshot(
+        groupsCollection,
+        (snapshot) => {
+          const allGroupsData: Group[] = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+              const groupData = { ...data, id: doc.id } as Group;
+              allGroupsData.push(groupData);
+            }
+          });
+          setAllGroups(allGroupsData);
+        },
+        (error) => {
+          console.error("Error listening to all groups updates:", error);
         }
-      });
+      );
 
-      setAllGroups(allGroupsData);
+      // Store unsubscribe function for cleanup (you can add cleanup logic if needed)
+      // For now, we'll let it run indefinitely as it's a real-time listener
     } catch (error) {
       console.error("Error fetching all groups:", error);
     }
@@ -938,30 +960,79 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user]);
 
-  // get and save the user information locally
+  // get and save the user information locally with real-time updates
   const getCurrentUserInfo = async () => {
     if (!user) return;
+
     try {
       const userRef = firestoreDoc(db, "users", user.uid);
-      const docRef = await getDoc(userRef);
 
-      if (docRef.exists()) {
-        const data = docRef.data();
-        const savedData = (data: any) => {
-          return {
-            userName: data.userName,
-            profilePicture: data.profileImage,
-            purpose: data.purpose,
-            level: data.level,
-            joinedGroups: data.joinedGroups,
-            canExplainToPeople: data.canExplainToPeople,
-            userID: user.uid,
-          } satisfies UserInfo;
-        };
-        setUserInformation(savedData(data));
-      }
+      // Use real-time listener instead of one-time fetch
+      const unsubscribe = onSnapshot(
+        userRef,
+        (doc) => {
+          if (doc.exists()) {
+            const data = doc.data();
+            const savedData = {
+              userName: data.userName,
+              profilePicture: data.profileImage,
+              purpose: data.purpose,
+              level: data.level,
+              joinedGroups: data.joinedGroups,
+              canExplainToPeople: data.canExplainToPeople,
+              userID: user.uid,
+              bio: data.bio || "",
+            } satisfies UserInfo;
+            setUserInformation(savedData);
+          }
+        },
+        (error) => {
+          console.error("Error listening to user data updates:", error);
+        }
+      );
+
+      // Store unsubscribe function for cleanup (you can add cleanup logic if needed)
+      // For now, we'll let it run indefinitely as it's a real-time listener
     } catch (error) {
       console.error("Unable to fetch user data", error);
+    }
+  };
+
+  /**
+   * Fetch all resources from all groups the user is a member of
+   */
+  const getAllUserResources = async (userId: string | undefined) => {
+    if (!user) return [];
+    try {
+      // Get all groups the user is a member of
+      const groupsSnapshot = await getDocs(collection(db, "groups"));
+      const userGroups = groupsSnapshot.docs.filter((doc) => {
+        const data = doc.data();
+        return data.members && data.members.includes(userId);
+      });
+      let allResources: any[] = [];
+      for (const groupDoc of userGroups) {
+        const groupId = groupDoc.id;
+        const groupName = groupDoc.data().name;
+        const resourcesSnapshot = await getDocs(
+          collection(db, "groups", groupId, "resources")
+        );
+        const groupResources = resourcesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          groupName,
+          groupId,
+        }));
+        allResources.push(...groupResources);
+      }
+      // Sort by uploadedAt descending
+      allResources.sort(
+        (a, b) => b.uploadedAt?.seconds - a.uploadedAt?.seconds
+      );
+      return allResources;
+    } catch (error) {
+      console.error("Error fetching user resources:", error);
+      return [];
     }
   };
 
@@ -982,6 +1053,46 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     const membershipRef = firestoreDoc(db, "users", userId, "groups", groupId);
     const docSnap = await getDoc(membershipRef);
     return docSnap.exists() && docSnap.data().onboardingCompleted === true;
+  };
+
+  /**
+   * Save a resource to the group's resources subcollection in Firestore
+   */
+  const saveGroupResource = async ({
+    groupId,
+    name,
+    url,
+    type,
+    uploadedBy,
+    uploadedByUserName,
+    uploadedAt,
+    fileSize,
+  }: {
+    groupId: string;
+    name: string;
+    url: string;
+    type: string;
+    uploadedBy: string;
+    uploadedByUserName: string;
+    uploadedAt: Timestamp;
+    fileSize?: number;
+  }) => {
+    try {
+      await addDoc(collection(db, "groups", groupId, "resources"), {
+        name,
+        url,
+        type,
+        uploadedBy,
+        uploadedByUserName,
+        uploadedAt,
+        fileSize: fileSize || 0,
+        groupId,
+      });
+      Toast.show({ type: "success", text1: "Resource uploaded!" });
+    } catch (error) {
+      console.error("Error saving resource:", error);
+      Toast.show({ type: "error", text1: "Failed to save resource." });
+    }
   };
 
   return (
@@ -1025,6 +1136,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         getCurrentUserInfo, // <-- add this
         setGroupOnboardingCompleted,
         checkGroupOnboardingCompleted,
+        saveGroupResource,
+        getAllUserResources,
       }}
     >
       {children}

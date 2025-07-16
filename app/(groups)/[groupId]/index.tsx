@@ -40,6 +40,7 @@ function GroupQA() {
   const [localGroupName, setLocalGroupName] = useState("");
 
   const router = useRouter();
+  console.log("GroupId: ", groupId);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -68,6 +69,8 @@ function GroupQA() {
         const cachedLocalData = await AsyncStorage.getItem(`local-${groupId}`);
         if (cachedLocalData) {
           setMessagesById(JSON.parse(cachedLocalData));
+          console.log("fecthed with: ", groupId);
+          console.log("Group Data: ", JSON.parse(cachedLocalData))
         } else {
           // No cached messages available
         }
@@ -332,6 +335,12 @@ function GroupQA() {
                 <Text className="font-poppins text-gray-500 ">
                   No Posts Yet.
                 </Text>
+
+                <TouchableOpacity
+                onPress={() => router.push("/call")}
+                >
+                  <Text>Navigate to Call</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
