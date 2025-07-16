@@ -335,12 +335,6 @@ function GroupQA() {
                 <Text className="font-poppins text-gray-500 ">
                   No Posts Yet.
                 </Text>
-
-                <TouchableOpacity
-                onPress={() => router.push("/call")}
-                >
-                  <Text>Navigate to Call</Text>
-                </TouchableOpacity>
               </View>
             )}
           </View>
