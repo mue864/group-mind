@@ -11,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform
 } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
 import { FAB, Portal, Provider } from "react-native-paper";
@@ -40,13 +41,13 @@ const TabButton: React.FC<TabButtonProps> = ({
       <View className="relative">
         <LinearGradient
           colors={isActive ? ["#667eea", "#764ba2"] : ["#f3f4f6", "#e5e7eb"]}
-          className="rounded-2xl py-4 px-6"
+          className="rounded-2xl py-4 px-6 "
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
           <View className="flex-row items-center justify-center">
             <Text
-              className={` text-base font-poppins-semiBold ${
+              className={` text-base font-poppins-semiBold ${Platform.OS === "ios" ? "p-4" : ""} ${
                 isActive ? "text-white" : "text-gray-600"
               }`}
             >
@@ -255,7 +256,7 @@ const Groups = () => {
         />
       </Portal>
 
-      <View className="flex-1 bg-gradient-to-b from-gray-50 to-white">
+      <View className="flex-1 bg-white">
         <StatusBar barStyle={"dark-content"} />
 
         {/* Enhanced Header with tabs */}

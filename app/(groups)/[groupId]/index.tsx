@@ -291,7 +291,7 @@ function GroupQA() {
           }}
           fabStyle={{ backgroundColor: "#4169E1" }}
         />
-        <View className="bg-background flex-1">
+        <View className="bg-white flex-1">
           <View className="flex flex-row items-center justify-between mx-4 mt-4 relative">
             {/* Back Button */}
             <TouchableOpacity
@@ -316,7 +316,7 @@ function GroupQA() {
           </View>
 
           {/* Page Name */}
-          <View className="mx-5 mt-10">
+          <View className="mx-5 mt-10 mb-5">
             <Text className="font-inter font-bold text-xl text-primary">
               Q&A Board
             </Text>

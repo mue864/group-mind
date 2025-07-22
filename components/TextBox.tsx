@@ -1,4 +1,4 @@
-import Colors from "@/constants/colors";
+import Colors from "@/constants/Colors";
 import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, View, ViewStyle } from "react-native";
 
@@ -10,6 +10,35 @@ interface TextBoxProps {
   errorText?: string;
   textColor?: string;
   style?: ViewStyle;
+  textContentType?:
+    | "none"
+    | "URL"
+    | "addressCity"
+    | "addressCityAndState"
+    | "addressState"
+    | "countryName"
+    | "creditCardNumber"
+    | "emailAddress"
+    | "familyName"
+    | "fullStreetAddress"
+    | "givenName"
+    | "jobTitle"
+    | "location"
+    | "middleName"
+    | "name"
+    | "namePrefix"
+    | "nameSuffix"
+    | "nickname"
+    | "organizationName"
+    | "postalCode"
+    | "streetAddressLine1"
+    | "streetAddressLine2"
+    | "sublocality"
+    | "telephoneNumber"
+    | "username"
+    | "password"
+    | "newPassword"
+    | "oneTimeCode";
 }
 
 const TextBox = ({
@@ -20,6 +49,7 @@ const TextBox = ({
   errorText,
   textColor = "#222",
   style,
+  textContentType,
 }: TextBoxProps) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -44,6 +74,7 @@ const TextBox = ({
         onBlur={() => setIsFocused(false)}
         autoCapitalize="none"
         autoCorrect={false}
+        textContentType={textContentType}
       />
       {!!errorText && <Text style={styles.errorText}>{errorText}</Text>}
     </View>

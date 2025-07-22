@@ -74,9 +74,9 @@ const DashboardLayout = () => {
         tabBarShowLabel: false,
         tabBarStyle: {
           borderRadius: 16,
-          height: Platform.OS === "ios" ? 85 : 65,
+          height: Platform.OS === "ios" ? 65 : 65,
           position: "absolute",
-          bottom: Platform.OS === "ios" ? 25 : 15,
+          bottom: Platform.OS === "ios" ? 15 : 15,
           left: 15,
           right: 15,
           marginLeft: 15,
@@ -87,9 +87,9 @@ const DashboardLayout = () => {
           shadowColor: "#000",
           shadowOffset: {
             width: 0,
-            height: 4,
+            height: 2,
           },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.3,
           shadowRadius: 12,
           paddingTop: 8,
           paddingBottom: Platform.OS === "ios" ? 20 : 8,

@@ -128,8 +128,8 @@ const SignUpScreen = () => {
     Alert.alert(
       "Not yet implemented",
       "Use Email and password signup for now."
-    )
-  }
+    );
+  };
 
   useEffect(() => {
     setPasswordMatch(validatePasswords(password, confirmPassword));
@@ -179,6 +179,7 @@ const SignUpScreen = () => {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          textContentType="oneTimeCode"
           errorText={
             password.length > 0 && !isPasswordMatch
               ? "Passwords do not match"
@@ -193,6 +194,7 @@ const SignUpScreen = () => {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
+          textContentType="oneTimeCode"
           errorText={
             confirmPassword.length > 0 && !isPasswordMatch
               ? "Passwords do not match"
@@ -230,9 +232,7 @@ const SignUpScreen = () => {
           or
         </Text>
 
-        <Pressable style={{ width: "100%" }}
-        onPress={handleGooglePress}
-        >
+        <Pressable style={{ width: "100%" }} onPress={handleGooglePress}>
           <View
             style={{
               flexDirection: "row",

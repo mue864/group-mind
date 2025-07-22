@@ -1,7 +1,7 @@
 import ImageModal from "@/components/ImageModal";
 import ProfileImage from "@/components/ProfileImage";
 import TextBox from "@/components/TextBox";
-import Colors from "@/constants/colors";
+import Colors from "@/constants/Colors";
 import { auth, db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -192,7 +192,9 @@ const Profile = () => {
           <Text className="text-white text-xl font-poppins-semiBold mt-4">
             {localUserInfo.userName}
           </Text>
-          <Text className="text-white/80 text-sm mt-1 font-poppins">{user.email}</Text>
+          <Text className="text-white/80 text-sm mt-1 font-poppins">
+            {user.email}
+          </Text>
 
           {localUserInfo.bio && (
             <Text className="text-white/90 text-center mt-3 max-w-xs">
@@ -212,13 +214,17 @@ const Profile = () => {
             <Text className="text-2xl font-poppins-semiBold text-primary">
               {stats.groupsJoined}
             </Text>
-            <Text className="text-gray-600 font-poppins text-sm mt-1">Groups Joined</Text>
+            <Text className="text-gray-600 font-poppins text-sm mt-1">
+              Groups Joined
+            </Text>
           </View>
           <View className="flex-1 bg-gray-100 rounded-xl p-4">
             <Text className="text-2xl font-poppins-semiBold text-primary">
               {stats.postsCount}
             </Text>
-            <Text className="text-gray-600 font-poppins text-sm mt-1">Posts Made</Text>
+            <Text className="text-gray-600 font-poppins text-sm mt-1">
+              Posts Made
+            </Text>
           </View>
         </View>
       </View>
@@ -263,7 +269,9 @@ const Profile = () => {
           </View>
 
           <View>
-            <Text className="text-gray-500 text-sm font-poppins">Can Explain to Others</Text>
+            <Text className="text-gray-500 text-sm font-poppins">
+              Can Explain to Others
+            </Text>
             <Text className="text-gray-800 font-poppins-semiBold">
               {localUserInfo.canExplainToPeople ? "Yes" : "No"}
             </Text>

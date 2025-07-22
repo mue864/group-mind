@@ -195,7 +195,7 @@ function GroupChat() {
                     "responses"
                   );
                   // You'd need to count these - this is a simplified example
-                  responseCount = 0; // Implement actual counting logic
+                  responseCount = 0; 
                 } catch (error) {
                   console.log("Error getting response count:", error);
                 }
@@ -366,7 +366,7 @@ function GroupChat() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 50}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 50}
       >
         <KeyboardAwareScrollView
           ref={scrollViewRef}
@@ -375,8 +375,8 @@ function GroupChat() {
           enableAutomaticScroll={true}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          extraScrollHeight={Platform.OS === "ios" ? 100 : 50}
-          extraHeight={Platform.OS === "ios" ? 100 : 50}
+          extraScrollHeight={Platform.OS === "ios" ? 0 : 50}
+          extraHeight={Platform.OS === "ios" ? 0 : 50}
           contentContainerStyle={{
             flexGrow: 1,
             paddingBottom: 40,

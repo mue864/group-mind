@@ -74,7 +74,7 @@ function ViewPost() {
   const [messageTime, setMessageTime] = useState("");
   const { postId, groupId } = useLocalSearchParams();
   const [isSelf] = useState(false);
-  const [isAdmin] = useState(true);
+  const [isAdmin] = useState(false);
   const [isMod] = useState(false);
   const [timeCheck, setCheckTime] = useState("");
   const [isActive, setIsActive] = useState(false);
@@ -347,11 +347,11 @@ function ViewPost() {
   }, [messageTime, messagesByID, postId]);
 
   return (
-    <View className="flex-1 bg-[#F5F6FA]">
+    <View className="flex-1 bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 30}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 30}
       >
         <KeyboardAwareScrollView
           ref={scrollViewRef}
@@ -360,11 +360,10 @@ function ViewPost() {
           enableAutomaticScroll={true}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          extraScrollHeight={Platform.OS === "ios" ? 150 : 50}
-          extraHeight={Platform.OS === "ios" ? 150 : 100}
+          extraScrollHeight={Platform.OS === "ios" ? 0 : 50}
+          extraHeight={Platform.OS === "ios" ? 0 : 100}
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: keyboardVisible ? 5 : 30,
           }}
         >
           {/* Header */}
@@ -503,93 +502,96 @@ function ViewPost() {
         )}
 
         {/* Main Input Area */}
-        <View
-          className="px-4 py-3 border-t border-gray-200 bg-white flex flex-row items-center"
-          style={{ paddingBottom: Platform.OS === "ios" ? 30 : 20 }}
-        >
-          {/* Add Button */}
-          <TouchableOpacity
-            className="justify-center items-center p-2"
-            onPress={() => setIsActive(!isActive)}
-            accessibilityLabel="Add attachment"
-            accessibilityRole="button"
+        {!showReplyInput && (
+          <View
+            className="px-4 py-3 border-t border-gray-200 bg-white flex flex-row items-center"
+            style={{ paddingBottom: Platform.OS === "ios" ? 0 : 20 }}
           >
-            <Image
-              source={messages.Add}
-              className="w-10 h-10"
-              tintColor={isActive ? "#4169E1" : "#64748b"}
-            />
-          </TouchableOpacity>
-
-          {/* Message Input */}
-          <View className="flex-1 mx-2 ">
-            <TextInput
-              value={post}
-              onChangeText={(text) => (setPost(text), setUserTyping(!!text))}
-              mode="outlined"
-              outlineColor="transparent"
-              activeOutlineColor="transparent"
-              cursorColor="#4169E1"
-              textColor="#1e293b"
-              placeholder="Type your message..."
-              placeholderTextColor="#94a3b8"
-              className="bg-gray-100 rounded-2xl px-4 py-2 text-base"
-              contentStyle={{ textAlignVertical: "center" }}
-              style={{ minHeight: 40, maxHeight: 120 }}
-              multiline
-              maxLength={500}
-              accessibilityLabel="Message input"
-            />
-          </View>
-
-          {/* Send Button */}
-          <TouchableOpacity
-            className="justify-center items-center p-2"
-            activeOpacity={post.length === 0 ? 0.5 : 1}
-            disabled={post.length === 0}
-            onPress={() => {
-              if (post.length === 0 || !user) return;
-
-              setIsSending(true);
-              setPost("");
-              responseQaPost(
-                postId.toString(),
-                post,
-                isAdmin,
-                isMod,
-                user.uid,
-                Timestamp.now(),
-                groupId.toString()
-              )
-                .then(() => {
-                  setSendButtonClicked(true);
-
-                  setUserTyping(false);
-                })
-                .catch((error) => {
-                  console.error("Error sending message:", error);
-                  // Optionally show error to user
-                })
-                .finally(() => {
-                  setIsSending(false);
-                });
-            }}
-            accessibilityLabel="Send message"
-            accessibilityRole="button"
-          >
-            <View
-              className={`p-2 rounded-full ${
-                post.length > 0 ? "bg-blue-500" : "bg-gray-300"
-              }`}
+            {/* Add Button */}
+            <TouchableOpacity
+              className="justify-center items-center p-2"
+              onPress={() => setIsActive(!isActive)}
+              accessibilityLabel="Add attachment"
+              accessibilityRole="button"
             >
               <Image
-                source={messages.Send}
-                className="w-6 h-6"
-                tintColor={post.length > 0 ? "#ffffff" : "#94a3b8"}
+                source={messages.Add}
+                className="w-10 h-10"
+                tintColor={isActive ? "#4169E1" : "#64748b"}
+              />
+            </TouchableOpacity>
+
+            {/* Message Input */}
+            <View className="flex-1 mx-2 ">
+              <TextInput
+                value={post}
+                onChangeText={(text) => (setPost(text), setUserTyping(!!text))}
+                mode="outlined"
+                outlineColor="transparent"
+                activeOutlineColor="transparent"
+                cursorColor="#4169E1"
+                textColor="#1e293b"
+                placeholder="Type your message..."
+                placeholderTextColor="#94a3b8"
+                className="bg-gray-100 rounded-2xl px-4 py-2 text-base"
+                contentStyle={{ textAlignVertical: "center" }}
+                style={{ minHeight: 40, maxHeight: 120 }}
+                multiline
+                maxLength={500}
+                accessibilityLabel="Message input"
               />
             </View>
-          </TouchableOpacity>
-        </View>
+
+            {/* Send Button */}
+            <TouchableOpacity
+              className="justify-center items-center p-2"
+              activeOpacity={post.length === 0 ? 0.5 : 1}
+              disabled={post.length === 0}
+              onPress={() => {
+                if (post.length === 0 || !user) return;
+
+                setIsSending(true);
+                setPost("");
+                responseQaPost(
+                  postId.toString(),
+                  post,
+                  isAdmin,
+                  isMod,
+                  user.uid,
+                  Timestamp.now(),
+                  groupId.toString()
+                )
+                  .then(() => {
+                    setSendButtonClicked(true);
+
+                    setUserTyping(false);
+                  })
+                  .catch((error) => {
+                    console.error("Error sending message:", error);
+                    // Optionally show error to user
+                  })
+                  .finally(() => {
+                    setIsSending(false);
+                  });
+              }}
+              accessibilityLabel="Send message"
+              accessibilityRole="button"
+            >
+              <View
+                className={`p-2 rounded-full ${
+                  post.length > 0 ? "bg-blue-500" : "bg-gray-300"
+                }`}
+              >
+                <Image
+                  source={messages.Send}
+                  className="w-6 h-6"
+                  tintColor={post.length > 0 ? "#ffffff" : "#94a3b8"}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <ShareModal
           visible={isActive}
           onDismiss={() => setIsActive(!isActive)}
