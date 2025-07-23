@@ -1,231 +1,312 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
-import webrtcService, { CallParticipant } from "../services/webrtcService";
-import { useGroupContext } from "../store/GroupContext";
 import {
-  checkUnifiedPermissions,
-  PermissionError,
-  requestUnifiedPermissions,
-  showPermissionDeniedAlert,
-} from "../utils/permissions";
+  mediaDevices,
+  MediaStream,
+  RTCIceCandidate,
+  RTCPeerConnection,
+  RTCSessionDescription,
+} from "react-native-webrtc";
 
-export interface UseWebRTCReturn {
-  // State
-  localStream: MediaStream | null;
-  remoteStreams: Map<string, MediaStream>;
-  participants: CallParticipant[];
-  isConnected: boolean;
-  isMuted: boolean;
-  isVideoOff: boolean;
-  isInitializing: boolean;
-  error: string | null;
+const SIGNALING_URL = "ws://192.168.101.113:3001"; // Change to your server address if needed
 
-  // Controls
-  startCall: (roomId: string, callType: "audio" | "video") => Promise<void>;
-  endCall: () => Promise<void>;
-  toggleMute: () => Promise<void>;
-  toggleVideo: () => Promise<void>;
-  switchCamera: () => void;
+export type WebRTCParticipant = {
+  userId: string;
+  userName: string;
+  stream: MediaStream | null;
+  isLocal: boolean;
+};
 
-  // Refs for video elements
-  localVideoRef: React.RefObject<any>;
-  remoteVideoRefs: Map<string, React.RefObject<any>>;
-}
+export type UseWebRTCOptions = {
+  roomId: string;
+  userId: string;
+  userName: string;
+  callType: "audio" | "video";
+};
 
-export const useWebRTC = (): UseWebRTCReturn => {
-  const { user, userInformation } = useGroupContext();
-
-  // State
+export function useWebRTC({
+  roomId,
+  userId,
+  userName,
+  callType,
+}: UseWebRTCOptions) {
+  const [participants, setParticipants] = useState<WebRTCParticipant[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(
-    new Map()
-  );
-  const [participants, setParticipants] = useState<CallParticipant[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(callType === "video");
+  const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Refs
-  const localVideoRef = useRef<any>(null);
-  const remoteVideoRefs = useRef<Map<string, React.RefObject<any>>>(new Map());
+  const ws = useRef<WebSocket | null>(null);
+  const peerConnections = useRef<{ [userId: string]: RTCPeerConnection }>({});
+  const remoteStreams = useRef<{ [userId: string]: MediaStream }>({});
 
-  // Initialize WebRTC service callbacks
+  // --- 1. Get local media stream ---
   useEffect(() => {
-    webrtcService.setCallbacks(
-      (updatedParticipants) => {
-        setParticipants(updatedParticipants);
+    let isMounted = true;
+    (async () => {
+      try {
+        const stream = await mediaDevices.getUserMedia({
+          audio: true,
+          video: callType === "video",
+        });
+        if (isMounted) {
+          setLocalStream(stream);
+          setParticipants([
+            {
+              userId,
+              userName,
+              stream,
+              isLocal: true,
+            },
+          ]);
+        }
+      } catch (err) {
+        setError("Could not access media devices.");
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [callType, userId, userName]);
 
-        // Update remote streams
-        const newRemoteStreams = new Map<string, MediaStream>();
-        updatedParticipants.forEach((participant) => {
-          if (participant.stream && participant.id !== user?.uid) {
-            newRemoteStreams.set(participant.id, participant.stream);
+  // --- 2. Connect to signaling server ---
+  useEffect(() => {
+    if (!localStream) return;
+    const wsUrl = `${SIGNALING_URL}?roomId=${roomId}&userId=${userId}&userName=${encodeURIComponent(
+      userName
+    )}`;
+    const socket = new WebSocket(wsUrl);
+    ws.current = socket;
+
+    socket.onopen = () => {
+      setConnected(true);
+    };
+    socket.onerror = (e) => {
+      setError("WebSocket error");
+    };
+    socket.onclose = () => {
+      setConnected(false);
+    };
+    socket.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        switch (data.type) {
+          case "welcome":
+            // Initiate offer to all existing participants
+            if (data.participants) {
+              for (const p of data.participants) {
+                if (p.id !== userId) {
+                  await createPeerConnection(p.id, p.name, true);
+                }
+              }
+            }
+            break;
+          case "participant-joined":
+            if (data.userId !== userId) {
+              await createPeerConnection(data.userId, data.userName, false);
+            }
+            break;
+          case "offer":
+            await handleOffer(data.fromUserId, data.sdp);
+            break;
+          case "answer":
+            await handleAnswer(data.fromUserId, data.sdp);
+            break;
+          case "ice-candidate":
+            await handleIceCandidate(data.fromUserId, data.candidate);
+            break;
+          case "participant-left":
+            removeParticipant(data.userId);
+            break;
+          default:
+            break;
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    return () => {
+      socket.close();
+      ws.current = null;
+      // Cleanup peer connections
+      Object.values(peerConnections.current).forEach((pc) => pc.close());
+      peerConnections.current = {};
+      remoteStreams.current = {};
+      setParticipants((prev) => prev.filter((p) => p.isLocal));
+    };
+  }, [localStream, roomId, userId, userName]);
+
+  // --- 3. Peer connection logic ---
+  const createPeerConnection = useCallback(
+    async (
+      remoteUserId: string,
+      remoteUserName: string,
+      isInitiator: boolean
+    ) => {
+      if (peerConnections.current[remoteUserId]) return;
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
+      peerConnections.current[remoteUserId] = pc;
+
+      // Add local tracks
+      if (localStream) {
+        localStream.getTracks().forEach((track) => {
+          pc.addTrack(track, localStream);
+        });
+      }
+
+      // Handle remote stream
+      (pc as any).onaddstream = (event: { stream: MediaStream }) => {
+        const stream = event.stream;
+        remoteStreams.current[remoteUserId] = stream;
+        setParticipants((prev) => {
+          const exists = prev.find((p) => p.userId === remoteUserId);
+          if (exists) {
+            return prev.map((p) =>
+              p.userId === remoteUserId ? { ...p, stream } : p
+            );
+          } else {
+            return [
+              ...prev,
+              {
+                userId: remoteUserId,
+                userName: remoteUserName,
+                stream,
+                isLocal: false,
+              },
+            ];
           }
         });
-        setRemoteStreams(newRemoteStreams);
+      };
 
-        // Update connection status
-        setIsConnected(updatedParticipants.length > 1);
-      },
-      (stateChanges) => {
-        if (stateChanges.isMuted !== undefined) {
-          setIsMuted(stateChanges.isMuted);
+      // ICE candidates
+      (pc as any).onicecandidate = (event: {
+        candidate: RTCIceCandidate | null;
+      }) => {
+        if (event.candidate && ws.current) {
+          ws.current.send(
+            JSON.stringify({
+              type: "ice-candidate",
+              targetUserId: remoteUserId,
+              candidate: event.candidate,
+            })
+          );
         }
-        if (stateChanges.isVideoOff !== undefined) {
-          setIsVideoOff(stateChanges.isVideoOff);
+      };
+
+      // Negotiate
+      if (isInitiator) {
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: callType === "audio",
+          offerToReceiveVideo: callType === "video",
+        });
+        await pc.setLocalDescription(offer);
+        if (ws.current) {
+          ws.current.send(
+            JSON.stringify({
+              type: "offer",
+              targetUserId: remoteUserId,
+              sdp: offer,
+            })
+          );
         }
-      }
-    );
-  }, [user?.uid]);
-
-  // Start call with proper permission handling
-  const startCall = useCallback(
-    async (roomId: string, callType: "audio" | "video" = "video") => {
-      if (!user || !userInformation) {
-        setError("User not authenticated");
-        return;
-      }
-
-      setIsInitializing(true);
-      setError(null);
-
-      try {
-        // For web, we can't reliably check permissions without requesting them
-        // So we'll skip the permission check and let the WebRTC service handle it
-        if (Platform.OS !== "web") {
-          // Check if permissions are already granted (mobile only)
-          const currentPermissions = await checkUnifiedPermissions(callType);
-
-          if (!currentPermissions.canProceed) {
-            // Request permissions with proper error handling
-            const permissions = await requestUnifiedPermissions(callType);
-
-            if (!permissions.canProceed) {
-              // Show permission denied alert
-              showPermissionDeniedAlert(
-                callType === "video" ? "both" : "microphone"
-              );
-              return;
-            }
-          }
-        }
-
-        // Initialize call - this will handle permission requests for web
-        const stream = await webrtcService.initializeCall(
-          roomId,
-          user.uid,
-          userInformation.userName || "Anonymous",
-          userInformation.isAdmin || false,
-          userInformation.isMod || false,
-          callType
-        );
-
-        setLocalStream(stream);
-        setIsVideoOff(callType === "audio");
-      } catch (err) {
-        console.error("Failed to start call:", err);
-
-        if (err instanceof PermissionError) {
-          setError(err.message);
-          showPermissionDeniedAlert(err.permissionType);
-        } else {
-          setError(err instanceof Error ? err.message : "Failed to start call");
-        }
-      } finally {
-        setIsInitializing(false);
       }
     },
-    [user, userInformation]
+    [localStream]
   );
 
-  // End call
-  const endCall = useCallback(async () => {
-    try {
-      await webrtcService.endCall();
-      setLocalStream(null);
-      setRemoteStreams(new Map());
-      setParticipants([]);
-      setIsConnected(false);
-      setIsMuted(false);
-      setIsVideoOff(false);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to end call:", err);
-      setError("Failed to end call");
-    }
-  }, []);
-
-  // Toggle mute
-  const toggleMute = useCallback(async () => {
-    try {
-      const newMutedState = await webrtcService.toggleMute();
-      setIsMuted(newMutedState);
-    } catch (err) {
-      console.error("Failed to toggle mute:", err);
-      setError("Failed to toggle mute");
-    }
-  }, []);
-
-  // Toggle video
-  const toggleVideo = useCallback(async () => {
-    try {
-      const newVideoState = await webrtcService.toggleVideo();
-      setIsVideoOff(newVideoState);
-    } catch (err) {
-      console.error("Failed to toggle video:", err);
-      setError("Failed to toggle video");
-    }
-  }, []);
-
-  // Switch camera (front/back)
-  const switchCamera = useCallback(() => {
-    if (!localStream) return;
-
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack && "getCapabilities" in videoTrack) {
-      const capabilities = videoTrack.getCapabilities();
-      if (capabilities.facingMode) {
-        const facingMode = capabilities.facingMode.includes("user")
-          ? "environment"
-          : "user";
-        videoTrack.applyConstraints({
-          advanced: [{ facingMode }],
-        });
+  const handleOffer = useCallback(
+    async (fromUserId: string, sdp: any) => {
+      let pc = peerConnections.current[fromUserId];
+      if (!pc) {
+        await createPeerConnection(fromUserId, fromUserId, false);
+        pc = peerConnections.current[fromUserId];
       }
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      if (ws.current) {
+        ws.current.send(
+          JSON.stringify({
+            type: "answer",
+            targetUserId: fromUserId,
+            sdp: answer,
+          })
+        );
+      }
+    },
+    [createPeerConnection]
+  );
+
+  const handleAnswer = useCallback(async (fromUserId: string, sdp: any) => {
+    const pc = peerConnections.current[fromUserId];
+    if (pc) {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    }
+  }, []);
+
+  const handleIceCandidate = useCallback(
+    async (fromUserId: string, candidate: any) => {
+      const pc = peerConnections.current[fromUserId];
+      if (pc && candidate) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    },
+    []
+  );
+
+  const removeParticipant = useCallback((remoteUserId: string) => {
+    if (peerConnections.current[remoteUserId]) {
+      peerConnections.current[remoteUserId].close();
+      delete peerConnections.current[remoteUserId];
+    }
+    if (remoteStreams.current[remoteUserId]) {
+      delete remoteStreams.current[remoteUserId];
+    }
+    setParticipants((prev) => prev.filter((p) => p.userId !== remoteUserId));
+  }, []);
+
+  // --- 4. Controls ---
+  const toggleMute = useCallback(() => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+        setIsMuted(!track.enabled);
+      });
     }
   }, [localStream]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (isConnected) {
-        endCall();
-      }
-    };
-  }, [isConnected, endCall]);
+  const toggleCamera = useCallback(() => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+        setIsCameraOn(track.enabled);
+      });
+    }
+  }, [localStream]);
+
+  const endCall = useCallback(() => {
+    if (ws.current) ws.current.close();
+    setParticipants([]);
+    setLocalStream(null);
+    setConnected(false);
+    setError(null);
+    // Cleanup peer connections
+    Object.values(peerConnections.current).forEach((pc) => pc.close());
+    peerConnections.current = {};
+    remoteStreams.current = {};
+  }, []);
 
   return {
-    // State
-    localStream,
-    remoteStreams,
     participants,
-    isConnected,
+    localStream,
     isMuted,
-    isVideoOff,
-    isInitializing,
+    isCameraOn,
+    connected,
     error,
-
-    // Controls
-    startCall,
-    endCall,
     toggleMute,
-    toggleVideo,
-    switchCamera,
-
-    // Refs
-    localVideoRef,
-    remoteVideoRefs: remoteVideoRefs.current,
+    toggleCamera,
+    endCall,
   };
-};
+}

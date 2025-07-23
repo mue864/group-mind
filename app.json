@@ -57,8 +57,6 @@
       "url": "https://u.expo.dev/179ab98c-6688-4dc2-8f6e-3d129dfb2c28"
     },
     "owner": "mutsa47",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    }
+    "runtimeVersion": "1.0.0"
   }
 }
