@@ -69,11 +69,11 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       console.log("Local stream ready:", {
         id: stream.id,
         audioTracks: stream.getAudioTracks().length,
-        videoTracks: stream.getVideoTracks().length
+        videoTracks: stream.getVideoTracks().length,
       });
 
       // Give React a chance to update state
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Only connect to signaling server after local stream is ready
       connectToSignalingServer();
@@ -125,12 +125,16 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       return;
     }
 
-    const wsUrl = `${WEBRTC_CONFIG.SIGNALING_URL}?roomId=${roomId}&userId=${userId}&userName=${encodeURIComponent(userName)}`;
+    const wsUrl = `${
+      WEBRTC_CONFIG.SIGNALING_URL
+    }?roomId=${roomId}&userId=${userId}&userName=${encodeURIComponent(
+      userName
+    )}`;
 
     console.log("Connecting to signaling server:", wsUrl, {
       streamId: stream.id,
       audioTracks: stream.getAudioTracks().length,
-      videoTracks: stream.getVideoTracks().length
+      videoTracks: stream.getVideoTracks().length,
     });
 
     wsRef.current = new WebSocket(wsUrl);
@@ -139,7 +143,7 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       console.log("WebSocket connected, local stream ready:", {
         streamId: stream.id,
         audioTracks: stream.getAudioTracks().length,
-        videoTracks: stream.getVideoTracks().length
+        videoTracks: stream.getVideoTracks().length,
       });
       setConnectionState("connected");
     };
@@ -151,7 +155,10 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
 
         // Use ref to check stream availability
         if (!localStreamRef.current) {
-          console.error("No local stream available for signaling message:", message.type);
+          console.error(
+            "No local stream available for signaling message:",
+            message.type
+          );
           return;
         }
 
@@ -186,14 +193,14 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
         participants: message.participants?.length,
         hasLocalStream: true,
         localStreamId: stream.id,
-        localTracks: stream.getTracks().length
+        localTracks: stream.getTracks().length,
       });
 
       switch (message.type) {
         case "welcome":
           console.log("Welcome message received:", {
             ...message,
-            localStreamId: stream.id
+            localStreamId: stream.id,
           });
           setParticipants(message.participants || []);
           break;
@@ -203,15 +210,18 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
             newUser: message.userId,
             totalParticipants: message.participants?.length,
             currentUser: userId,
-            localStreamId: stream.id
+            localStreamId: stream.id,
           });
-          
+
           setParticipants(message.participants || []);
 
           // If we're already in the room and a new participant joins,
           // we should initiate the connection
           if (message.userId !== userId) {
-            console.log("Creating peer connection as initiator for new participant:", message.userId);
+            console.log(
+              "Creating peer connection as initiator for new participant:",
+              message.userId
+            );
             await createPeerConnection(message.userId, true);
           }
           break;
@@ -220,21 +230,25 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
           console.log("Received existing participants:", {
             participants: message.participants,
             currentUser: userId,
-            localStreamId: stream.id
+            localStreamId: stream.id,
           });
-          
+
           // Create connections for all existing participants
           const existingParticipants = message.participants.filter(
             (p: { id: string }) => p.id !== userId
           );
 
-          console.log("Creating connections for existing participants:", 
+          console.log(
+            "Creating connections for existing participants:",
             existingParticipants.map((p: { id: string }) => p.id)
           );
 
           for (const participant of existingParticipants) {
             if (!peerConnectionsRef.current.has(participant.id)) {
-              console.log("Creating peer connection for existing participant:", participant.id);
+              console.log(
+                "Creating peer connection for existing participant:",
+                participant.id
+              );
               await createPeerConnection(participant.id, false);
             }
           }
@@ -781,13 +795,25 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
   const renderLocalVideo = () => {
     if (!localStreamRef.current || callType !== "video") return null;
 
+    console.log("Rendering local video:", {
+      streamId: localStreamRef.current.id,
+      tracks: localStreamRef.current.getTracks().map(track => ({
+        kind: track.kind,
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState
+      }))
+    });
+
     return (
-      <View className="absolute top-12 right-10 w-[120px] h-[160px] z-10 rounded-lg overflow-hidden">
+      <View className="absolute top-4 right-4 w-[120px] h-[160px] z-10 rounded-lg overflow-hidden">
         <RTCView
           streamURL={localStreamRef.current.toURL()}
-          className="flex-1"
+          className="absolute inset-0"
+          style={{ width: '100%', height: '100%' }}
           objectFit="cover"
           mirror={true}
+          zOrder={2}
         />
       </View>
     );
@@ -797,10 +823,18 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
     if (callType !== "video") return null;
 
     const remoteStreamArray = Array.from(remoteStreams.entries());
+    console.log("Rendering remote videos:", {
+      streamCount: remoteStreamArray.length,
+      streams: remoteStreamArray.map(([peerId, stream]) => ({
+        peerId,
+        streamId: stream.id,
+        tracks: stream.getTracks().length
+      }))
+    });
 
     if (remoteStreamArray.length === 0) {
       return (
-        <View className="flex-1 justify-center items-center">
+        <View className="flex-1 justify-center items-center bg-gray-900">
           <Text className="text-white text-lg">
             Waiting for participants...
           </Text>
@@ -821,19 +855,22 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
             key={peerId}
             className={`${
               remoteStreamArray.length === 1 ? "w-full h-full" : "w-1/2 h-1/2"
-            } p-0.5`}
+            } p-1`}
           >
-            <RTCView
-              streamURL={stream.toURL()}
-              className="flex-1 bg-black"
-              objectFit="cover"
-              mirror={false}
-            />
-            <View className="absolute bottom-28 left-2.5 bg-black/50 px-2.5 py-1 rounded">
-              <Text className="text-white">
-                {participants.find((p) => p.id === peerId)?.name ||
-                  "Participant"}
-              </Text>
+            <View className="relative flex-1 bg-black rounded-lg overflow-hidden">
+              <RTCView
+                streamURL={stream.toURL()}
+                style={{ width: '100%', height: '100%' }}
+                className="absolute inset-0"
+                objectFit="cover"
+                mirror={false}
+                zOrder={1}
+              />
+              <View className="absolute bottom-4 left-4 bg-black/50 px-3 py-1.5 rounded-lg z-10">
+                <Text className="text-white font-medium">
+                  {participants.find((p) => p.id === peerId)?.name || "Participant"}
+                </Text>
+              </View>
             </View>
           </View>
         ))}
@@ -842,75 +879,84 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
   };
 
   return (
-    <View className="flex-1 bg-black">
-      {callType === "video" ? (
-        <>
-          {renderRemoteVideos()}
-          {renderLocalVideo()}
-        </>
-      ) : (
-        <View className="flex-1 justify-center items-center">
-          <Ionicons name="call" size={100} color="white" />
-          <Text className="text-white text-2xl mt-5">Audio Call</Text>
-          <Text className="text-white text-base mt-2.5">
-            Connected: {participants.length} participant(s)
-          </Text>
-          <Text className="text-white text-sm mt-1">
-            Status: {connectionState}
-          </Text>
-        </View>
-      )}
+    <View className="flex-1 bg-black safe-area-top">
+      {/* Main content area */}
+      <View className="flex-1 relative">
+        {callType === "video" ? (
+          <>
+            <View className="flex-1">
+              {renderRemoteVideos()}
+            </View>
+            {renderLocalVideo()}
+          </>
+        ) : (
+          <View className="flex-1 justify-center items-center">
+            <View className="bg-gray-800/50 rounded-full p-8 mb-6">
+              <Ionicons name="call" size={100} color="white" />
+            </View>
+            <Text className="text-white text-2xl font-semibold">Audio Call</Text>
+            <Text className="text-white/80 text-base mt-2.5">
+              Connected: {participants.length} participant(s)
+            </Text>
+            <Text className="text-white/60 text-sm mt-1">
+              Status: {connectionState}
+            </Text>
+          </View>
+        )}
+      </View>
 
       {/* Control buttons */}
-      <View className="absolute bottom-[50] left-0 right-0 flex-row justify-center items-center px-5">
-        <TouchableOpacity
-          onPress={toggleAudio}
-          className={`${
-            isAudioEnabled ? "bg-white/20" : "bg-red-500"
-          } rounded-full w-[70px] h-[70px] justify-center items-center mx-4`}
-        >
-          <Ionicons
-            name={isAudioEnabled ? "mic" : "mic-off"}
-            size={30}
-            color="white"
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={endCall}
-          className="bg-red-500 rounded-full w-[70px] h-[70px] justify-center items-center mx-4"
-        >
-          <Ionicons name="call" size={30} color="white" />
-        </TouchableOpacity>
-
-        {callType === "video" && (
+      <View className="absolute bottom-safe left-0 right-0 pb-6">
+        <View className="flex-row justify-center items-center px-5 space-x-4">
           <TouchableOpacity
-            onPress={toggleVideo}
+            onPress={toggleAudio}
             className={`${
-              isVideoEnabled ? "bg-white/20" : "bg-red-500"
-            } rounded-full w-[70px] h-[70px] justify-center items-center mx-4`}
+              isAudioEnabled ? "bg-white/20" : "bg-red-500"
+            } rounded-full w-16 h-16 justify-center items-center`}
           >
             <Ionicons
-              name={isVideoEnabled ? "videocam" : "videocam-off"}
-              size={30}
+              name={isAudioEnabled ? "mic" : "mic-off"}
+              size={28}
               color="white"
             />
           </TouchableOpacity>
-        )}
+
+          <TouchableOpacity
+            onPress={endCall}
+            className="bg-red-500 rounded-full w-16 h-16 justify-center items-center"
+          >
+            <Ionicons name="call" size={28} color="white" />
+          </TouchableOpacity>
+
+          {callType === "video" && (
+            <TouchableOpacity
+              onPress={toggleVideo}
+              className={`${
+                isVideoEnabled ? "bg-white/20" : "bg-red-500"
+              } rounded-full w-16 h-16 justify-center items-center`}
+            >
+              <Ionicons
+                name={isVideoEnabled ? "videocam" : "videocam-off"}
+                size={28}
+                color="white"
+              />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Debug info */}
       {__DEV__ && (
-        <View className="absolute top-24 left-5 bg-black/70 p-2.5 rounded">
-          <Text className="text-white text-xs">Room: {roomId}</Text>
-          <Text className="text-white text-xs">User: {userId}</Text>
-          <Text className="text-white text-xs">
+        <View className="absolute top-safe left-4 bg-black/70 p-2.5 rounded-lg">
+          <Text className="text-white/80 text-xs">Room: {roomId}</Text>
+          <Text className="text-white/80 text-xs">User: {userId}</Text>
+          <Text className="text-white/80 text-xs">
             Participants: {participants.length}
           </Text>
-          <Text className="text-white text-xs">
+          <Text className="text-white/80 text-xs">
             Remote Streams: {remoteStreams.size}
           </Text>
-          <Text className="text-white text-xs">Status: {connectionState}</Text>
+          <Text className="text-white/80 text-xs">Status: {connectionState}</Text>
         </View>
       )}
     </View>
