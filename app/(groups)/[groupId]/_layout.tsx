@@ -44,16 +44,17 @@ const GroupMenuLayout = () => {
         tabBarStyle: {
           height: 65,
           position: "absolute",
-          bottom: 8,
+          bottom: 15,
           marginLeft: 15,
           marginRight: 15,
           borderRadius: 15,
+          shadowColor: "#000",
           shadowOffset: {
             width: 0,
-            height: 10,
+            height: 4,
           },
-          shadowOpacity: 0.05,
-          shadowRadius: 4,
+          shadowOpacity: 0.10,
+          shadowRadius: 3,
         },
       }}
     >

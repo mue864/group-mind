@@ -1,4 +1,4 @@
-import Avatar from "@/assets/icons/Avatar.svg";
+
 import Button from "@/components/Button";
 import DropDown from "@/components/DropDown";
 import ImageModal from "@/components/ImageModal";
@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const CreateProfile = () => {
   const router = useRouter();
@@ -123,8 +124,8 @@ const CreateProfile = () => {
             marginTop: 24,
             marginBottom: 16,
             justifyContent: "center",
-            width: 100,
-            height: 100,
+            width: 150,
+            height: 150,
             borderWidth: submitted && !selectedImage ? 2 : 0,
             borderColor: submitted && !selectedImage ? "#ef4444" : undefined,
             borderRadius: 50,
@@ -139,15 +140,17 @@ const CreateProfile = () => {
           {selectedImage !== null ? (
             <ProfileImage imageLocation={selectedImage} />
           ) : (
-            <Avatar
-              width={100}
-              height={100}
-              style={{
-                borderWidth: 1,
-                borderColor: "#9EADD9",
-                borderRadius: 50,
-              }}
-            />
+            <View className="bg-[#4169E1] rounded-full p-4 w-full h-full justify-center items-center">
+              <Ionicons
+                name="person-circle-outline"
+                size={150}
+                color="#fff"
+                style={{
+                  width: 150,
+                  height: 150,
+                }}
+              />
+            </View>
           )}
         </Pressable>
         {submitted && !selectedImage && (
@@ -188,15 +191,7 @@ const CreateProfile = () => {
             error={submitted && level === ""}
           />
           {submitted && level === "" && (
-            <Text
-              style={{
-                color: "#ef4444",
-                fontSize: 13,
-                marginTop: 4,
-                marginLeft: 2,
-                fontFamily: "Poppins-SemiBold",
-              }}
-            >
+            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
               Level is required
             </Text>
           )}
@@ -211,15 +206,7 @@ const CreateProfile = () => {
             error={submitted && age === ""}
           />
           {submitted && age === "" && (
-            <Text
-              style={{
-                color: "#ef4444",
-                fontSize: 13,
-                marginTop: 4,
-                marginLeft: 2,
-                fontFamily: "Poppins-SemiBold",
-              }}
-            >
+            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
               Age is required
             </Text>
           )}
@@ -241,62 +228,27 @@ const CreateProfile = () => {
             error={submitted && purpose === ""}
           />
           {submitted && purpose === "" && (
-            <Text
-              style={{
-                color: "#ef4444",
-                fontSize: 13,
-                marginTop: 4,
-                marginLeft: 2,
-                fontFamily: "Poppins-SemiBold",
-              }}
-            >
+            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
               Purpose is required
             </Text>
           )}
         </View>
 
         {/* Bio Field */}
-        <View style={{ width: "100%", marginTop: 18 }}>
-          <Text
-            style={{
-              fontSize: 16,
-              fontFamily: "Poppins-SemiBold",
-              color: "#4169E1",
-              marginBottom: 6,
-            }}
-          >
-            {"Bio"}
-          </Text>
+        <View style={{ width: "100%", marginBottom: 14 }}>
           <TextInput
             value={bio}
             onChangeText={setBio}
             placeholder={"Tell us about yourself..."}
             multiline
             numberOfLines={4}
-            style={{
-              borderWidth: 1,
-              borderColor:
-                submitted && bio.trim().length === 0 ? "#ef4444" : "#9EADD9",
-              borderRadius: 8,
-              padding: 12,
-              fontSize: 15,
-              fontFamily: "Poppins-Regular",
-              minHeight: 80,
-              backgroundColor: "#F8FAFF",
-              color: "#222",
-            }}
+            className="font-poppins-semiBold text-lg text-[#222] bg-white border border-[#9EADD9] rounded-xl p-3 min-h-[80px] text-left"
             textAlignVertical="top"
             maxLength={300}
+            placeholderTextColor="#9EADD9"
           />
           {submitted && bio.trim().length === 0 && (
-            <Text
-              style={{
-                color: "#ef4444",
-                fontSize: 13,
-                marginTop: 4,
-                fontFamily: "Poppins-SemiBold",
-              }}
-            >
+            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
               Bio is required
             </Text>
           )}
@@ -309,6 +261,7 @@ const CreateProfile = () => {
             flexDirection: "row",
             alignItems: "center",
             marginBottom: 24,
+            marginTop: 10
           }}
           onPress={() => setIsChecked(!isChecked)}
         >
@@ -317,14 +270,7 @@ const CreateProfile = () => {
             onValueChange={setIsChecked}
             color={isChecked ? "#4169E1" : "#9EADD9"}
           />
-          <Text
-            style={{
-              marginLeft: 12,
-              fontSize: 15,
-              color: "#222",
-              fontFamily: "Poppins-SemiBold",
-            }}
-          >
+          <Text className="font-poppins-semiBold text-md text-[#4169E1] ml-3">
             {Strings.userProfile.userConfident}
           </Text>
         </Pressable>

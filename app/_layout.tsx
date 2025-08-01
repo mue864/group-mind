@@ -1,15 +1,16 @@
+import { GroupProvider, useGroupContext } from "@/store/GroupContext";
+import { PostProvider } from "@/store/PostContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import FlashMessage from "react-native-flash-message";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { DefaultTheme, Provider as PaperProvider } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { GroupProvider, useGroupContext } from "@/store/GroupContext";
-import { PostProvider } from "@/store/PostContext";
-import {Provider as PaperProvider, DefaultTheme} from "react-native-paper";
-import { StatusBar } from "expo-status-bar";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,19 +22,19 @@ const theme = {
   colors: {
     ...DefaultTheme.colors,
     primary: "#4169E1",
-  }
-}
+  },
+};
 
-const Post =({children}: {children: React.ReactNode}) => {
-  const {groups, loading, error} = useGroupContext();
+const Post = ({ children }: { children: React.ReactNode }) => {
+  const { groups, loading, error } = useGroupContext();
 
   if (error) return;
   return (
     <PostProvider groups={groups} loading={loading}>
       {children}
     </PostProvider>
-  )
-}
+  );
+};
 
 const RootLayout = () => {
   const [fontsLoaded] = useFonts({
@@ -58,7 +59,6 @@ const RootLayout = () => {
     return <ActivityIndicator size={"large"} />;
   }
 
-  
   return (
     <GestureHandlerRootView>
       <PaperProvider theme={theme}>
@@ -87,6 +87,7 @@ const RootLayout = () => {
                     <Stack.Screen name="index" />
                   </Stack>
 
+                  <FlashMessage position="top" />
                   <Toast />
                 </View>
               </SafeAreaView>

@@ -1,0 +1,261 @@
+@startuml Data Models
+title GroupMind - Data Models Class Diagram
+
+skinparam class {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+' Core Data Models
+class User {
+  +id: string
+  +email: string
+  +displayName: string
+  +photoURL: string
+  +bio: string
+  +createdAt: Date
+  +lastLoginAt: Date
+  +isOnline: boolean
+  +settings: UserSettings
+}
+
+class UserSettings {
+  +notifications: boolean
+  +privacy: PrivacySettings
+  +theme: string
+  +language: string
+}
+
+class Group {
+  +id: string
+  +name: string
+  +description: string
+  +imageURL: string
+  +createdBy: string
+  +members: string[]
+  +admins: string[]
+  +createdAt: Date
+  +updatedAt: Date
+  +isPublic: boolean
+  +maxMembers: number
+  +tags: string[]
+  +settings: GroupSettings
+}
+
+class GroupSettings {
+  +allowInvites: boolean
+  +requireApproval: boolean
+  +allowFileSharing: boolean
+  +allowVideoCalls: boolean
+}
+
+class Message {
+  +id: string
+  +groupId: string
+  +senderId: string
+  +content: string
+  +type: MessageType
+  +attachments: Attachment[]
+  +reactions: Reaction[]
+  +createdAt: Date
+  +updatedAt: Date
+  +isEdited: boolean
+  +replyTo: string | null
+  +mentions: string[]
+}
+
+class Attachment {
+  +id: string
+  +type: AttachmentType
+  +url: string
+  +filename: string
+  +size: number
+  +mimeType: string
+  +uploadedAt: Date
+}
+
+class Reaction {
+  +id: string
+  +messageId: string
+  +userId: string
+  +type: string
+  +createdAt: Date
+}
+
+class Post {
+  +id: string
+  +groupId: string
+  +authorId: string
+  +title: string
+  +content: string
+  +type: PostType
+  +tags: string[]
+  +createdAt: Date
+  +updatedAt: Date
+  +isPinned: boolean
+  +viewCount: number
+  +comments: Comment[]
+}
+
+class Comment {
+  +id: string
+  +postId: string
+  +authorId: string
+  +content: string
+  +createdAt: Date
+  +updatedAt: Date
+  +isEdited: boolean
+}
+
+class Session {
+  +id: string
+  +groupId: string
+  +title: string
+  +description: string
+  +startTime: Date
+  +endTime: Date
+  +createdBy: string
+  +participants: string[]
+  +status: SessionStatus
+  +type: SessionType
+  +settings: SessionSettings
+}
+
+class SessionSettings {
+  +maxParticipants: number
+  +allowRecording: boolean
+  +requireApproval: boolean
+  +autoRecord: boolean
+}
+
+class Call {
+  +id: string
+  +groupId: string
+  +initiatedBy: string
+  +participants: CallParticipant[]
+  +startTime: Date
+  +endTime: Date
+  +status: CallStatus
+  +type: CallType
+  +settings: CallSettings
+}
+
+class CallParticipant {
+  +userId: string
+  +joinedAt: Date
+  +leftAt: Date
+  +isVideoEnabled: boolean
+  +isAudioEnabled: boolean
+  +isScreenSharing: boolean
+}
+
+class CallSettings {
+  +maxParticipants: number
+  +allowScreenShare: boolean
+  +allowRecording: boolean
+  +autoRecord: boolean
+}
+
+class Notification {
+  +id: string
+  +userId: string
+  +type: NotificationType
+  +title: string
+  +body: string
+  +data: object
+  +createdAt: Date
+  +readAt: Date
+  +isRead: boolean
+}
+
+' Enums
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  SYSTEM
+}
+
+enum PostType {
+  QUESTION
+  DISCUSSION
+  RESOURCE
+  ANNOUNCEMENT
+  EVENT
+}
+
+enum SessionStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum SessionType {
+  STUDY
+  REVIEW
+  QUIZ
+  DISCUSSION
+  PRESENTATION
+}
+
+enum CallStatus {
+  INITIATING
+  ACTIVE
+  ENDED
+  MISSED
+}
+
+enum CallType {
+  AUDIO
+  VIDEO
+  SCREEN_SHARE
+}
+
+enum NotificationType {
+  MESSAGE
+  GROUP_INVITE
+  CALL_INVITE
+  SESSION_REMINDER
+  SYSTEM
+}
+
+enum AttachmentType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  OTHER
+}
+
+' Relationships
+User ||--o{ Group : creates
+User ||--o{ Group : joins
+User ||--o{ Message : sends
+User ||--o{ Post : creates
+User ||--o{ Comment : writes
+User ||--o{ Session : schedules
+User ||--o{ Call : initiates
+User ||--o{ CallParticipant : participates
+User ||--o{ Notification : receives
+User ||--|| UserSettings : has
+
+Group ||--o{ Message : contains
+Group ||--o{ Post : contains
+Group ||--o{ Session : hosts
+Group ||--o{ Call : hosts
+Group ||--|| GroupSettings : has
+
+Message ||--o{ Attachment : has
+Message ||--o{ Reaction : receives
+Message ||--o{ Message : replies to
+
+Post ||--o{ Comment : has
+
+Session ||--|| SessionSettings : has
+Call ||--o{ CallParticipant : has
+Call ||--|| CallSettings : has
+
+@enduml 

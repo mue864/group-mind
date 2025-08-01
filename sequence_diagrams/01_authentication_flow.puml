@@ -1,0 +1,74 @@
+@startuml Authentication Flow
+!theme plain
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam pageWidth 1200
+
+title GroupMind - Authentication Flow
+
+actor User
+participant "App" as App
+participant "Firebase Auth" as Auth
+participant "Firestore" as DB
+participant "Onboarding" as Onboard
+participant "SignUp Screen" as SignUp
+participant "Create Profile" as Profile
+participant "SignIn Screen" as SignIn
+participant "Dashboard" as Dashboard
+
+== App Launch ==
+User -> App: Launch app
+App -> Auth: onAuthStateChanged()
+Auth -> App: User state (null/existing)
+
+alt User not authenticated
+    App -> Onboard: Navigate to welcome
+    User -> Onboard: View welcome screen
+    User -> Onboard: Click "Get Started"
+    Onboard -> Onboard: Show introduction screens (4 screens)
+    User -> Onboard: Complete onboarding
+    Onboard -> SignUp: Navigate to signup
+    
+    == Sign Up Process ==
+    User -> SignUp: Enter email & password
+    SignUp -> SignUp: Validate email format
+    SignUp -> SignUp: Validate password strength
+    SignUp -> SignUp: Check password match
+    SignUp -> Auth: createUserWithEmailAndPassword()
+    Auth -> SignUp: User credentials
+    SignUp -> DB: Create user document
+    Note over DB: Store user data:\n- email, userName, level\n- age, purpose, profileImage\n- joinedGroups, resources\n- isFirstLogin: true\n- profileComplete: false
+    SignUp -> Profile: Navigate to profile creation
+    
+    == Profile Creation ==
+    User -> Profile: Upload profile image
+    User -> Profile: Enter user name
+    User -> Profile: Select academic level
+    User -> Profile: Enter age & purpose
+    User -> Profile: Write bio
+    User -> Profile: Toggle "can explain to people"
+    Profile -> Profile: Validate all fields
+    Profile -> DB: updateDoc(user.uid)
+    Note over DB: Update user data:\n- userName, level, age\n- purpose, profileImage\n- canExplainToPeople, bio\n- profileComplete: true
+    Profile -> Dashboard: Navigate to home
+    
+else User already authenticated
+    App -> Dashboard: Navigate directly to home
+end
+
+== Sign In Process ==
+User -> SignIn: Enter email & password
+SignIn -> SignIn: Validate email format
+SignIn -> Auth: signInWithEmailAndPassword()
+Auth -> SignIn: User credentials
+SignIn -> Dashboard: Navigate to home
+
+== Dashboard ==
+Dashboard -> DB: Fetch user groups
+Dashboard -> DB: Fetch user information
+DB -> Dashboard: Return user data
+Dashboard -> User: Display home screen
+
+@enduml 

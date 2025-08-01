@@ -1,0 +1,122 @@
+@startuml Video Call Flow
+
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam pageWidth 1200
+
+title GroupMind - Video Call Flow (WebRTC)
+
+actor User
+participant "Group Details" as Group
+participant "WebRTCCall" as Call
+participant "Signaling Server" as Signal
+participant "Firebase" as DB
+participant "Media Devices" as Media
+participant "Peer Connection" as Peer
+participant "Remote User" as Remote
+
+== Call Initiation ==
+User -> Group: Click "Start Video Call"
+Group -> DB: addDoc(collection("activeCalls"))
+Note over DB: Create call document:\n- groupId, channelName\n- callType, createdBy\n- participants, status
+Group -> Call: Navigate to call screen
+Call -> Media: getUserMedia()
+Media -> Call: Local media stream
+Call -> Call: Initialize local video/audio
+Call -> Signal: Connect to WebSocket
+Signal -> Call: Connection established
+
+== Call Setup ==
+Call -> Signal: Send join room message
+Note over Signal: roomId, userId, userName
+Signal -> Call: Send welcome message
+Signal -> Call: Send existing participants list
+
+== Peer Connection Setup ==
+loop For each existing participant
+    Call -> Call: createPeerConnection(peerId)
+    Call -> Peer: new RTCPeerConnection()
+    Call -> Peer: addTrack(localStream)
+    Peer -> Call: ICE candidates
+    Call -> Signal: Send ICE candidate
+    Signal -> Remote: Forward ICE candidate
+    Call -> Peer: createOffer()
+    Call -> Peer: setLocalDescription(offer)
+    Call -> Signal: Send offer
+    Signal -> Remote: Forward offer
+    Remote -> Remote: handleOffer()
+    Remote -> Remote: createAnswer()
+    Remote -> Signal: Send answer
+    Signal -> Call: Forward answer
+    Call -> Peer: setRemoteDescription(answer)
+end
+
+== New Participant Joins ==
+Remote -> Signal: Join room
+Signal -> Call: participant-joined event
+Call -> Call: createPeerConnection(newPeerId)
+Call -> Peer: Add local tracks
+Call -> Peer: createOffer()
+Call -> Signal: Send offer to new peer
+Signal -> Remote: Forward offer
+Remote -> Remote: handleOffer()
+Remote -> Remote: createAnswer()
+Remote -> Signal: Send answer
+Signal -> Call: Forward answer
+Call -> Peer: setRemoteDescription(answer)
+
+== Media Stream Handling ==
+Peer -> Call: onaddstream event
+Call -> Call: Add remote stream to participants
+Call -> Call: Update UI with remote video
+
+== Call Controls ==
+User -> Call: Toggle mute
+Call -> Call: setLocalAudioEnabled(false)
+Call -> Call: Update UI state
+
+User -> Call: Toggle video
+Call -> Call: setLocalVideoEnabled(false)
+Call -> Call: Update UI state
+
+User -> Call: Switch camera
+Call -> Media: getUserMedia({facingMode: 'environment'})
+Media -> Call: New local stream
+Call -> Call: Replace local stream
+Call -> Peer: Replace video track
+
+== Call Termination ==
+User -> Call: End call
+Call -> Signal: Send leave room message
+Signal -> Remote: participant-left event
+Call -> Call: Cleanup peer connections
+Call -> Call: Stop local stream
+Call -> DB: updateDoc(callId)
+Note over DB: Remove user from participants
+Call -> Group: Navigate back to group
+
+== Scheduled Calls ==
+User -> Group: Schedule call
+Group -> DB: addDoc(collection("scheduledCalls"))
+Note over DB: Store scheduled call data:\n- title, scheduledTime\n- channelName, joinLink\n- callType, groupId
+Group -> Group: Display scheduled call
+
+User -> Group: Join scheduled call
+Group -> DB: updateDoc(scheduledCallId)
+Note over DB: Update status to "in-progress"
+Group -> DB: addDoc(collection("activeCalls"))
+Group -> Call: Navigate to call screen
+
+== Call Invitations ==
+User -> Group: Invite to call
+Group -> DB: addDoc(collection("callInvitations"))
+Note over DB: Create invitation:\n- groupId, channelName\n- invitedBy, invitedUsers\n- expiresAt
+Group -> DB: Send push notification
+DB -> Remote: Receive call invitation
+Remote -> Remote: Show invitation notification
+Remote -> Call: Accept invitation
+Remote -> Call: Join call directly
+
+@enduml 

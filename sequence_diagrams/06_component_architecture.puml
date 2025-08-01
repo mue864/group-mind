@@ -1,0 +1,75 @@
+@startuml Component Architecture
+!theme plain
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+title GroupMind - System Architecture
+
+package "Client (React Native)" {
+  [Auth Module]
+  [Dashboard]
+  [Group Management]
+  [Video Calling]
+  [State Management]
+}
+
+package "Backend (Firebase)" {
+  [Firebase Auth]
+  [Firestore DB]
+  [Firebase Storage]
+}
+
+package "Video Calling (WebRTC)" {
+  [Signaling Server]
+  [STUN/TURN Servers]
+}
+
+' Client to Firebase
+[Auth Module] --> [Firebase Auth]
+[Dashboard] --> [Firestore DB]
+[Group Management] --> [Firestore DB]
+[Group Management] --> [Firebase Storage]
+
+' State management connects to DB
+[State Management] --> [Firestore DB]
+
+' WebRTC flow
+[Video Calling] --> [Signaling Server]
+[Video Calling] --> [STUN/TURN Servers]
+
+' Notes for clarity
+note right of [Auth Module]
+Handles:
+- Sign in / Sign up
+- User profile
+end note
+
+note right of [Group Management]
+Handles:
+- Group creation
+- Group chat
+- Resource sharing
+end note
+
+note right of [State Management]
+Syncs:
+- User/group state
+- Messages/posts
+end note
+
+note right of [Firestore DB]
+Collections:
+- users
+- groups
+- messages
+end note
+
+note right of [Video Calling]
+Handles:
+- Peer connections
+- Media streams
+end note
+
+@enduml

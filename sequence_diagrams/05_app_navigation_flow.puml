@@ -1,0 +1,140 @@
+@startuml App Navigation Flow
+!theme plain
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+
+title GroupMind - App Navigation Flow
+
+actor User
+participant "App Entry" as Entry
+participant "Auth Navigator" as Auth
+participant "Dashboard Navigator" as Dashboard
+participant "Tab Navigator" as Tabs
+participant "Group Navigator" as Groups
+participant "Settings Navigator" as Settings
+
+== App Launch & Routing ==
+User -> Entry: Launch app
+Entry -> Entry: Check authentication state
+alt User not authenticated
+    Entry -> Auth: Navigate to auth flow
+    Auth -> Auth: Show welcome screen
+    Auth -> Auth: Show onboarding screens
+    Auth -> Auth: Show signup/signin
+    Auth -> Auth: Show profile creation
+    Auth -> Dashboard: Navigate to dashboard
+else User authenticated
+    Entry -> Dashboard: Navigate directly to dashboard
+end
+
+== Dashboard Tab Navigation ==
+Dashboard -> Tabs: Initialize tab navigator
+Tabs -> Tabs: Show bottom tab bar
+User -> Tabs: Switch between tabs
+
+== Home Tab ==
+User -> Tabs: Select Home tab
+Tabs -> Tabs: Show home screen
+Tabs -> Tabs: Load user's groups
+Tabs -> Tabs: Display recent posts
+Tabs -> Tabs: Show scheduled sessions
+User -> Tabs: View group suggestions
+User -> Tabs: Navigate to specific group
+
+== Groups Tab ==
+User -> Tabs: Select Groups tab
+Tabs -> Tabs: Show groups screen
+Tabs -> Tabs: Display joined groups
+User -> Tabs: Switch to "All Groups"
+Tabs -> Tabs: Show available groups
+User -> Tabs: Join group
+Tabs -> Groups: Navigate to group details
+User -> Tabs: Create new group
+Tabs -> Groups: Navigate to group creation
+
+== Live Session Tab ==
+User -> Tabs: Select Live Session tab
+Tabs -> Tabs: Show live sessions screen
+Tabs -> Tabs: Display active calls
+Tabs -> Tabs: Show scheduled calls
+User -> Tabs: Join active call
+Tabs -> Groups: Navigate to call screen
+User -> Tabs: Schedule new call
+Tabs -> Groups: Navigate to scheduling
+
+== Resources Tab ==
+User -> Tabs: Select Resources tab
+Tabs -> Tabs: Show resources screen
+Tabs -> Tabs: Display user's resources
+Tabs -> Tabs: Show shared resources
+User -> Tabs: Upload new resource
+Tabs -> Tabs: Download resource
+User -> Tabs: Navigate to group resources
+
+== Profile Navigation ==
+User -> Dashboard: Access profile
+Dashboard -> Dashboard: Show profile screen
+Dashboard -> Dashboard: Display user info
+User -> Dashboard: Edit profile
+Dashboard -> Dashboard: Show edit form
+User -> Dashboard: Update profile data
+Dashboard -> Dashboard: Save changes
+
+== Settings Navigation ==
+User -> Dashboard: Access settings
+Dashboard -> Settings: Navigate to settings
+Settings -> Settings: Show settings menu
+User -> Settings: Select setting option
+Settings -> Settings: Show setting screen
+User -> Settings: Configure setting
+Settings -> Settings: Save setting
+
+== Group Navigation ==
+User -> Groups: Navigate to group
+Groups -> Groups: Show group details
+Groups -> Groups: Display group info
+User -> Groups: Access group chat
+Groups -> Groups: Navigate to chat
+Groups -> Groups: Show chat interface
+User -> Groups: Access group resources
+Groups -> Groups: Navigate to resources
+Groups -> Groups: Show resource list
+User -> Groups: Access group settings
+Groups -> Groups: Navigate to settings
+Groups -> Groups: Show group settings
+
+== Deep Linking ==
+User -> Entry: Open deep link
+Entry -> Entry: Parse link parameters
+Entry -> Groups: Navigate to specific group
+Entry -> Groups: Navigate to specific post
+Entry -> Groups: Navigate to call
+
+== Modal Navigation ==
+User -> Tabs: Open modal
+Tabs -> Tabs: Show modal overlay
+Tabs -> Tabs: Display modal content
+User -> Tabs: Close modal
+Tabs -> Tabs: Hide modal overlay
+Tabs -> Tabs: Return to previous screen
+
+== Back Navigation ==
+User -> Groups: Press back button
+Groups -> Groups: Navigate back
+Groups -> Tabs: Return to previous tab
+User -> Dashboard: Press back button
+Dashboard -> Dashboard: Navigate back
+Dashboard -> Auth: Return to auth if needed
+
+== Error Navigation ==
+User -> Entry: Encounter error
+Entry -> Entry: Show error screen
+Entry -> Entry: Provide retry option
+User -> Entry: Retry action
+Entry -> Entry: Attempt recovery
+Entry -> Dashboard: Navigate to safe screen
+
+@enduml 

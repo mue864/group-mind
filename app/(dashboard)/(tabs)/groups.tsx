@@ -11,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform
 } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
 import { FAB, Portal, Provider } from "react-native-paper";
@@ -40,13 +41,13 @@ const TabButton: React.FC<TabButtonProps> = ({
       <View className="relative">
         <LinearGradient
           colors={isActive ? ["#667eea", "#764ba2"] : ["#f3f4f6", "#e5e7eb"]}
-          className="rounded-2xl py-4 px-6"
+          className="rounded-2xl py-4 px-6 "
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
           <View className="flex-row items-center justify-center">
             <Text
-              className={` text-base font-poppins-semiBold ${
+              className={` text-base font-poppins-semiBold ${Platform.OS === "ios" ? "p-4" : ""} ${
                 isActive ? "text-white" : "text-gray-600"
               }`}
             >
@@ -255,22 +256,16 @@ const Groups = () => {
         />
       </Portal>
 
-      <View className="flex-1 bg-gradient-to-b from-gray-50 to-white">
+      <View className="flex-1 bg-white">
         <StatusBar barStyle={"dark-content"} />
 
         {/* Enhanced Header with tabs */}
         <View className="bg-white border-b border-gray-100 pt-5 pb-6">
-          <LinearGradient
-            colors={["#667eea", "#764ba2"]}
-            className="absolute top-0 left-0 right-0 h-1"
-          />
+
 
           <View className="flex-row justify-between items-center px-6 mb-6">
             <View>
-              <Text className="text-3xl font-poppins-semiBold text-gray-800 mb-1">
-                Groups
-              </Text>
-              <Text className="text-gray-500 text-base font-poppins">
+              <Text className="text-gray-500 text-xl font-poppins-semiBold">
                 {activeTab === "joined"
                   ? "Your study communities"
                   : "Discover new groups"}

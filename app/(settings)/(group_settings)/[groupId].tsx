@@ -542,7 +542,7 @@ const GroupSettings = () => {
             {/* Profile avatar */}
             <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-3 overflow-hidden">
               {profile ? (
-                <ProfileImage imageLocation={profile.profileImage} />
+                <ProfileImage imageLocation={profile.profileImage} size={40} />
               ) : (
                 <Ionicons name="person" size={20} color="#6B7280" />
               )}

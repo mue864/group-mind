@@ -137,7 +137,7 @@ const CreatePost = () => {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 35}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 50}
       >
         <KeyboardAwareScrollView
           style={{ flex: 1 }}

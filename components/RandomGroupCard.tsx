@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { doc, onSnapshot } from "firebase/firestore";
 import { memo, useEffect, useState } from "react";
-import { ColorValue, Image, Text, TouchableOpacity, View } from "react-native";
+import { ColorValue, Image, Platform, Text, TouchableOpacity, View } from "react-native";
 import avatars from "../assets/images/avatars";
 import groupImages from "../assets/images/group_images";
 import { db } from "../services/firebase";
@@ -133,7 +133,14 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
   };
 
   return (
-    <View className="items-center px-4 mb-4">
+    <View className="items-center px-4 mb-4"
+    style={{
+      shadowColor: "#000",
+      shadowOffset: {width: 0, height: 8},
+      shadowOpacity: 0.20,
+      shadowRadius: 12
+    }}
+    >
       <View
         className="bg-white rounded-3xl overflow-hidden"
         style={{
@@ -167,7 +174,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <View className="flex-row items-center">
+              <View className={`flex-row items-center ${Platform.OS === "ios" ? "p-1" : ""}`}>
                 <Text className="text-white font-inter text-sm mr-1">🎓</Text>
                 <Text className="text-white font-inter text-xs font-bold">Join</Text>
               </View>

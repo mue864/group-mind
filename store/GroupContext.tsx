@@ -1,23 +1,27 @@
 import { auth, db } from "@/services/firebase";
 import { reviveTimestamps } from "@/utils/formatDate";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
   addDoc,
   arrayRemove,
   arrayUnion,
   collection,
+  deleteDoc,
   FieldValue,
   doc as firestoreDoc,
   getDoc,
   getDocs,
   onSnapshot,
+  query,
   serverTimestamp,
   setDoc,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { showMessage } from "react-native-flash-message";
 import Toast from "react-native-toast-message";
 
 export interface Group {
@@ -181,6 +185,12 @@ interface GroupContextType {
     fileSize?: number;
   }) => Promise<void>;
   getAllUserResources: (userId: string | undefined) => Promise<any[]>;
+  activeCalls: CallInfo[];
+  updateCallParticipants: (
+    callDocId: string,
+    userId: string,
+    joining: boolean
+  ) => Promise<void>;
 }
 
 interface UserInfo {
@@ -192,6 +202,18 @@ interface UserInfo {
   canExplainToPeople: boolean;
   userID: string;
   bio?: string;
+}
+
+interface CallInfo {
+  id: string;
+  groupId: string;
+  channelName: string;
+  callType: "audio" | "video";
+  participants: string[];
+  startedAt: Timestamp;
+  groupName: string;
+  createdByUserName: string;
+  createdBy: string;
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
@@ -212,6 +234,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [groupID, setGroupID] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [isSendingJoinRequest, setIsSendingJoinRequest] = useState(false);
+  const [activeCalls, setActiveCalls] = useState<CallInfo[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -315,6 +338,84 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [user]);
 
+  // Monitor active calls
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const activeCallsRef = collection(db, "activeCalls");
+    const q = query(activeCallsRef);
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        const callData = change.doc.data() as CallInfo;
+        callData.id = change.doc.id;
+
+        if (change.type === "added") {
+          setActiveCalls((prev) => [...prev, callData]);
+          // Show notification for new calls (not created by this user and not already joined)
+          if (
+            callData.createdBy !== user?.uid &&
+            !callData.participants.includes(user?.uid)
+          ) {
+            showMessage({
+              message: "New Call Started",
+              description: `${callData.createdByUserName} started a ${callData.callType} call in ${callData.groupName}`,
+              type: "info",
+              duration: 4000,
+              onPress: () => {
+                router.push({
+                  pathname: "/call",
+                  params: {
+                    groupId: callData.groupId,
+                    channel: callData.channelName,
+                    type: callData.callType,
+                    groupName: callData.groupName,
+                  },
+                });
+              },
+            });
+          }
+        }
+
+        if (change.type === "modified") {
+          setActiveCalls((prev) =>
+            prev.map((call) =>
+              call.id === change.doc.id
+                ? { ...callData, id: change.doc.id }
+                : call
+            )
+          );
+
+          // Check if participants dropped to 0
+          if (callData.participants.length === 0) {
+            // this will never get to 0
+            try {
+              await deleteDoc(firestoreDoc(db, "activeCalls", change.doc.id));
+              console.log(
+                "Call cleaned up due to 0 participants:",
+                change.doc.id
+              );
+
+              setActiveCalls((prev) =>
+                prev.filter((call) => call.id !== change.doc.id)
+              );
+            } catch (error) {
+              console.error("Error cleaning up empty call:", error);
+            }
+          }
+        }
+
+        if (change.type === "removed") {
+          setActiveCalls((prev) =>
+            prev.filter((call) => call.id !== change.doc.id)
+          );
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
   const saveGroupData = async (validGroups: Group[]) => {
     try {
       await AsyncStorage.setItem("validGroups", JSON.stringify(validGroups));
@@ -322,23 +423,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Unable to save group data: ", error);
     }
   };
-
-  /**
-   * 
-   * @param groupId 
-   * @param userId 
-   * @returns 
-   * 
-   * promoteToModerator: (groupId: string, userId: string) => Promise<void>;
-   demoteModerator: (groupId: string, userId: string) => Promise<void>;
-   promoteToAdmin: (groupId: string, userId: string) => Promise<void>;
-   removeMember: (groupId: string, userId: string) => Promise<void>;
-  blockMember: (groupId: string, userId: string) => Promise<void>;
-  unblockMember: (groupId: string, userId: string) => Promise<void>;
-  approveJoinRequest: (grouId: string, userId: string) => Promise<void>;
-  rejectJoinRequest: (groupId: string, userId: string) => Promise<void>;
-  transferOwnership: (groupId: string, userId: string) => Promise<void>;
-   */
 
   // Helper to move user between role arrays (atomic update)
   const moveUserRole = async (
@@ -1095,6 +1179,45 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateCallParticipants = async (
+    callDocId: string,
+    userId: string,
+    joining: boolean
+  ) => {
+    try {
+      const call = activeCalls.find((call) => call.id === callDocId);
+
+      if (!call) {
+        return;
+      }
+      let updatedParticipants: string[] = [];
+      if (joining) {
+        // Only add if not already present
+        updatedParticipants = call.participants.includes(userId)
+          ? call.participants
+          : [...call.participants, userId];
+      } else {
+        // Remove user if present
+        updatedParticipants = call.participants.filter((id) => id !== userId);
+      }
+
+      const callRef = firestoreDoc(db, "activeCalls", callDocId);
+      await updateDoc(callRef, {
+        participants: updatedParticipants,
+      });
+
+      // If no participants left, delete the call document
+      if (!joining && updatedParticipants.length === 0) {
+        await deleteDoc(callRef);
+        console.log("Call document deleted due to 0 participants");
+      } else {
+        console.log("Call participants updated");
+      }
+    } catch (error) {
+      console.error("Error updating call participants:", error);
+    }
+  };
+
   return (
     <GroupContext.Provider
       value={{
@@ -1138,6 +1261,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         checkGroupOnboardingCompleted,
         saveGroupResource,
         getAllUserResources,
+        activeCalls,
+        updateCallParticipants,
       }}
     >
       {children}

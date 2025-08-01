@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { Modal } from "react-native-paper";
+import { useGroupContext } from "@/store/GroupContext";
 
 /**
  * Props interface for ShareModal component
@@ -19,6 +20,7 @@ import { Modal } from "react-native-paper";
  * @property {() => void} onDismiss - Callback function called when modal is dismissed
  * @property {(fileUrl: string, fileName: string) => void} [onFileUploaded] - Optional callback when file upload completes
  */
+
 interface ShareModalProps {
   visible: boolean;
   onDismiss: () => void;
@@ -39,6 +41,8 @@ interface SelectedFile {
   type: string;
   mimeType?: string;
 }
+
+
 
 /**
  * ShareModal Component
@@ -61,6 +65,9 @@ const ShareModal = ({
   onDismiss,
   onFileUploaded,
 }: ShareModalProps) => {
+  // extracting group utility to save group resource when sent
+  const { saveGroupResource } = useGroupContext();
+
   // State for tracking selected file
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
 
@@ -123,8 +130,11 @@ const ShareModal = ({
       const data = await response.json();
       // File uploaded to Cloudinary successfully
 
+
       // Show success message to user
       Alert.alert("Upload successful", "File uploaded successfully!");
+
+      
 
       // Call the callback function if provided
       if (onFileUploaded) {

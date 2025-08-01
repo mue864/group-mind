@@ -339,7 +339,7 @@ function GroupResources() {
       </View>
 
       {/* Upload Button */}
-      <View className="p-4 absolute bottom-20 left-12 right-12">
+      <View className="p-4 absolute bottom-28 left-12 right-12">
         <TouchableOpacity
           className="bg-primary rounded-xl p-4 items-center shadow-sm"
           onPress={() => {

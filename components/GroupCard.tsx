@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { memo, useEffect, useState } from "react";
-import { Dimensions, Image, Text, TouchableOpacity, View } from "react-native";
+import { Dimensions, Image, Platform, Text, TouchableOpacity, View } from "react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -158,14 +158,19 @@ const GroupCard = ({
       onPress={handleGroupPress}
       className="mb-6"
       activeOpacity={0.95}
-      style={{ width: cardWidth }}
+      style={{ width: cardWidth,
+        shadowColor: "#000",
+        shadowOffset: {width: 0, height: 6},
+        shadowOpacity: 0.20,
+        shadowRadius: 16
+       }}
     >
       <View
         className="bg-white rounded-3xl overflow-hidden"
         style={{
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.12,
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.25,
           shadowRadius: 16,
           elevation: 12,
         }}
@@ -196,7 +201,7 @@ const GroupCard = ({
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <View className="flex-row items-center">
+              <View className={` ${Platform.OS === "ios" ? "p-1" : ""} flex-row items-center`}>
                 <Text className="text-white text-sm mr-1">
                   {isCreator ? "👑" : "🎓"}
                 </Text>

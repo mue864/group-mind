@@ -1,0 +1,38 @@
+@startuml Data Flow Diagra,
+title GroupMind - Level 1 Data Flow Diagram
+
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor Black
+}
+
+' External Entity
+actor "User" as User
+
+' Processes
+rectangle "GroupMind App" as App
+rectangle "Authentication Module" as AuthModule
+rectangle "Chat & Media Upload Module" as ChatModule
+
+' Data Stores
+database "Firestore DB" as Firestore
+database "Firebase Storage" as Storage
+
+' External Services
+rectangle "Firebase Auth" as FirebaseAuth
+
+' Flows
+User --> App : Inputs (Login, Register,\nSend Message, Upload)
+App --> AuthModule : Credentials
+AuthModule --> FirebaseAuth : Validate User
+FirebaseAuth --> AuthModule : Auth Token
+AuthModule --> App : Auth Response
+
+App --> ChatModule : Message, File
+ChatModule --> Firestore : Store Message
+ChatModule --> Storage : Upload Media
+
+Firestore --> App : Messages
+Storage --> App : Media URL
+
+@enduml

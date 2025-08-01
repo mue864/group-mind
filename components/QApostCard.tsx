@@ -1,10 +1,9 @@
 import { Timestamp } from "firebase/firestore";
 import React from "react";
-import { Text, View, Dimensions, TouchableOpacity } from "react-native";
+import { Text, View, TouchableOpacity, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Comment from "@/assets/icons/comment_duotone.svg";
 import Time from "@/assets/icons/time-qa.svg";
-import HR from "@/assets/icons/hr.svg";
 import Button from "@/assets/icons/Arrow-Right.svg";
 import { router } from "expo-router";
 
@@ -20,19 +19,32 @@ interface QaProps {
 function QApostCard({
   post,
   timeSent,
-  responseTo,
   responseFrom,
   postID,
   groupID,
 }: QaProps) {
   let displayTime = "";
-  const deviceWidth = Dimensions.get("window").width;
   const sentTime = timeSent?.toDate?.() ?? new Date();
+
+  
 
   const now = new Date();
   const sentTimeMs = sentTime.getTime();
   const diffMs = now.getTime() - sentTimeMs; // difference in milliseconds
   const diffMin = Math.floor(diffMs / 60000);
+
+  const delayNavigate = () => {
+    const timeout = setTimeout(() => {
+      router.push({
+        pathname: "/(settings)/(create_post)/(view_post)/[postId]",
+        params: {
+          postId: postID,
+          groupId: groupID,
+        },
+      });
+    }, 100);
+    return () => clearTimeout(timeout);
+  };
 
   if (diffMin < 1) {
     displayTime = "Just Now";
@@ -40,7 +52,11 @@ function QApostCard({
     displayTime = `${diffMin} min ago`;
   } else if (diffMin < 60) {
     displayTime = `${diffMin} mins ago`;
-  } else {
+  } else if (diffMin >= 1440) {
+    displayTime = `${Math.floor(diffMin / 1440)} day${diffMin <= 2879 ? "" : "s"} ago`;
+  } 
+  
+  else if (diffMin > 60) {
     const diffHours = Math.floor(diffMin / 60);
     displayTime = `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
   }
@@ -49,26 +65,23 @@ function QApostCard({
   const hasResponses = responseCount > 0;
 
   return (
-    <View className="mx-3 mb-4">
+    <View className="mx-3">
       <TouchableOpacity
         activeOpacity={0.95}
-        onPress={() =>
-          router.push({
-            pathname: "/(settings)/(create_post)/(view_post)/[postId]",
-            params: {
-              postId: postID,
-              groupId: groupID,
-            },
-          })
-        }
+        onPress={delayNavigate}
+        style={{
+          // ios shadows
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 3,
+        }}
+        
       >
         <View
-          className="bg-white rounded-2xl overflow-hidden"
+          className="bg-white rounded-2xl overflow-hidden border border-secondary/50"
           style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
+            // android shadows
             elevation: 4,
           }}
         >
@@ -79,7 +92,7 @@ function QApostCard({
               <View className="flex-row items-start justify-between">
                 <View className="flex-1 pr-3">
                   <Text
-                    className="text-gray-800 font-semibold text-base leading-6"
+                    className="text-gray-800 font-poppins-semiBold text-base leading-6"
                     numberOfLines={3}
                     ellipsizeMode="tail"
                   >
@@ -93,9 +106,9 @@ function QApostCard({
                     className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center"
                     style={{
                       shadowColor: "#4facfe",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 5 },
+                      shadowOpacity: 0.20,
+                      shadowRadius: 3,
                       elevation: 3,
                     }}
                   >
@@ -119,7 +132,7 @@ function QApostCard({
                     <Comment width={16} height={16} />
                   </View>
                   <Text
-                    className={`font-medium text-sm ${
+                    className={`font-poppins font-medium text-sm ${
                       hasResponses ? "text-green-600" : "text-gray-500"
                     }`}
                   >
@@ -133,7 +146,7 @@ function QApostCard({
                 <View className="w-6 h-6 bg-blue-50 rounded-full items-center justify-center mr-2">
                   <Time width={14} height={14} />
                 </View>
-                <Text className="text-gray-500 font-medium text-sm">
+                <Text className="text-gray-500 font-medium font-poppins text-sm">
                   {displayTime}
                 </Text>
               </View>
@@ -147,7 +160,11 @@ function QApostCard({
                     colors={["#10B981", "#059669"]}
                     className="rounded-full px-3 py-1"
                   >
-                    <Text className="text-white font-semibold text-xs">
+                    <Text
+                      className={` ${
+                        Platform.OS === "ios" ? "p-1" : ""
+                      } text-white font-poppins font-semibold text-xs`}
+                    >
                       ✓ Answered
                     </Text>
                   </LinearGradient>
@@ -162,7 +179,11 @@ function QApostCard({
                     colors={["#F59E0B", "#D97706"]}
                     className="rounded-full px-3 py-1"
                   >
-                    <Text className="text-white font-semibold text-xs">
+                    <Text
+                      className={` ${
+                        Platform.OS === "ios" ? "p-1" : ""
+                      } text-white font-semibold text-xs font-poppins`}
+                    >
                       🤔 Awaiting Answer
                     </Text>
                   </LinearGradient>
@@ -179,7 +200,7 @@ function QApostCard({
         </View>
       </TouchableOpacity>
 
-      {/* Modern Separator */}
+      {/* Separator */}
       <View className="mt-4 mx-4">
         <LinearGradient
           colors={["transparent", "#E5E7EB", "transparent"]}

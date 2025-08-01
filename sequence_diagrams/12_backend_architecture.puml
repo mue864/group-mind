@@ -1,0 +1,64 @@
+@startuml Backend Architecture
+title GroupMind - Backend Architecture
+
+skinparam database {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+skinparam cloud {
+  BackgroundColor LightBlue
+  BorderColor Blue
+}
+
+' --- Firebase Cloud ---
+cloud "Firebase" {
+  [Firebase Authentication] as Auth
+  database "Firestore" as Firestore
+  [Firebase Storage] as Storage
+  [Realtime Database] as RealtimeDB
+  [Cloud Functions] as Functions
+}
+
+' --- WebRTC Services ---
+cloud "WebRTC Services" {
+  [Signaling Server] as Signaling
+  [STUN/TURN Servers] as ICE
+}
+
+' --- Data Models ---
+package "Data Models" {
+  [User]
+  [Group]
+  [Message]
+  [Post]
+  [Session]
+}
+
+' --- Core Connections ---
+
+' Authentication
+Auth --> Firestore : store user profile
+Auth --> Functions
+
+' Firestore & Models
+Firestore --> User
+Firestore --> Group
+Firestore --> Message
+Firestore --> Post
+Firestore --> Session
+
+' File Storage
+Storage --> Firestore
+Storage --> User : profile images
+Storage --> Message : attachments
+
+' WebRTC
+Signaling --> Firestore : call metadata
+Signaling --> ICE : exchange candidates
+
+' Realtime
+RealtimeDB --> Firestore : sync changes
+Functions --> RealtimeDB : updates
+
+@enduml

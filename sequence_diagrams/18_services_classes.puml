@@ -1,0 +1,107 @@
+@startuml Services Classes
+title GroupMind - Services Classes
+
+skinparam class {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+' Firebase Services
+class FirebaseService {
+  +auth: Auth
+  +firestore: Firestore
+  +storage: Storage
+  +initialize(): Promise<void>
+  +getCurrentUser(): User | null
+  +signIn(email: string, password: string): Promise<User>
+  +signUp(email: string, password: string): Promise<User>
+  +signOut(): Promise<void>
+  +uploadFile(file: File, path: string): Promise<string>
+  +downloadFile(url: string): Promise<File>
+  +getDocument(collection: string, id: string): Promise<any>
+  +setDocument(collection: string, id: string, data: any): Promise<void>
+  +updateDocument(collection: string, id: string, data: any): Promise<void>
+  +deleteDocument(collection: string, id: string): Promise<void>
+  +queryDocuments(collection: string, query: QueryConstraint[]): Promise<any[]>
+}
+
+class AuthService {
+  +currentUser: User | null
+  +isAuthenticated: boolean
+  +login(email: string, password: string): Promise<User>
+  +register(email: string, password: string): Promise<User>
+  +logout(): Promise<void>
+  +resetPassword(email: string): Promise<void>
+  +updateProfile(data: Partial<UserProfile>): Promise<void>
+  +sendEmailVerification(): Promise<void>
+  +getCurrentUser(): User | null
+  +onAuthStateChanged(callback: (user: User | null) => void): () => void
+}
+
+' WebRTC Services
+class WebRTCService {
+  +localStream: MediaStream | null
+  +remoteStreams: Map<string, MediaStream>
+  +connectionState: ConnectionState
+  +participants: Participant[]
+  +peerConnections: Map<string, RTCPeerConnection>
+  +initializeCall(groupId: string): Promise<void>
+  +joinCall(callId: string): Promise<void>
+  +leaveCall(): Promise<void>
+  +toggleVideo(enabled: boolean): Promise<void>
+  +toggleAudio(enabled: boolean): Promise<void>
+  +switchCamera(): Promise<void>
+  +getParticipants(): Participant[]
+  +addParticipant(userId: string): void
+  +removeParticipant(userId: string): void
+  +startScreenShare(): Promise<void>
+  +stopScreenShare(): Promise<void>
+  +getLocalStream(): MediaStream | null
+  +getRemoteStreams(): Map<string, MediaStream>
+}
+
+' Group Services
+class GroupService {
+  +getGroups(): Promise<Group[]>
+  +getGroup(groupId: string): Promise<Group>
+  +createGroup(data: CreateGroupData): Promise<Group>
+  +updateGroup(groupId: string, data: Partial<Group>): Promise<void>
+  +deleteGroup(groupId: string): Promise<void>
+  +joinGroup(groupId: string): Promise<void>
+  +leaveGroup(groupId: string): Promise<void>
+  +addMember(groupId: string, userId: string): Promise<void>
+  +removeMember(groupId: string, userId: string): Promise<void>
+  +makeAdmin(groupId: string, userId: string): Promise<void>
+  +removeAdmin(groupId: string, userId: string): Promise<void>
+  +searchGroups(query: string): Promise<Group[]>
+  +getSuggestedGroups(): Promise<Group[]>
+}
+
+class MessageService {
+  +getMessages(groupId: string): Promise<Message[]>
+  +sendMessage(groupId: string, content: string): Promise<Message>
+  +updateMessage(messageId: string, content: string): Promise<void>
+  +deleteMessage(messageId: string): Promise<void>
+  +reactToMessage(messageId: string, reaction: string): Promise<void>
+  +removeReaction(messageId: string, reaction: string): Promise<void>
+  +getMessageReactions(messageId: string): Promise<Reaction[]>
+  +sendFileMessage(groupId: string, file: File): Promise<Message>
+  +sendImageMessage(groupId: string, image: File): Promise<Message>
+  +onMessageReceived(callback: (message: Message) => void): () => void
+}
+
+class PostService {
+  +getPosts(groupId: string): Promise<Post[]>
+  +getPost(postId: string): Promise<Post>
+  +createPost(data: CreatePostData): Promise<Post>
+  +updatePost(postId: string, data: Partial<Post>): Promise<void>
+  +deletePost(postId: string): Promise<void>
+  +likePost(postId: string): Promise<void>
+  +unlikePost(postId: string): Promise<void>
+  +addComment(postId: string, content: string): Promise<Comment>
+  +updateComment(commentId: string, content: string): Promise<void>
+  +deleteComment(commentId: string): Promise<void>
+  +getComments(postId: string): Promise<Comment[]>
+}
+
+@enduml 

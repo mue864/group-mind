@@ -1,0 +1,153 @@
+@startuml Component Hierarchy
+title GroupMind - Component Hierarchy Diagram
+
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor Black
+}
+
+skinparam component {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+}
+
+skinparam package {
+  BackgroundColor LightGreen
+  BorderColor DarkGreen
+}
+
+' Main App Structure
+package "App.tsx" {
+  component "FlashMessage" as FlashMessage
+}
+
+package "Navigation (Expo Router)" {
+  package "(auth)/" {
+    component "Login Screen" as LoginScreen
+    component "Register Screen" as RegisterScreen
+  }
+  
+  package "(dashboard)/" {
+    component "Home Screen" as HomeScreen
+    component "Profile Screen" as ProfileScreen
+  }
+  
+  package "(groups)/" {
+    component "Group List Screen" as GroupListScreen
+    component "Group Detail Screen" as GroupDetailScreen
+    component "Chat Screen" as ChatScreen
+    component "Video Call Screen" as VideoCallScreen
+  }
+  
+  package "(settings)/" {
+    component "Settings Screen" as SettingsScreen
+  }
+}
+
+' UI Components
+package "Reusable Components" {
+  component "Button.tsx" as Button
+  component "InputField.tsx" as InputField
+  component "Card.tsx" as Card
+  component "SearchBar.tsx" as SearchBar
+  component "DropDown.tsx" as DropDown
+  component "CheckBox.tsx" as CheckBox
+}
+
+package "Group Components" {
+  component "GroupCard.tsx" as GroupCard
+  component "RandomGroupCard.tsx" as RandomGroupCard
+  component "GroupButton.tsx" as GroupButton
+  component "GroupImageModal.tsx" as GroupImageModal
+}
+
+package "Message Components" {
+  component "MessageBubble.tsx" as MessageBubble
+  component "PostCard.tsx" as PostCard
+  component "QApostCard.tsx" as QApostCard
+  component "ScheduledCard.tsx" as ScheduledCard
+}
+
+package "Communication Components" {
+  component "WebRTCCall.tsx" as WebRTCCall
+  component "LiveSessions.tsx" as LiveSessions
+  component "CallInvitation.tsx" as CallInvitation
+  component "ShareModal.tsx" as ShareModal
+}
+
+package "Utility Components" {
+  component "ProfileIcon.tsx" as ProfileIcon
+  component "ProfileImage.tsx" as ProfileImage
+  component "SearchIcon.tsx" as SearchIcon
+  component "FloatingButton.tsx" as FloatingButton
+  component "ActionButton.tsx" as ActionButton
+  component "MiniButton.tsx" as MiniButton
+  component "ScheduleButton.tsx" as ScheduleButton
+}
+
+' State Management
+package "Context Providers" {
+  component "GroupContext.tsx" as GroupContext
+  component "PostContext.tsx" as PostContext
+  component "MessagesProvider.tsx" as MessagesProvider
+}
+
+' Services
+package "Service Layer" {
+  component "firebase.ts" as FirebaseService
+  component "webrtcService.ts" as WebRTCService
+  component "webrtcWebSocketService.ts" as WebRTCWebSocketService
+  component "authService.ts" as AuthService
+}
+
+' Relationships - App Level
+App --> FlashMessage : Renders
+
+' Navigation Relationships
+LoginScreen --> InputField : Uses
+RegisterScreen --> InputField : Uses
+HomeScreen --> GroupCard : Renders
+HomeScreen --> SearchBar : Uses
+HomeScreen --> FloatingButton : Uses
+
+GroupListScreen --> GroupCard : Renders Multiple
+GroupListScreen --> SearchBar : Uses
+GroupListScreen --> DropDown : Uses
+
+GroupDetailScreen --> MessageBubble : Renders
+GroupDetailScreen --> PostCard : Renders
+GroupDetailScreen --> WebRTCCall : Integrates
+GroupDetailScreen --> LiveSessions : Integrates
+
+ChatScreen --> MessageBubble : Renders
+ChatScreen --> InputField : Uses
+ChatScreen --> ShareModal : Uses
+
+VideoCallScreen --> WebRTCCall : Renders
+VideoCallScreen --> CallInvitation : Uses
+
+' Component Dependencies
+GroupCard --> Card : Extends
+GroupCard --> ProfileImage : Uses
+GroupCard --> GroupButton : Uses
+
+MessageBubble --> ProfileIcon : Uses
+PostCard --> Card : Extends
+PostCard --> ProfileImage : Uses
+
+WebRTCCall --> ActionButton : Uses
+LiveSessions --> MiniButton : Uses
+
+' State Management Dependencies
+HomeScreen --> GroupContext : Consumes
+GroupDetailScreen --> PostContext : Consumes
+ChatScreen --> MessagesProvider : Consumes
+
+' Service Dependencies
+GroupContext --> FirebaseService : Uses
+PostContext --> FirebaseService : Uses
+MessagesProvider --> FirebaseService : Uses
+WebRTCCall --> WebRTCService : Uses
+WebRTCCall --> WebRTCWebSocketService : Uses
+
+@enduml 

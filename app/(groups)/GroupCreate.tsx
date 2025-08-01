@@ -9,7 +9,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { levelInfo } from "@/constants/accSetupInfo";
 interface GroupImagesProp {
   groupImage1: string;
   groupImage2: string;
@@ -50,13 +51,17 @@ const GroupCreate = () => {
     { label: "Science", value: "Science" },
     { label: "History", value: "History" },
     { label: "English", value: "English" },
+    { label: "Social Studies", value: "Social Studies" },
+    { label: "Geography", value: "Geography" },
+    { label: "Life Sciences", value: "Life Sciences" },
+    { label: "Physical Sciences", value: "Physical Sciences" },
+    { label: "Accounting", value: "Accounting" },
+    { label: "Economics", value: "Economics" },
+    { label: "Business Studies", value: "Business Studies" },
+    { label: "Computer Science", value: "Computer Science" },
+    { label: "Art", value: "Art" },
   ];
-  const gradeOptions = [
-    { label: "Grade 8", value: "Grade 8" },
-    { label: "Grade 9", value: "Grade 9" },
-    { label: "Grade 10", value: "Grade 10" },
-    { label: "Grade 11", value: "Grade 11" },
-  ];
+
 
   const privacyOptions = [
     { label: "Private", value: "Private" },
@@ -147,44 +152,46 @@ const GroupCreate = () => {
       keyboardShouldPersistTaps="handled"
       extraScrollHeight={100}
     >
+      <View className="mt-5">
+        <Text className="text-2xl font-bold font-poppins">Create a Group</Text>
+      </View>
       {/* Avatar Picker */}
       <Pressable
         style={{
           alignItems: "center",
-          marginTop: 32,
-          marginBottom: 16,
+          marginTop: 20,
+          marginBottom: 20,
           justifyContent: "center",
-          width: 120,
-          height: 120,
-        }}
-        onPress={() => setModalVisible(true)}
+          width: 150,
+          height: 150,
+          borderRadius: 100,
+          }}
+          onPress={() => setModalVisible(true)}
       >
         {selectedImage ? (
           <Image
             source={groupImages[selectedImage as keyof GroupImagesProp]}
             style={{
-              width: 120,
-              height: 120,
-              borderRadius: 60,
-              borderWidth: 1,
-              borderColor: "#9EADD9",
+              width: 150,
+              height: 150,
+              borderRadius: 100,
             }}
             resizeMode="cover"
           />
         ) : (
           <View
             style={{
-              borderWidth: 1,
-              borderColor: "#9EADD9",
-              borderRadius: 60,
-              width: 120,
-              height: 120,
+              borderRadius: 100,
+              width: 150,
+              height: 150,
               justifyContent: "center",
               alignItems: "center",
               backgroundColor: "#F6F8FE",
             }}
           >
-            <Camera width={40} height={40} />
+            <View className="bg-[#4169E1] rounded-full p-4 w-full h-full justify-center items-center">
+              <Ionicons name="image-outline" size={50} color="#fff" />
+            </View>
           </View>
         )}
       </Pressable>
@@ -254,8 +261,8 @@ const GroupCreate = () => {
       {/* Grade Dropdown */}
       <View style={{ width: "100%", marginTop: 18, zIndex: 2000 }}>
         <DropDown
-          data={gradeOptions}
-          placeholder="Grade Level"
+          data={levelInfo}
+          placeholder="Level"
           zIndex={2000}
           zIndexInverse={2000}
           setValue={setGrade}
@@ -324,6 +331,7 @@ const GroupCreate = () => {
             fontFamily: "Poppins-SemiBold",
             fontSize: 16,
             marginBottom: 6,
+            color: "#4169E1",
           }}
         >
           Group Rules
@@ -386,15 +394,16 @@ const GroupCreate = () => {
         fullWidth
         disabled={!formValid || groupCreating}
         loading={groupCreating}
-        style={{ marginTop: 100 }}
+        style={{ marginTop: 30 }}
       />
 
       {/* Go Back Button */}
       <Button
         onPress={() => router.back()}
-        title="Go Back"
+        title="Cancel"
         fullWidth
-        style={{ marginTop: 10 }}
+        style={{ marginTop: 10, backgroundColor: "red" }}
+        textStyle={{ fontWeight: "bold", color: "#fff" }}
       />
     </KeyboardAwareScrollView>
   );

@@ -1,0 +1,248 @@
+@startuml ERD - Firestore Collections
+title GroupMind - Firestore Collections Structure
+
+skinparam entity {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+skinparam relationship {
+  Color DarkBlue
+}
+
+' Firestore Collections
+entity "users" {
+  * id: string
+  --
+  * email: string
+  * displayName: string
+  photoURL: string
+  bio: string
+  * createdAt: Date
+  lastLoginAt: Date
+  isOnline: boolean
+  settings: object
+  --
+  <<Collection>> users
+}
+
+entity "groups" {
+  * id: string
+  --
+  * name: string
+  description: string
+  imageURL: string
+  * createdBy: string
+  * createdAt: Date
+  updatedAt: Date
+  isPublic: boolean
+  maxMembers: number
+  tags: string[]
+  settings: object
+  memberCount: number
+  --
+  <<Collection>> groups
+}
+
+entity "groupMembers" {
+  * groupId: string
+  * userId: string
+  --
+  * joinedAt: Date
+  isAdmin: boolean
+  role: string
+  --
+  <<Subcollection>> groups/{groupId}/members
+}
+
+entity "messages" {
+  * id: string
+  --
+  * groupId: string
+  * senderId: string
+  * content: string
+  * type: string
+  * createdAt: Date
+  updatedAt: Date
+  isEdited: boolean
+  replyTo: string
+  mentions: string[]
+  attachments: array
+  reactions: object
+  --
+  <<Subcollection>> groups/{groupId}/messages
+}
+
+entity "posts" {
+  * id: string
+  --
+  * groupId: string
+  * authorId: string
+  * title: string
+  * content: string
+  * type: string
+  tags: string[]
+  * createdAt: Date
+  updatedAt: Date
+  isPinned: boolean
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  --
+  <<Subcollection>> groups/{groupId}/posts
+}
+
+entity "comments" {
+  * id: string
+  --
+  * postId: string
+  * authorId: string
+  * content: string
+  * createdAt: Date
+  updatedAt: Date
+  isEdited: boolean
+  --
+  <<Subcollection>> posts/{postId}/comments
+}
+
+entity "sessions" {
+  * id: string
+  --
+  * groupId: string
+  * title: string
+  description: string
+  * startTime: Date
+  endTime: Date
+  * createdBy: string
+  * status: string
+  * type: string
+  settings: object
+  participantCount: number
+  --
+  <<Subcollection>> groups/{groupId}/sessions
+}
+
+entity "sessionParticipants" {
+  * sessionId: string
+  * userId: string
+  --
+  * joinedAt: Date
+  leftAt: Date
+  --
+  <<Subcollection>> sessions/{sessionId}/participants
+}
+
+entity "calls" {
+  * id: string
+  --
+  * groupId: string
+  * initiatedBy: string
+  * startTime: Date
+  endTime: Date
+  * status: string
+  * type: string
+  settings: object
+  participantCount: number
+  --
+  <<Subcollection>> groups/{groupId}/calls
+}
+
+entity "callParticipants" {
+  * callId: string
+  * userId: string
+  --
+  * joinedAt: Date
+  leftAt: Date
+  isVideoEnabled: boolean
+  isAudioEnabled: boolean
+  isScreenSharing: boolean
+  --
+  <<Subcollection>> calls/{callId}/participants
+}
+
+entity "notifications" {
+  * id: string
+  --
+  * userId: string
+  * type: string
+  * title: string
+  * body: string
+  data: object
+  * createdAt: Date
+  readAt: Date
+  isRead: boolean
+  --
+  <<Subcollection>> users/{userId}/notifications
+}
+
+entity "userActivity" {
+  * id: string
+  --
+  * userId: string
+  * type: string
+  * targetId: string
+  * targetType: string
+  * createdAt: Date
+  data: object
+  --
+  <<Subcollection>> users/{userId}/activity
+}
+
+entity "groupInvites" {
+  * id: string
+  --
+  * groupId: string
+  * invitedBy: string
+  * invitedUser: string
+  * status: string
+  * createdAt: Date
+  expiresAt: Date
+  --
+  <<Collection>> groupInvites
+}
+
+entity "sessionInvites" {
+  * id: string
+  --
+  * sessionId: string
+  * invitedBy: string
+  * invitedUser: string
+  * status: string
+  * createdAt: Date
+  expiresAt: Date
+  --
+  <<Collection>> sessionInvites
+}
+
+entity "fileMetadata" {
+  * id: string
+  --
+  * url: string
+  * filename: string
+  * size: number
+  * mimeType: string
+  * uploadedBy: string
+  * uploadedAt: Date
+  checksum: string
+  --
+  <<Collection>> fileMetadata
+}
+
+' Relationships (Firestore References)
+users ||--o{ groups : creates
+users ||--o{ groupMembers : joins
+groups ||--o{ groupMembers : has
+groups ||--o{ messages : contains
+groups ||--o{ posts : contains
+groups ||--o{ sessions : hosts
+groups ||--o{ calls : hosts
+posts ||--o{ comments : has
+sessions ||--o{ sessionParticipants : has
+calls ||--o{ callParticipants : has
+users ||--o{ notifications : receives
+users ||--o{ userActivity : generates
+groups ||--o{ groupInvites : sends
+sessions ||--o{ sessionInvites : sends
+users ||--o{ fileMetadata : uploads
+
+@enduml 

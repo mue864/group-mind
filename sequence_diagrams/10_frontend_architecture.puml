@@ -1,0 +1,52 @@
+@startuml Frontend Architecture
+title Frontend Architecture - GroupMind
+
+node "User Device\n(React Native)" {
+  [index.tsx] --> [expo-router]
+  [expo-router] --> [App Screens]
+}
+
+package "App Screens" {
+  [LoginScreen.tsx]
+  [SignupScreen.tsx]
+  [Dashboard.tsx]
+  [GroupList.tsx]
+  [GroupChat.tsx]
+  [VideoCall.tsx]
+  [FileSharing.tsx]
+}
+
+cloud "Firebase" {
+  database "Firestore"
+  [Firebase Auth]
+  [Firebase Storage]
+}
+
+cloud "WebRTC Services" {
+  [WebRTC Signaling Server]
+  [STUN/TURN Servers]
+}
+
+' Represent localstorage as a database symbol on the user device
+database "Local Storage" as localstorage
+
+' Firebase connections
+[LoginScreen.tsx] --> [Firebase Auth]
+[SignupScreen.tsx] --> [Firebase Auth]
+[FileSharing.tsx] --> [Firebase Storage]
+
+' Screens interacting with localstorage
+[Dashboard.tsx] --> localstorage
+[GroupList.tsx] --> localstorage
+[GroupChat.tsx] --> localstorage
+[VideoCall.tsx] --> localstorage
+
+localstorage --> Firestore
+[Firebase Auth] --> Firestore
+[Firebase Storage] --> Firestore
+
+' WebRTC connections
+[VideoCall.tsx] --> [WebRTC Signaling Server]
+[WebRTC Signaling Server] --> [STUN/TURN Servers]
+
+@enduml

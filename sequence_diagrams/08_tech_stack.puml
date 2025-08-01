@@ -1,0 +1,43 @@
+@startuml Tech Stack
+title GroupMind Technology Stack
+
+skinparam componentStyle rectangle
+
+rectangle "Frontend" {
+  [React Native]
+}
+
+rectangle "Backend-as-a-Service (BaaS)" {
+  [Firebase Authentication]
+  [Firebase Firestore]
+  [Firebase Cloud Functions]
+  [Firebase Storage]
+  [Firebase Cloud Messaging]
+}
+
+rectangle "Database" {
+  [Cloud Firestore]
+}
+
+rectangle "Media Upload" {
+  [Firebase Storage]
+}
+
+rectangle "Real-Time Calls" {
+  [WebRTC]
+  [Firestore (Signaling)]
+}
+
+
+' Dependencies
+[React Native] --> [Firebase Authentication]
+[React Native] --> [Firebase Firestore]
+[React Native] --> [Firebase Storage]
+[React Native] --> [Firebase Cloud Messaging]
+[React Native] --> [WebRTC]
+
+[WebRTC] --> [Firestore (Signaling)]
+
+[Firebase Firestore] --> [Cloud Firestore]
+
+@enduml

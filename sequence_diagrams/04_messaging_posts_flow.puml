@@ -1,0 +1,128 @@
+@startuml Messaging & Posts Flow
+!theme plain
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+title GroupMind - Messaging & Posts Flow
+
+actor User
+participant "Group Chat" as Chat
+participant "PostContext" as Context
+participant "MessagesProvider" as Messages
+participant "Firebase" as DB
+participant "Real-time Listener" as Listener
+participant "Group Members" as Members
+
+== Chat Initialization ==
+User -> Chat: Navigate to group chat
+Chat -> Context: Initialize PostContext
+Context -> DB: Query posts for groupId
+DB -> Context: Return existing posts
+Context -> Chat: Display posts list
+Chat -> Listener: Listen for real-time updates
+Listener -> DB: onSnapshot(collection("posts"))
+
+== Sending a Message ==
+User -> Chat: Type message text
+User -> Chat: Click send button
+Chat -> Chat: Validate message content
+Chat -> Context: sendMessage(messageData)
+Context -> DB: addDoc(collection("posts"))
+Note over DB: Create post document:\n- groupId, message\n- sentBy, timeSent\n- type: "message"\n- isAnswered: false
+DB -> Listener: Real-time update
+Listener -> Chat: Update UI with new message
+Chat -> User: Display sent message
+
+== Q&A Posts ==
+User -> Chat: Click "Post Question"
+Chat -> Chat: Show Q&A form
+User -> Chat: Enter question text
+User -> Chat: Submit question
+Chat -> Context: sendQaPost(qaData)
+Context -> DB: addDoc(collection("posts"))
+Note over DB: Create Q&A post:\n- groupId, message\n- type: "qa", isAnswered: false\n- sentBy, timeSent\n- isMod, isAdmin
+DB -> Listener: Real-time update
+Listener -> Chat: Update UI with new Q&A post
+Chat -> Members: Notify group members
+
+== Responding to Q&A ==
+User -> Chat: Click on Q&A post
+Chat -> Chat: Show response form
+User -> Chat: Enter response text
+User -> Chat: Submit response
+Chat -> Context: responseQaPost(postId, response)
+Context -> DB: updateDoc(postId)
+Note over DB: Update post:\n- Add response to replies array\n- Update isAnswered: true\n- Add responder info
+DB -> Listener: Real-time update
+Listener -> Chat: Update UI with response
+Chat -> User: Display updated Q&A post
+
+== Real-time Updates ==
+Members -> Chat: Send message from another device
+Members -> DB: addDoc(collection("posts"))
+DB -> Listener: Real-time update
+Listener -> Chat: Update UI with new message
+Chat -> User: Display incoming message
+
+== Message Moderation ==
+User -> Chat: Report inappropriate message
+Chat -> Context: reportMessage(postId)
+Context -> DB: updateDoc(postId)
+Note over DB: Add report flag to post
+Context -> DB: Notify moderators
+DB -> Members: Send moderation alert
+
+== Message Deletion ==
+User -> Chat: Delete own message
+Chat -> Context: deleteMessage(postId)
+Context -> DB: deleteDoc(postId)
+DB -> Listener: Real-time update
+Listener -> Chat: Remove message from UI
+Chat -> User: Update message list
+
+== Group Chat Features ==
+User -> Chat: Upload file/image
+Chat -> Chat: Process file upload
+Chat -> DB: Upload to Firebase Storage
+DB -> Chat: Return file URL
+Chat -> Context: sendMessage(fileData)
+Context -> DB: addDoc(collection("posts"))
+Note over DB: Create file post:\n- groupId, fileUrl\n- fileName, fileType\n- sentBy, timeSent
+DB -> Listener: Real-time update
+Listener -> Chat: Update UI with file
+Chat -> User: Display file message
+
+== Message Reactions ==
+User -> Chat: React to message
+Chat -> Context: addReaction(postId, reaction)
+Context -> DB: updateDoc(postId)
+Note over DB: Add reaction to post:\n- reactions: {userId: reactionType}
+DB -> Listener: Real-time update
+Listener -> Chat: Update UI with reaction
+Chat -> User: Display updated reactions
+
+== Message Search ==
+User -> Chat: Search messages
+Chat -> DB: Query posts with search term
+DB -> Chat: Return filtered messages
+Chat -> User: Display search results
+
+== Message History ==
+User -> Chat: Scroll to load more
+Chat -> Context: loadMoreMessages()
+Context -> DB: Query older posts
+DB -> Context: Return paginated messages
+Context -> Chat: Append to message list
+Chat -> User: Display older messages
+
+== Offline Support ==
+User -> Chat: Send message offline
+Chat -> Chat: Store message locally
+Chat -> Chat: Queue for sync when online
+Chat -> DB: Sync when connection restored
+DB -> Chat: Confirm message sent
+Chat -> User: Update message status
+
+@enduml 

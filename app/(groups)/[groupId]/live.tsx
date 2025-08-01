@@ -5,6 +5,7 @@ import { Camera } from "expo-camera";
 import { useRouter } from "expo-router";
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   onSnapshot,
@@ -27,6 +28,7 @@ import {
 import Toast from "react-native-toast-message";
 import { db } from "../../../services/firebase";
 import { useGroupContext } from "../../../store/GroupContext";
+import { showMessage } from "react-native-flash-message";
 
 // Types for calls
 type ScheduledCall = {
@@ -65,7 +67,7 @@ export default function Live() {
   const [scheduledTime, setScheduledTime] = useState("");
 
   // Add group context
-  const { userInformation, groupID: contextGroupID } = useGroupContext();
+  const { userInformation, groupID: contextGroupID, updateCallParticipants } = useGroupContext();
   const router = useRouter();
 
   // Local state for groupID and groupName from AsyncStorage
@@ -77,6 +79,7 @@ export default function Live() {
   const [activeCalls, setActiveCalls] = useState<ActiveCall[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isStartingCall, setIsStartingCall] = useState(false);
+  const [callDocId, setCallDocId] = useState("");
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -182,7 +185,11 @@ export default function Live() {
         groupName,
       });
       const joinLink = generateJoinLink(channelName, type);
-      await updateDoc(doc(db, "activeCalls", callRef.id), { joinLink });
+      setCallDocId(callRef.id);
+      await updateDoc(doc(db, "activeCalls", callRef.id),{
+        id: callRef.id,
+        joinLink,
+      } );
       Toast.show({
         type: "success",
         text1: "Call Started",
@@ -233,18 +240,28 @@ export default function Live() {
       );
     }
     try {
-      if (!call.participants.includes(userInformation.userID)) {
-        await updateDoc(doc(db, "activeCalls", call.id), {
-          participants: [...call.participants, userInformation.userID],
-        });
-      }
-      router.push(
-        `/call?groupId=${encodeURIComponent(
-          String(call.groupId)
-        )}&channel=${encodeURIComponent(
-          String(call.channelName)
-        )}&type=${encodeURIComponent(String(call.callType))}`
-      );
+      console.log("callDocId: ", callDocId);
+      console.log("User info", userInformation.userID)
+      // update participants in firestore
+      await updateDoc(doc(db, "activeCalls", call.id), {
+        participants: arrayUnion(userInformation.userID),
+      });
+
+      // Only use updateCallParticipants to handle joining
+      await updateCallParticipants(callDocId, userInformation.userID, true);
+
+      router.push({
+        pathname: "/call",
+        params: {
+          groupId: String(call.groupId),
+          channel: String(call.channelName),
+          type: String(call.callType),
+          groupName: String(groupName),
+          callDocId: String(callDocId),
+          callId: String(call.id),
+        },
+      });
+      console.log("Call doc id: ", callDocId);
     } catch (error) {
       console.error("Error joining active call:", error);
       Toast.show({
@@ -270,30 +287,13 @@ export default function Live() {
   return (
     <View className="flex-1 bg-white">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Context & AsyncStorage Debug Info */}
-        <View className="p-3 bg-gray-100 border-b border-gray-200">
-          <Text className="text-gray-500 text-xs">
-            User: {userInformation?.userName || "N/A"}
-          </Text>
-          <Text className="text-gray-500 text-xs">
-            Firebase Group ID: {contextGroupID || "N/A"}
-          </Text>
-          <Text className="text-gray-500 text-xs">
-            AsyncStorage Group ID: {groupID || "N/A"}
-          </Text>
-          <Text className="text-gray-500 text-xs">
-            AsyncStorage Group Name: {groupName || "N/A"}
-          </Text>
-        </View>
         {/* Header */}
-        <View className="bg-primary px-6 py-8">
-          <Text className="text-white text-2xl font-poppins-semiBold mb-2">
+        <View className="px-6 mt-4 py-3">
+          <Text className="text-white bg-primary border border-secondary/50 rounded-2xl p-3 text-2xl font-poppins-semiBold mb-2">
             Live Sessions
           </Text>
-          <Text className="text-violet-100 text-base font-poppins">
-            Calls are not yet working propely at the moment
-          </Text>
         </View>
+        
 
         {/* Active Calls Section */}
         <View className="px-6 py-4">
@@ -301,7 +301,9 @@ export default function Live() {
             Active Calls
           </Text>
           {activeCalls.length === 0 ? (
-            <Text className="text-slate-400 text-sm font-poppins">No active calls.</Text>
+            <Text className="text-slate-400 text-sm font-poppins">
+              No active calls.
+            </Text>
           ) : (
             activeCalls.map((call) => (
               <View
@@ -521,6 +523,8 @@ export default function Live() {
             ))
           )}
         </View>
+
+
         <View className="h-20" />
       </ScrollView>
     </View>
