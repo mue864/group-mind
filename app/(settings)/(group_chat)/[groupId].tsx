@@ -363,10 +363,55 @@ function GroupChat() {
 
   return (
     <View className="flex-1 bg-[#F5F6FA]">
+      {/* Header */}
+      <View className="flex flex-row items-center justify-between mx-4 mt-4 relative z-10">
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <Back />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: `/(settings)/(group_settings)/[groupId]`,
+              params: {
+                groupId: groupId.toString(),
+                groupName: groupName,
+              },
+            })
+          }
+          activeOpacity={0.7}
+          className="absolute left-1/2 -translate-x-1/2 "
+        >
+          <View className="flex flex-row items-center gap-2">
+            <Text className="text-2xl font-bold">{groupName}</Text>
+            <ExpandRight width={20} height={20} />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setShowSearch(!showSearch)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.searchButton}>{showSearch ? "✕" : "🔍"}</Text>
+        </TouchableOpacity>
+      </View>
+      {/* Search Bar */}
+      {showSearch && (
+        <SearchBar
+          placeholder="Search messages..."
+          onSearch={setSearchQuery}
+          onClear={() => setSearchQuery("")}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      )}
+
+      <View className="mt-2">
+        <HR width={deviceWidth} height={2} />
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 50}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 35}
       >
         <KeyboardAwareScrollView
           ref={scrollViewRef}
@@ -375,62 +420,13 @@ function GroupChat() {
           enableAutomaticScroll={true}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          extraScrollHeight={Platform.OS === "ios" ? 0 : 50}
-          extraHeight={Platform.OS === "ios" ? 0 : 50}
+          extraScrollHeight={Platform.OS === "ios" ? 0 : 0}
+          extraHeight={Platform.OS === "ios" ? 0 : 0}
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: 40,
+
           }}
         >
-          {/* Header */}
-          <View className="flex flex-row items-center justify-between mx-4 mt-4 relative">
-            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-              <Back />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() =>
-                router.push({
-                  pathname: `/(settings)/(group_settings)/[groupId]`,
-                  params: {
-                    groupId: groupId.toString(),
-                    groupName: groupName,
-                  },
-                })
-              }
-              activeOpacity={0.7}
-              className="absolute left-1/2 -translate-x-1/2 "
-            >
-              <View className="flex flex-row items-center gap-2">
-                <Text className="text-2xl font-bold">{groupName}</Text>
-                <ExpandRight width={20} height={20} />
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setShowSearch(!showSearch)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.searchButton}>{showSearch ? "✕" : "🔍"}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Search Bar */}
-          {showSearch && (
-            <SearchBar
-              placeholder="Search messages..."
-              onSearch={setSearchQuery}
-              onClear={() => setSearchQuery("")}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          )}
-
-          {/* Offline Indicator */}
-          {/* Removed offline indicator as it's no longer needed */}
-
-          <View className="mt-2">
-            <HR width={deviceWidth} height={2} />
-          </View>
-
           {/* Messages */}
           <View className="px-2 py-2 flex-1">
             {filteredTimeline.length > 0 ? (

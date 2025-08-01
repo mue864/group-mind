@@ -26,10 +26,25 @@ function QApostCard({
   let displayTime = "";
   const sentTime = timeSent?.toDate?.() ?? new Date();
 
+  
+
   const now = new Date();
   const sentTimeMs = sentTime.getTime();
   const diffMs = now.getTime() - sentTimeMs; // difference in milliseconds
   const diffMin = Math.floor(diffMs / 60000);
+
+  const delayNavigate = () => {
+    const timeout = setTimeout(() => {
+      router.push({
+        pathname: "/(settings)/(create_post)/(view_post)/[postId]",
+        params: {
+          postId: postID,
+          groupId: groupID,
+        },
+      });
+    }, 100);
+    return () => clearTimeout(timeout);
+  };
 
   if (diffMin < 1) {
     displayTime = "Just Now";
@@ -53,15 +68,7 @@ function QApostCard({
     <View className="mx-3">
       <TouchableOpacity
         activeOpacity={0.95}
-        onPress={() =>
-          router.push({
-            pathname: "/(settings)/(create_post)/(view_post)/[postId]",
-            params: {
-              postId: postID,
-              groupId: groupID,
-            },
-          })
-        }
+        onPress={delayNavigate}
         style={{
           // ios shadows
           shadowColor: "#000",

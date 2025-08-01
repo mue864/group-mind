@@ -1,0 +1,112 @@
+@startuml Level 2 DFD
+title GroupMind - Level 2 Data Flow Diagram
+
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor Black
+}
+
+skinparam database {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+' External Entities
+actor "User" as User
+actor "Firebase Auth" as FirebaseAuth
+actor "WebRTC Signaling" as WebRTCSignaling
+
+' Main Processes (Level 1)
+rectangle "1.0 Authentication Module" as AuthModule
+rectangle "2.0 Group Management Module" as GroupModule
+rectangle "3.0 Messaging Module" as MessagingModule
+rectangle "4.0 Video Calling Module" as VideoModule
+rectangle "5.0 File Management Module" as FileModule
+
+' Sub-processes (Level 2)
+rectangle "1.1 Validate Credentials" as ValidateCreds
+rectangle "1.2 Create User Profile" as CreateProfile
+rectangle "1.3 Update User Status" as UpdateStatus
+
+rectangle "2.1 Create Group" as CreateGroup
+rectangle "2.2 Join Group" as JoinGroup
+rectangle "2.3 Manage Members" as ManageMembers
+rectangle "2.4 Update Group Settings" as UpdateGroupSettings
+
+rectangle "3.1 Send Message" as SendMessage
+rectangle "3.2 Process Message" as ProcessMessage
+rectangle "3.3 Handle Reactions" as HandleReactions
+rectangle "3.4 Manage Threads" as ManageThreads
+
+rectangle "4.1 Initialize Call" as InitCall
+rectangle "4.2 Establish Connection" as EstablishConnection
+rectangle "4.3 Manage Participants" as ManageParticipants
+rectangle "4.4 Handle Media Streams" as HandleMedia
+
+rectangle "5.1 Upload File" as UploadFile
+rectangle "5.2 Process File" as ProcessFile
+rectangle "5.3 Generate Thumbnail" as GenerateThumbnail
+rectangle "5.4 Store Metadata" as StoreMetadata
+
+' Data Stores
+database "User Profiles" as UserDB
+database "Groups" as GroupDB
+database "Messages" as MessageDB
+database "File Storage" as FileStorage
+database "Call Sessions" as CallDB
+
+' Flows - Authentication
+User --> AuthModule : Login/Register
+AuthModule --> ValidateCreds : Credentials
+ValidateCreds --> FirebaseAuth : Validate
+FirebaseAuth --> ValidateCreds : Auth Token
+ValidateCreds --> CreateProfile : New User
+CreateProfile --> UserDB : Store Profile
+UpdateStatus --> UserDB : Update Online Status
+
+' Flows - Group Management
+User --> GroupModule : Create/Join Group
+GroupModule --> CreateGroup : Group Data
+CreateGroup --> GroupDB : Store Group
+JoinGroup --> GroupDB : Add Member
+ManageMembers --> GroupDB : Update Members
+UpdateGroupSettings --> GroupDB : Update Settings
+
+' Flows - Messaging
+User --> MessagingModule : Send Message
+MessagingModule --> SendMessage : Message Content
+SendMessage --> ProcessMessage : Raw Message
+ProcessMessage --> MessageDB : Store Message
+HandleReactions --> MessageDB : Update Reactions
+ManageThreads --> MessageDB : Thread Management
+
+' Flows - Video Calling
+User --> VideoModule : Start Call
+VideoModule --> InitCall : Call Request
+InitCall --> WebRTCSignaling : Signaling Data
+EstablishConnection --> CallDB : Store Call Session
+ManageParticipants --> CallDB : Update Participants
+HandleMedia --> CallDB : Stream Data
+
+' Flows - File Management
+User --> FileModule : Upload File
+FileModule --> UploadFile : File Data
+UploadFile --> ProcessFile : Raw File
+ProcessFile --> GenerateThumbnail : Image/Video
+GenerateThumbnail --> FileStorage : Store File
+StoreMetadata --> MessageDB : File Reference
+
+' Internal Flows
+AuthModule --> GroupModule : User Context
+GroupModule --> MessagingModule : Group Context
+MessagingModule --> VideoModule : Group Context
+FileModule --> MessagingModule : File Attachments
+
+' Data Retrieval Flows
+UserDB --> GroupModule : User Info
+GroupDB --> MessagingModule : Group Info
+MessageDB --> MessagingModule : Message History
+CallDB --> VideoModule : Call History
+FileStorage --> FileModule : File Access
+
+@enduml 

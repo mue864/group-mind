@@ -1,0 +1,129 @@
+@startuml UI Components Classes
+title GroupMind - UI Components Classes
+
+skinparam class {
+  BackgroundColor LightGreen
+  BorderColor DarkGreen
+}
+
+' Group Components
+class GroupCard {
+  +group: Group
+  +onPress: () => void
+  +onJoin: () => void
+  +onLeave: () => void
+  +render(): JSX.Element
+  +handleJoinPress(): void
+  +handleLeavePress(): void
+}
+
+class RandomGroupCard {
+  +group: Group
+  +onPress: () => void
+  +onJoin: () => void
+  +render(): JSX.Element
+  +handleJoinPress(): void
+}
+
+class GroupButton {
+  +title: string
+  +onPress: () => void
+  +variant: ButtonVariant
+  +disabled: boolean
+  +render(): JSX.Element
+}
+
+' Message Components
+class MessageBubble {
+  +message: Message
+  +isOwnMessage: boolean
+  +onPress: () => void
+  +onLongPress: () => void
+  +onReaction: (reaction: string) => void
+  +render(): JSX.Element
+  +handleReaction(reaction: string): void
+  +handleReply(): void
+}
+
+class PostCard {
+  +post: Post
+  +onPress: () => void
+  +onLike: () => void
+  +onComment: () => void
+  +render(): JSX.Element
+  +handleLike(): void
+  +handleComment(): void
+}
+
+class QApostCard {
+  +post: Post
+  +onPress: () => void
+  +onAnswer: () => void
+  +render(): JSX.Element
+  +handleAnswer(): void
+}
+
+class ScheduledCard {
+  +session: Session
+  +onPress: () => void
+  +onJoin: () => void
+  +render(): JSX.Element
+  +handleJoin(): void
+}
+
+' Video Calling Components
+class WebRTCCall {
+  +callId: string
+  +groupId: string
+  +participants: Participant[]
+  +localStream: MediaStream | null
+  +onEndCall: () => void
+  +onToggleVideo: () => void
+  +onToggleAudio: () => void
+  +render(): JSX.Element
+  +handleEndCall(): void
+  +handleToggleVideo(): void
+  +handleToggleAudio(): void
+  +handleSwitchCamera(): void
+}
+
+class LiveSessions {
+  +sessions: Session[]
+  +onJoinSession: (sessionId: string) => void
+  +onCreateSession: () => void
+  +render(): JSX.Element
+  +handleJoinSession(sessionId: string): void
+  +handleCreateSession(): void
+}
+
+class CallInvitation {
+  +call: Call
+  +onAccept: () => void
+  +onDecline: () => void
+  +render(): JSX.Element
+  +handleAccept(): void
+  +handleDecline(): void
+}
+
+' Utility Components
+class Button {
+  +title: string
+  +onPress: () => void
+  +variant: ButtonVariant
+  +size: ButtonSize
+  +disabled: boolean
+  +loading: boolean
+  +render(): JSX.Element
+}
+
+class InputField {
+  +value: string
+  +placeholder: string
+  +onChangeText: (text: string) => void
+  +secureTextEntry: boolean
+  +keyboardType: KeyboardType
+  +render(): JSX.Element
+}
+
+
+@enduml 

@@ -1,0 +1,241 @@
+@startuml Deployment Architecture
+!theme plain
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam pageWidth 1200
+
+title GroupMind - Deployment Architecture
+
+node "Mobile Devices" {
+  node "iOS Devices" {
+    [GroupMind iOS App]
+    note right
+      - React Native + Expo
+      - Native iOS build
+      - Camera & Microphone access
+      - Push notifications
+    end note
+  }
+  
+  node "Android Devices" {
+    [GroupMind Android App]
+    note right
+      - React Native + Expo
+      - Native Android build
+      - Camera & Microphone access
+      - Push notifications
+    end note
+  }
+  
+  node "Web Browsers" {
+    [GroupMind Web App]
+    note right
+      - React Native Web
+      - WebRTC support
+      - Progressive Web App
+    end note
+  }
+}
+
+node "Cloud Infrastructure (Google Cloud)" {
+  node "Firebase Project" {
+    node "Authentication" {
+      [Firebase Auth Service]
+      note right
+        - Email/Password auth
+        - Google OAuth
+        - Token management
+        - Session handling
+      end note
+    }
+    
+    node "Database" {
+      [Firestore Database]
+      note right
+        Collections:
+        - users
+        - groups
+        - posts
+        - activeCalls
+        - scheduledCalls
+      end note
+      
+      [Firebase Realtime DB]
+      note right
+        - Real-time listeners
+        - Live updates
+        - Presence tracking
+      end note
+    }
+    
+    node "Storage" {
+      [Firebase Storage]
+      note right
+        - Profile images
+        - Group banners
+        - File uploads
+        - Resource files
+      end note
+    }
+    
+    node "Functions" {
+      [Cloud Functions]
+      note right
+        - Push notifications
+        - Data processing
+        - Background tasks
+      end note
+    }
+    
+    node "Hosting" {
+      [Firebase Hosting]
+      note right
+        - Web app hosting
+        - Static file serving
+        - CDN distribution
+      end note
+    }
+  }
+}
+
+node "External Services" {
+  node "Video Calling Infrastructure" {
+    [WebRTC Signaling Server]
+    note right
+      - Custom Node.js server
+      - WebSocket connections
+      - Room management
+      - Peer coordination
+    end note
+    
+    [STUN/TURN Servers]
+    note right
+      - Google STUN servers
+      - Custom TURN servers
+      - NAT traversal
+      - Connection relay
+    end note
+    
+    [WebRTC Media Server]
+    note right
+      - Fallback video calling
+      - High-quality streaming
+      - Global CDN
+    end note
+  }
+  
+  node "Development & CI/CD" {
+    [Expo Build Service]
+    note right
+      - EAS Build
+      - iOS/Android builds
+      - Over-the-air updates
+    end note
+    
+    [GitHub Actions]
+    note right
+      - Automated testing
+      - Build automation
+      - Deployment pipeline
+    end note
+  }
+  
+  node "Monitoring & Analytics" {
+    [Firebase Analytics]
+    note right
+      - User behavior
+      - App performance
+      - Crash reporting
+    end note
+    
+    [Sentry]
+    note right
+      - Error tracking
+      - Performance monitoring
+      - Real-time alerts
+    end note
+  }
+}
+
+node "Development Environment" {
+  [Local Development]
+  note right
+    - Expo CLI
+    - Metro bundler
+    - Hot reloading
+    - Debug tools
+  end note
+  
+  [Testing Environment]
+  note right
+    - Jest testing
+    - E2E testing
+    - Performance testing
+  end note
+}
+
+' Mobile to Cloud connections
+[GroupMind iOS App] --> [Firebase Auth Service] : HTTPS
+[GroupMind Android App] --> [Firebase Auth Service] : HTTPS
+[GroupMind Web App] --> [Firebase Auth Service] : HTTPS
+
+[GroupMind iOS App] --> [Firestore Database] : HTTPS
+[GroupMind Android App] --> [Firestore Database] : HTTPS
+[GroupMind Web App] --> [Firestore Database] : HTTPS
+
+[GroupMind iOS App] --> [Firebase Storage] : HTTPS
+[GroupMind Android App] --> [Firebase Storage] : HTTPS
+[GroupMind Web App] --> [Firebase Storage] : HTTPS
+
+' Video calling connections
+[GroupMind iOS App] --> [WebRTC Signaling Server] : WebSocket
+[GroupMind Android App] --> [WebRTC Signaling Server] : WebSocket
+[GroupMind Web App] --> [WebRTC Signaling Server] : WebSocket
+
+[GroupMind iOS App] --> [STUN/TURN Servers] : UDP/TCP
+[GroupMind Android App] --> [STUN/TURN Servers] : UDP/TCP
+[GroupMind Web App] --> [STUN/TURN Servers] : UDP/TCP
+
+[GroupMind iOS App] --> [WebRTC Media Server] : HTTPS/WebRTC
+[GroupMind Android App] --> [WebRTC Media Server] : HTTPS/WebRTC
+
+' Development connections
+[Local Development] --> [Expo Build Service] : HTTPS
+[GitHub Actions] --> [Expo Build Service] : HTTPS
+[GitHub Actions] --> [Firebase Project] : HTTPS
+
+' Monitoring connections
+[GroupMind iOS App] --> [Firebase Analytics] : HTTPS
+[GroupMind Android App] --> [Firebase Analytics] : HTTPS
+[GroupMind Web App] --> [Firebase Analytics] : HTTPS
+
+[GroupMind iOS App] --> [Sentry] : HTTPS
+[GroupMind Android App] --> [Sentry] : HTTPS
+[GroupMind Web App] --> [Sentry] : HTTPS
+
+' Internal Firebase connections
+[Firebase Auth Service] --> [Firestore Database] : Internal
+[Firebase Auth Service] --> [Firebase Realtime DB] : Internal
+[Cloud Functions] --> [Firestore Database] : Internal
+[Cloud Functions] --> [Firebase Storage] : Internal
+[Firebase Hosting] --> [Firebase Storage] : Internal
+
+note top of [Firebase Project]
+  Google Cloud Platform
+  - Auto-scaling
+  - Global CDN
+  - 99.9% uptime SLA
+  - Security & compliance
+end note
+
+note top of [WebRTC Signaling Server]
+  Custom Infrastructure
+  - Node.js server
+  - WebSocket protocol
+  - Room management
+  - Peer coordination
+end note
+
+@enduml 

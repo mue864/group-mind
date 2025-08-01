@@ -40,7 +40,7 @@ function GroupQA() {
   const [localGroupName, setLocalGroupName] = useState("");
 
   const router = useRouter();
-  console.log("GroupId: ", groupId);
+ 
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -69,8 +69,6 @@ function GroupQA() {
         const cachedLocalData = await AsyncStorage.getItem(`local-${groupId}`);
         if (cachedLocalData) {
           setMessagesById(JSON.parse(cachedLocalData));
-          console.log("fecthed with: ", groupId);
-          console.log("Group Data: ", JSON.parse(cachedLocalData))
         } else {
           // No cached messages available
         }
@@ -85,7 +83,7 @@ function GroupQA() {
         if (cachedGroupName) {
           setLocalGroupName(cachedGroupName);
         } else {
-          // No cached group name available
+          setLocalGroupName("Group");
         }
       } catch (error) {
         console.error("Error fetching group name: ", error);
@@ -301,7 +299,11 @@ function GroupQA() {
               <Back />
             </TouchableOpacity>
 
-            <Text className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">
+            <Text className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{ maxWidth: "80%" }}
+            >
               {/* Group Name issue */}
               {!groupName ? localGroupName : groupName}
             </Text>

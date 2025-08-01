@@ -10,6 +10,7 @@ import { useInterval } from "@/hooks/useInterval";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -411,6 +412,7 @@ const Home = () => {
 
   return (
     <View className="bg-white flex-1">
+
       <StatusBar barStyle={"dark-content"} backgroundColor={"white"} />
 
       <View className="absolute bottom-0" pointerEvents="box-none">

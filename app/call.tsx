@@ -7,9 +7,8 @@ import { useGroupContext } from '@/store/GroupContext';
 import WebRTCCall from '@/components/WebRTCCall';
 
 export default function GroupCallScreen() {
-  const { groupId, channel, type } = useLocalSearchParams();
+  const { groupId, channel, type, groupName, callDocId, callId } = useLocalSearchParams();
   const { user, userInformation } = useGroupContext();
-  const groupName = 'Group';
   const [callType, setCallType] = useState<'audio' | 'video'>((type as 'audio' | 'video') || 'video');
   const [isInCall, setIsInCall] = useState(false);
 
@@ -81,7 +80,9 @@ export default function GroupCallScreen() {
           userName={userInformation.userName}
           callType={callType}
           onEndCall={handleEndCall}
-          
+          groupName={groupName as string}
+          callDocId={callDocId as string}
+          callId={callId as string}
         />
       </View>
     );

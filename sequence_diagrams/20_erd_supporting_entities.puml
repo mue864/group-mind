@@ -1,0 +1,214 @@
+@startuml ERD - Supporting Entities
+title GroupMind - Entity Relationship Diagram (Supporting Entities)
+
+skinparam entity {
+  BackgroundColor LightGreen
+  BorderColor DarkGreen
+}
+
+skinparam relationship {
+  Color DarkBlue
+}
+
+' Message-related entities
+entity "Attachment" {
+  * id: string
+  --
+  * messageId: string
+  * type: AttachmentType
+  * url: string
+  * filename: string
+  * size: number
+  * mimeType: string
+  * uploadedAt: Date
+  --
+  <<PK>> id
+  <<FK>> messageId -> Message.id
+}
+
+entity "Reaction" {
+  * id: string
+  --
+  * messageId: string
+  * userId: string
+  * type: string
+  * createdAt: Date
+  --
+  <<PK>> id
+  <<FK>> messageId -> Message.id
+  <<FK>> userId -> User.id
+}
+
+' Post-related entities
+entity "Comment" {
+  * id: string
+  --
+  * postId: string
+  * authorId: string
+  * content: string
+  * createdAt: Date
+  updatedAt: Date
+  isEdited: boolean
+  --
+  <<PK>> id
+  <<FK>> postId -> Post.id
+  <<FK>> authorId -> User.id
+}
+
+' User-related entities
+entity "Notification" {
+  * id: string
+  --
+  * userId: string
+  * type: NotificationType
+  * title: string
+  * body: string
+  data: object
+  * createdAt: Date
+  readAt: Date
+  isRead: boolean
+  --
+  <<PK>> id
+  <<FK>> userId -> User.id
+}
+
+entity "UserSettings" {
+  * userId: string
+  --
+  notifications: boolean
+  privacy: PrivacySettings
+  theme: string
+  language: string
+  emailNotifications: boolean
+  pushNotifications: boolean
+  --
+  <<PK>> userId
+  <<FK>> userId -> User.id
+}
+
+entity "UserActivity" {
+  * id: string
+  --
+  * userId: string
+  * type: ActivityType
+  * targetId: string
+  * targetType: string
+  * createdAt: Date
+  data: object
+  --
+  <<PK>> id
+  <<FK>> userId -> User.id
+}
+
+' Settings entities
+entity "GroupSettings" {
+  * groupId: string
+  --
+  allowInvites: boolean
+  requireApproval: boolean
+  allowFileSharing: boolean
+  allowVideoCalls: boolean
+  allowAnonymousPosts: boolean
+  maxFileSize: number
+  --
+  <<PK>> groupId
+  <<FK>> groupId -> Group.id
+}
+
+entity "SessionSettings" {
+  * sessionId: string
+  --
+  maxParticipants: number
+  allowRecording: boolean
+  requireApproval: boolean
+  autoRecord: boolean
+  allowScreenShare: boolean
+  --
+  <<PK>> sessionId
+  <<FK>> sessionId -> Session.id
+}
+
+entity "CallSettings" {
+  * callId: string
+  --
+  maxParticipants: number
+  allowScreenShare: boolean
+  allowRecording: boolean
+  autoRecord: boolean
+  --
+  <<PK>> callId
+  <<FK>> callId -> Call.id
+}
+
+' File and metadata entities
+entity "FileMetadata" {
+  * id: string
+  --
+  * url: string
+  * filename: string
+  * size: number
+  * mimeType: string
+  * uploadedBy: string
+  * uploadedAt: Date
+  checksum: string
+  --
+  <<PK>> id
+  <<FK>> uploadedBy -> User.id
+}
+
+' Invitation entities
+entity "GroupInvite" {
+  * id: string
+  --
+  * groupId: string
+  * invitedBy: string
+  * invitedUser: string
+  * status: InviteStatus
+  * createdAt: Date
+  expiresAt: Date
+  --
+  <<PK>> id
+  <<FK>> groupId -> Group.id
+  <<FK>> invitedBy -> User.id
+  <<FK>> invitedUser -> User.id
+}
+
+entity "SessionInvite" {
+  * id: string
+  --
+  * sessionId: string
+  * invitedBy: string
+  * invitedUser: string
+  * status: InviteStatus
+  * createdAt: Date
+  expiresAt: Date
+  --
+  <<PK>> id
+  <<FK>> sessionId -> Session.id
+  <<FK>> invitedBy -> User.id
+  <<FK>> invitedUser -> User.id
+}
+
+' Relationships - Message-related
+Message ||--o{ Attachment : has
+Message ||--o{ Reaction : receives
+
+' Relationships - Post-related
+Post ||--o{ Comment : has
+
+' Relationships - User-related
+User ||--o{ Notification : receives
+User ||--|| UserSettings : has
+User ||--o{ UserActivity : generates
+User ||--o{ FileMetadata : uploads
+
+' Relationships - Settings
+Group ||--|| GroupSettings : has
+Session ||--|| SessionSettings : has
+Call ||--|| CallSettings : has
+
+' Relationships - Invitations
+Group ||--o{ GroupInvite : sends
+Session ||--o{ SessionInvite : sends
+
+@enduml 

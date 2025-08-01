@@ -1,0 +1,148 @@
+@startuml Deployment Architecture
+title GroupMind - Deployment Architecture
+
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor Black
+}
+
+skinparam cloud {
+  BackgroundColor LightBlue
+  BorderColor Blue
+}
+
+skinparam database {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+' Client Applications
+package "Mobile Applications" {
+  [iOS App] as iOSApp
+  [Android App] as AndroidApp
+  note right of iOSApp
+    - App Store Distribution
+    - EAS Build System
+    - Expo Updates
+  end note
+  note right of AndroidApp
+    - Google Play Store
+    - EAS Build System
+    - Expo Updates
+  end note
+}
+
+' Development & Build
+package "Development Environment" {
+  [Expo CLI] as ExpoCLI
+  [Metro Bundler] as MetroBundler
+  [TypeScript Compiler] as TypeScript
+  [EAS Build] as EASBuild
+}
+
+' Cloud Services
+cloud "Google Cloud Platform" {
+  package "Firebase Services" {
+    [Firebase Authentication] as FirebaseAuth
+    [Firestore Database] as Firestore
+    [Firebase Storage] as FirebaseStorage
+    [Cloud Functions] as CloudFunctions
+    [Cloud Messaging] as FCM
+  }
+  
+  package "Hosting & CDN" {
+    [Firebase Hosting] as FirebaseHosting
+    [Cloud CDN] as CDN
+  }
+}
+
+cloud "WebRTC Infrastructure" {
+  [WebRTC Signaling Server] as WebRTCSignaling
+  [STUN/TURN Servers] as STUNTURN
+  [WebRTC Media Server] as WebRTCMedia
+}
+
+cloud "Expo Services" {
+  [Expo Updates] as ExpoUpdates
+  [Expo Development Builds] as ExpoDevBuilds
+  [Expo EAS] as EAS
+}
+
+' External Services
+cloud "App Stores" {
+  [Apple App Store] as AppStore
+  [Google Play Store] as PlayStore
+}
+
+cloud "Analytics & Monitoring" {
+  [Firebase Analytics] as FirebaseAnalytics
+  [Crashlytics] as Crashlytics
+  [Performance Monitoring] as Performance
+}
+
+' Development Workflow
+package "Development Process" {
+  [Local Development] as LocalDev
+  [Testing Environment] as Testing
+  [Staging Environment] as Staging
+  [Production Environment] as Production
+}
+
+' Relationships - Development
+LocalDev --> ExpoCLI : Uses
+ExpoCLI --> MetroBundler : Starts
+MetroBundler --> TypeScript : Compiles
+TypeScript --> EASBuild : Builds
+
+' Relationships - Build & Deploy
+EASBuild --> iOSApp : Creates
+EASBuild --> AndroidApp : Creates
+EASBuild --> ExpoUpdates : Publishes
+
+' Relationships - App Distribution
+iOSApp --> AppStore : Uploads
+AndroidApp --> PlayStore : Uploads
+ExpoUpdates --> iOSApp : Updates
+ExpoUpdates --> AndroidApp : Updates
+
+' Relationships - Backend Services
+iOSApp --> FirebaseAuth : Authenticates
+AndroidApp --> FirebaseAuth : Authenticates
+iOSApp --> Firestore : Reads/Writes
+AndroidApp --> Firestore : Reads/Writes
+iOSApp --> FirebaseStorage : Uploads/Downloads
+AndroidApp --> FirebaseStorage : Uploads/Downloads
+
+' Relationships - Video Calling
+iOSApp --> WebRTCSignaling : Connects
+AndroidApp --> WebRTCSignaling : Connects
+WebRTCSignaling --> STUNTURN : ICE Candidates
+WebRTCMedia --> WebRTCSignaling : Media Streams
+
+' Relationships - Analytics
+iOSApp --> FirebaseAnalytics : Sends Data
+AndroidApp --> FirebaseAnalytics : Sends Data
+iOSApp --> Crashlytics : Reports Crashes
+AndroidApp --> Crashlytics : Reports Crashes
+
+' Relationships - Hosting
+FirebaseHosting --> CDN : Distributes
+CDN --> iOSApp : Serves Assets
+CDN --> AndroidApp : Serves Assets
+
+' Relationships - Notifications
+CloudFunctions --> FCM : Triggers
+FCM --> iOSApp : Sends Push
+FCM --> AndroidApp : Sends Push
+
+' Environment Flow
+LocalDev --> Testing : Deploys
+Testing --> Staging : Promotes
+Staging --> Production : Promotes
+
+' Data Flow
+Firestore --> FirebaseAnalytics : User Activity
+FirebaseStorage --> FirebaseAnalytics : File Usage
+FirebaseAuth --> FirebaseAnalytics : Login Events
+
+@enduml 

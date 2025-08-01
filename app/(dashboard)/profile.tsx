@@ -352,7 +352,7 @@ const Profile = () => {
 
           {/* Edit Form */}
           <ScrollView className="flex-1 p-6">
-            <View className="space-y-6">
+            <View className="gap-6">
               <View>
                 <Text className="text-gray-700 font-poppins-semiBold mb-2">
                   Username
@@ -370,16 +370,12 @@ const Profile = () => {
                 <Text className="text-gray-700 font-poppins-semiBold mb-2">
                   Bio
                 </Text>
-                <TextInput
+                <TextBox
                   placeholder="Tell us about yourself..."
                   value={editForm.bio}
                   onChangeText={(text) =>
                     setEditForm({ ...editForm, bio: text })
                   }
-                  multiline
-                  numberOfLines={4}
-                  className="border border-gray-300 rounded-xl p-4 text-gray-800 font-poppins-regular"
-                  textAlignVertical="top"
                 />
               </View>
 

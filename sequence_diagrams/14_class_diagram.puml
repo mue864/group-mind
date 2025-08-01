@@ -1,0 +1,261 @@
+@startuml Class Diagram
+title GroupMind - Class Diagram
+
+skinparam class {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+}
+
+skinparam interface {
+  BackgroundColor LightGreen
+  BorderColor DarkGreen
+}
+
+' Core App Classes
+class App {
+  +FlashMessage: FlashMessage
+  +Router: ExpoRouter
+  +initializeApp(): void
+  +handleAppState(): void
+}
+
+class ExpoRouter {
+  +routes: Route[]
+  +navigate(path: string): void
+  +goBack(): void
+  +getCurrentRoute(): Route
+}
+
+' Authentication Classes
+class AuthModule {
+  +currentUser: User | null
+  +isAuthenticated: boolean
+  +login(email: string, password: string): Promise<User>
+  +register(email: string, password: string): Promise<User>
+  +logout(): void
+  +resetPassword(email: string): Promise<void>
+}
+
+class User {
+  +id: string
+  +email: string
+  +displayName: string
+  +photoURL: string
+  +createdAt: Date
+  +lastLoginAt: Date
+  +getProfile(): UserProfile
+  +updateProfile(data: Partial<UserProfile>): Promise<void>
+}
+
+' Group Management Classes
+class GroupContext {
+  +groups: Group[]
+  +currentGroup: Group | null
+  +loading: boolean
+  +error: string | null
+  +fetchGroups(): Promise<Group[]>
+  +createGroup(data: CreateGroupData): Promise<Group>
+  +joinGroup(groupId: string): Promise<void>
+  +leaveGroup(groupId: string): Promise<void>
+  +updateGroup(groupId: string, data: Partial<Group>): Promise<void>
+}
+
+class Group {
+  +id: string
+  +name: string
+  +description: string
+  +imageURL: string
+  +createdBy: string
+  +members: string[]
+  +admins: string[]
+  +createdAt: Date
+  +updatedAt: Date
+  +isPublic: boolean
+  +getMembers(): Promise<User[]>
+  +addMember(userId: string): Promise<void>
+  +removeMember(userId: string): Promise<void>
+  +isAdmin(userId: string): boolean
+}
+
+' Messaging Classes
+class MessagesProvider {
+  +messages: Message[]
+  +loading: boolean
+  +error: string | null
+  +fetchMessages(groupId: string): Promise<Message[]>
+  +sendMessage(groupId: string, content: string): Promise<Message>
+  +deleteMessage(messageId: string): Promise<void>
+  +reactToMessage(messageId: string, reaction: string): Promise<void>
+}
+
+class Message {
+  +id: string
+  +groupId: string
+  +senderId: string
+  +content: string
+  +type: MessageType
+  +attachments: Attachment[]
+  +reactions: Reaction[]
+  +createdAt: Date
+  +updatedAt: Date
+  +isEdited: boolean
+  +getSender(): Promise<User>
+  +addReaction(userId: string, reaction: string): Promise<void>
+  +removeReaction(userId: string, reaction: string): Promise<void>
+}
+
+class Post {
+  +id: string
+  +groupId: string
+  +authorId: string
+  +title: string
+  +content: string
+  +type: PostType
+  +tags: string[]
+  +createdAt: Date
+  +updatedAt: Date
+  +getAuthor(): Promise<User>
+  +addComment(comment: Comment): Promise<void>
+  +getComments(): Promise<Comment[]>
+}
+
+' Video Calling Classes
+class WebRTCService {
+  +localStream: MediaStream | null
+  +remoteStreams: Map<string, MediaStream>
+  +connectionState: ConnectionState
+  +participants: Participant[]
+  +initializeCall(groupId: string): Promise<void>
+  +joinCall(callId: string): Promise<void>
+  +leaveCall(): Promise<void>
+  +toggleVideo(enabled: boolean): Promise<void>
+  +toggleAudio(enabled: boolean): Promise<void>
+  +switchCamera(): Promise<void>
+  +getParticipants(): Participant[]
+}
+
+class WebRTCWebSocketService {
+  +socket: WebSocket | null
+  +isConnected: boolean
+  +connect(url: string): Promise<void>
+  +disconnect(): void
+  +sendSignal(signal: SignalData): void
+  +onSignalReceived(callback: (signal: SignalData) => void): void
+  +joinRoom(roomId: string, userId: string): Promise<void>
+  +leaveRoom(): Promise<void>
+}
+
+class Participant {
+  +id: string
+  +userId: string
+  +stream: MediaStream | null
+  +isVideoEnabled: boolean
+  +isAudioEnabled: boolean
+  +isScreenSharing: boolean
+  +joinedAt: Date
+  +getUser(): Promise<User>
+  +toggleVideo(): Promise<void>
+  +toggleAudio(): Promise<void>
+  +startScreenShare(): Promise<void>
+  +stopScreenShare(): Promise<void>
+}
+
+' UI Component Classes
+class GroupCard {
+  +group: Group
+  +onPress: () => void
+  +onJoin: () => void
+  +onLeave: () => void
+  +render(): JSX.Element
+  +handleJoinPress(): void
+  +handleLeavePress(): void
+}
+
+class MessageBubble {
+  +message: Message
+  +isOwnMessage: boolean
+  +onPress: () => void
+  +onLongPress: () => void
+  +onReaction: (reaction: string) => void
+  +render(): JSX.Element
+  +handleReaction(reaction: string): void
+  +handleReply(): void
+}
+
+class WebRTCCall {
+  +callId: string
+  +groupId: string
+  +participants: Participant[]
+  +localStream: MediaStream | null
+  +onEndCall: () => void
+  +onToggleVideo: () => void
+  +onToggleAudio: () => void
+  +render(): JSX.Element
+  +handleEndCall(): void
+  +handleToggleVideo(): void
+  +handleToggleAudio(): void
+  +handleSwitchCamera(): void
+}
+
+' Service Classes
+class FirebaseService {
+  +auth: Auth
+  +firestore: Firestore
+  +storage: Storage
+  +initialize(): Promise<void>
+  +getCurrentUser(): User | null
+  +signIn(email: string, password: string): Promise<User>
+  +signUp(email: string, password: string): Promise<User>
+  +signOut(): Promise<void>
+  +uploadFile(file: File, path: string): Promise<string>
+  +downloadFile(url: string): Promise<File>
+}
+
+class AuthService {
+  +currentUser: User | null
+  +isAuthenticated: boolean
+  +login(email: string, password: string): Promise<User>
+  +register(email: string, password: string): Promise<User>
+  +logout(): Promise<void>
+  +resetPassword(email: string): Promise<void>
+  +updateProfile(data: Partial<UserProfile>): Promise<void>
+}
+
+' Relationships
+App --> ExpoRouter : uses
+App --> AuthModule : uses
+App --> GroupContext : uses
+App --> MessagesProvider : uses
+
+ExpoRouter --> AuthModule : navigates to
+ExpoRouter --> GroupContext : navigates to
+ExpoRouter --> MessagesProvider : navigates to
+
+AuthModule --> User : manages
+AuthModule --> FirebaseService : uses
+
+GroupContext --> Group : manages
+GroupContext --> FirebaseService : uses
+Group --> User : contains
+
+MessagesProvider --> Message : manages
+MessagesProvider --> Post : manages
+MessagesProvider --> FirebaseService : uses
+Message --> User : belongs to
+Post --> User : belongs to
+
+WebRTCService --> WebRTCWebSocketService : uses
+WebRTCService --> Participant : manages
+WebRTCService --> FirebaseService : uses
+
+WebRTCCall --> WebRTCService : uses
+WebRTCCall --> Participant : displays
+
+GroupCard --> Group : displays
+MessageBubble --> Message : displays
+
+FirebaseService --> AuthService : provides
+FirebaseService --> GroupContext : provides
+FirebaseService --> MessagesProvider : provides
+
+@enduml 

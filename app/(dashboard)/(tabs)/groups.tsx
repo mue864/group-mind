@@ -261,17 +261,11 @@ const Groups = () => {
 
         {/* Enhanced Header with tabs */}
         <View className="bg-white border-b border-gray-100 pt-5 pb-6">
-          <LinearGradient
-            colors={["#667eea", "#764ba2"]}
-            className="absolute top-0 left-0 right-0 h-1"
-          />
+
 
           <View className="flex-row justify-between items-center px-6 mb-6">
             <View>
-              <Text className="text-3xl font-poppins-semiBold text-gray-800 mb-1">
-                Groups
-              </Text>
-              <Text className="text-gray-500 text-base font-poppins">
+              <Text className="text-gray-500 text-xl font-poppins-semiBold">
                 {activeTab === "joined"
                   ? "Your study communities"
                   : "Discover new groups"}

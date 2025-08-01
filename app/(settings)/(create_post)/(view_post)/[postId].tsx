@@ -62,7 +62,7 @@ type TimelineMessage = {
 };
 
 function ViewPost() {
-  const { userInformation, responseQaPost, user, qaPostSent } =
+  const { userInformation, responseQaPost, user, saveGroupResource } =
     useGroupContext();
   const scrollViewRef = useRef<KeyboardAwareScrollView>(null);
 
@@ -73,7 +73,6 @@ function ViewPost() {
   const [authorMessage, setAuthorMessage] = useState("");
   const [messageTime, setMessageTime] = useState("");
   const { postId, groupId } = useLocalSearchParams();
-  const [isSelf] = useState(false);
   const [isAdmin] = useState(false);
   const [isMod] = useState(false);
   const [timeCheck, setCheckTime] = useState("");
@@ -83,6 +82,7 @@ function ViewPost() {
   const [sendButtonClicked, setSendButtonClicked] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [groupName, setGroupName] = useState("");
 
   const [qa_Responses, setQA_Responses] = useState<QaResponses[]>([]);
 
@@ -92,6 +92,23 @@ function ViewPost() {
   const [showReplyInput, setShowReplyInput] = useState(false);
 
   const userAvatar = userInformation?.profilePicture;
+
+  // fetch group name
+  useEffect(() => {
+    const getGroupName = async () => {
+      try {
+        const groupName = await AsyncStorage.getItem("groupName");
+        if (groupName) {
+          setGroupName(groupName);
+        }
+      } catch (error) {
+        console.error("Unable to get group name: ", error);
+      }
+    }
+
+    getGroupName();
+  }, []);
+
 
   // Keyboard listeners
   useEffect(() => {
@@ -255,6 +272,57 @@ function ViewPost() {
     return () => unsubscribe();
   }, [user, groupId, postId]);
 
+  //  file upload
+  const handleFileUploaded = async (fileUrl: string, fileName: string) => {
+    if (!user || !groupId) return;
+
+    try {
+      await saveGroupResource ({
+        groupId: groupId.toString(),
+        name: groupName,
+        url: fileUrl,
+        type: getFileType(fileName),
+        uploadedBy: user.uid,
+        uploadedByUserName: userInformation?.userName || "Unkown User",
+        uploadedAt: Timestamp.now(),
+        fileSize: 0,
+      })
+    } catch (error) {
+      console.error("Unable to send resource: ", error);
+    }
+  };
+
+    const getFileType = (fileName: string): string => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    switch (extension) {
+      case "pdf":
+        return "PDF";
+      case "doc":
+      case "docx":
+        return "Document";
+      case "xls":
+      case "xlsx":
+        return "Spreadsheet";
+      case "ppt":
+      case "pptx":
+        return "Presentation";
+      case "jpg":
+      case "jpeg":
+      case "png":
+      case "gif":
+        return "Image";
+      case "mp4":
+      case "avi":
+      case "mov":
+        return "Video";
+      case "mp3":
+      case "wav":
+        return "Audio";
+      default:
+        return "File";
+    }
+  };
+
   // fetch local message data
   useEffect(() => {
     const fetchLocalMessagesData = async () => {
@@ -348,10 +416,22 @@ function ViewPost() {
 
   return (
     <View className="flex-1 bg-white">
+      {/* Header */}
+      <View className="flex flex-row items-center justify-between mx-4 mt-4">
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <Back />
+        </TouchableOpacity>
+        <Text className="text-2xl font-bold">Q&A Post</Text>
+        <View className="w-8" />
+      </View>
+
+      <View className="mt-2">
+        <HR width={deviceWidth} height={2} />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 30}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 55 : 35}
       >
         <KeyboardAwareScrollView
           ref={scrollViewRef}
@@ -360,25 +440,12 @@ function ViewPost() {
           enableAutomaticScroll={true}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          extraScrollHeight={Platform.OS === "ios" ? 0 : 50}
-          extraHeight={Platform.OS === "ios" ? 0 : 100}
+          extraScrollHeight={Platform.OS === "ios" ? 0 : 0}
+          extraHeight={Platform.OS === "ios" ? 0 : 0}
           contentContainerStyle={{
             flexGrow: 1,
           }}
         >
-          {/* Header */}
-          <View className="flex flex-row items-center justify-between mx-4 mt-4">
-            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-              <Back />
-            </TouchableOpacity>
-            <Text className="text-2xl font-bold">Q&A Post</Text>
-            <View className="w-8" />
-          </View>
-
-          <View className="mt-2">
-            <HR width={deviceWidth} height={2} />
-          </View>
-
           {/* Original Post */}
           {authorMessage && (
             <View className="mx-4 mt-4 p-4 bg-white rounded-lg shadow-sm">
@@ -595,11 +662,8 @@ function ViewPost() {
         <ShareModal
           visible={isActive}
           onDismiss={() => setIsActive(!isActive)}
-          onFileUploaded={(fileUrl, fileName) => {
-            // You can handle the uploaded file here
-            // For example, add it to the message or store it in the database
-            // File uploaded successfully
-            // Add the file URL to the current message (clean format)
+          onFileUploaded={  (fileUrl, fileName) => {
+            handleFileUploaded(fileUrl, fileName);           
             setPost((prev) => prev + (prev ? "\n" : "") + fileUrl);
           }}
         />

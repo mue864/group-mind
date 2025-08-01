@@ -20,8 +20,6 @@ wss.on('connection', (ws, req) => {
         return;
     }
 
-    console.log(`User ${userName} (${userId}) joining room ${roomId}`);
-
     // Check if user is already in the room (prevent duplicates)
     const existingConnection = findExistingConnection(roomId, userId);
     if (existingConnection) {

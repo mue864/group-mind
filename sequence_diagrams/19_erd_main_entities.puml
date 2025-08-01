@@ -1,0 +1,173 @@
+@startuml ERD - Main Entities
+title GroupMind - Entity Relationship Diagram (Main Entities)
+
+skinparam entity {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+}
+
+skinparam relationship {
+  Color DarkGreen
+}
+
+' Main Entities
+entity "User" {
+  * id: string
+  --
+  * email: string
+  * displayName: string
+  photoURL: string
+  bio: string
+  * createdAt: Date
+  lastLoginAt: Date
+  isOnline: boolean
+  --
+  <<PK>> id
+}
+
+entity "Group" {
+  * id: string
+  --
+  * name: string
+  description: string
+  imageURL: string
+  * createdBy: string
+  * createdAt: Date
+  updatedAt: Date
+  isPublic: boolean
+  maxMembers: number
+  tags: string[]
+  --
+  <<PK>> id
+  <<FK>> createdBy -> User.id
+}
+
+entity "Message" {
+  * id: string
+  --
+  * groupId: string
+  * senderId: string
+  * content: string
+  * type: MessageType
+  * createdAt: Date
+  updatedAt: Date
+  isEdited: boolean
+  replyTo: string
+  mentions: string[]
+  --
+  <<PK>> id
+  <<FK>> groupId -> Group.id
+  <<FK>> senderId -> User.id
+  <<FK>> replyTo -> Message.id
+}
+
+entity "Post" {
+  * id: string
+  --
+  * groupId: string
+  * authorId: string
+  * title: string
+  * content: string
+  * type: PostType
+  tags: string[]
+  * createdAt: Date
+  updatedAt: Date
+  isPinned: boolean
+  viewCount: number
+  --
+  <<PK>> id
+  <<FK>> groupId -> Group.id
+  <<FK>> authorId -> User.id
+}
+
+entity "Session" {
+  * id: string
+  --
+  * groupId: string
+  * title: string
+  description: string
+  * startTime: Date
+  endTime: Date
+  * createdBy: string
+  * status: SessionStatus
+  * type: SessionType
+  --
+  <<PK>> id
+  <<FK>> groupId -> Group.id
+  <<FK>> createdBy -> User.id
+}
+
+entity "Call" {
+  * id: string
+  --
+  * groupId: string
+  * initiatedBy: string
+  * startTime: Date
+  endTime: Date
+  * status: CallStatus
+  * type: CallType
+  --
+  <<PK>> id
+  <<FK>> groupId -> Group.id
+  <<FK>> initiatedBy -> User.id
+}
+
+' Junction Tables
+entity "GroupMember" {
+  * groupId: string
+  * userId: string
+  --
+  * joinedAt: Date
+  isAdmin: boolean
+  --
+  <<PK>> groupId, userId
+  <<FK>> groupId -> Group.id
+  <<FK>> userId -> User.id
+}
+
+entity "SessionParticipant" {
+  * sessionId: string
+  * userId: string
+  --
+  * joinedAt: Date
+  leftAt: Date
+  --
+  <<PK>> sessionId, userId
+  <<FK>> sessionId -> Session.id
+  <<FK>> userId -> User.id
+}
+
+entity "CallParticipant" {
+  * callId: string
+  * userId: string
+  --
+  * joinedAt: Date
+  leftAt: Date
+  isVideoEnabled: boolean
+  isAudioEnabled: boolean
+  isScreenSharing: boolean
+  --
+  <<PK>> callId, userId
+  <<FK>> callId -> Call.id
+  <<FK>> userId -> User.id
+}
+
+' Relationships
+User ||--o{ Group : creates
+User ||--o{ GroupMember : joins
+Group ||--o{ GroupMember : has
+User ||--o{ Message : sends
+Group ||--o{ Message : contains
+User ||--o{ Post : creates
+Group ||--o{ Post : contains
+User ||--o{ Session : schedules
+Group ||--o{ Session : hosts
+User ||--o{ SessionParticipant : participates
+Session ||--o{ SessionParticipant : has
+User ||--o{ Call : initiates
+Group ||--o{ Call : hosts
+User ||--o{ CallParticipant : participates
+Call ||--o{ CallParticipant : has
+Message ||--o{ Message : replies to
+
+@enduml 

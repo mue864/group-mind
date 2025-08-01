@@ -1,0 +1,114 @@
+@startuml Group Management Flow
+!theme plain
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam pageWidth 1200
+
+title GroupMind - Group Management Flow
+
+actor User
+participant "Groups Screen" as Groups
+participant "GroupContext" as Context
+participant "Firestore" as DB
+participant "Group Card" as Card
+participant "Group Onboarding" as Onboard
+participant "Group Details" as Details
+participant "Group Chat" as Chat
+participant "Group Resources" as Resources
+participant "Group Settings" as Settings
+
+== Group Discovery ==
+User -> Groups: Navigate to Groups tab
+Groups -> Context: fetchAllGroups()
+Context -> DB: Query all groups
+DB -> Context: Return groups list
+Context -> Groups: Update allGroups state
+Groups -> User: Display available groups
+
+== Viewing Groups ==
+User -> Groups: Switch between "Joined" and "All" tabs
+Groups -> Context: refreshGroups() / fetchAllGroups()
+Context -> DB: Query user's groups / all groups
+DB -> Context: Return filtered groups
+Context -> Groups: Update groups state
+Groups -> User: Display filtered groups
+
+== Joining a Group ==
+User -> Card: Click on group card
+Card -> Card: Show confirmation dialog
+User -> Card: Confirm join request
+Card -> Context: joinGroup(groupId)
+Context -> DB: updateDoc(user.uid)
+Note over DB: Add groupId to user's joinedGroups
+Context -> DB: updateDoc(groupId)
+Note over DB: Add user.uid to group's members
+Context -> Card: Update groups state
+Card -> Onboard: Navigate to group onboarding
+
+== Group Onboarding ==
+Onboard -> DB: getDoc(groupId)
+DB -> Onboard: Return group data
+Onboard -> User: Display group welcome & rules
+User -> Onboard: Read onboarding content
+User -> Onboard: Click "Continue"
+Onboard -> DB: setGroupOnboardingCompleted()
+Note over DB: Mark onboarding as completed
+Onboard -> Details: Navigate to group details
+
+== Group Navigation ==
+User -> Details: View group information
+Details -> DB: getDoc(groupId)
+DB -> Details: Return group data
+Details -> User: Display group details
+
+User -> Chat: Navigate to group chat
+Chat -> Chat: Initialize chat interface
+Chat -> DB: Listen for messages
+DB -> Chat: Real-time message updates
+Chat -> User: Display chat messages
+
+User -> Resources: Navigate to resources
+Resources -> DB: Query group resources
+DB -> Resources: Return resource files
+Resources -> User: Display resource list
+
+User -> Settings: Navigate to group settings
+Settings -> DB: getDoc(groupId)
+DB -> Settings: Return group data
+Settings -> User: Display group settings
+
+== Creating a Group ==
+User -> Groups: Click "Create Group"
+Groups -> Groups: Navigate to group creation
+User -> Groups: Fill group details
+Note over Groups: - Group name & description\n- Category & grade level\n- Privacy settings\n- Onboarding text & rules\n- Group image
+Groups -> Groups: Validate form data
+Groups -> Context: createGroup(groupData)
+Context -> DB: addDoc(collection("groups"))
+Note over DB: Create new group document
+Context -> Context: joinGroup(groupId)
+Context -> DB: Add user as admin & member
+Context -> Groups: Navigate to new group
+
+== Group Operations ==
+User -> Settings: Manage group members
+Settings -> Context: promoteToModerator()
+Context -> DB: updateDoc(groupId)
+Note over DB: Add user to moderators array
+
+User -> Settings: Transfer ownership
+Settings -> Context: transferOwnership()
+Context -> DB: updateDoc(groupId)
+Note over DB: Change groupOwner field
+
+User -> Settings: Leave group
+Settings -> Context: leaveGroup()
+Context -> DB: updateDoc(user.uid)
+Note over DB: Remove groupId from joinedGroups
+Context -> DB: updateDoc(groupId)
+Note over DB: Remove user.uid from members
+Context -> Groups: Navigate back to groups
+
+@enduml 

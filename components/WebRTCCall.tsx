@@ -1,7 +1,8 @@
 import { WEBRTC_CONFIG } from "@/constants";
+import { useGroupContext } from "@/store/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Dimensions, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import {
   mediaDevices,
   MediaStream,
@@ -10,8 +11,8 @@ import {
   RTCSessionDescription,
   RTCView,
 } from "react-native-webrtc";
-
-const { width, height } = Dimensions.get("window");
+import { db } from "@/services/firebase";
+import { doc, updateDoc, arrayRemove, deleteDoc, getDoc } from "firebase/firestore";
 
 interface WebRTCCallProps {
   roomId: string;
@@ -19,6 +20,9 @@ interface WebRTCCallProps {
   userName: string;
   callType: "audio" | "video";
   onEndCall: () => void;
+  groupName: string;
+  callDocId: string;
+  callId: string;
 }
 
 const WebRTCCall: React.FC<WebRTCCallProps> = ({
@@ -27,7 +31,11 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
   userName,
   callType,
   onEndCall,
+  groupName,
+  callDocId,
+  callId,
 }) => {
+  const { updateCallParticipants } = useGroupContext();
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(
@@ -50,6 +58,17 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       cleanup();
     };
   }, []);
+
+  // Update participants in Firebase
+  useEffect(() => {
+    // Join call
+    updateCallParticipants(callDocId, userId, true);
+
+    // Leave call on unmount
+    return () => {
+      updateCallParticipants(callDocId, userId, false);
+    };
+  }, [callDocId, userId]);
 
   const initializeCall = async () => {
     try {
@@ -82,6 +101,34 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       Alert.alert("Error", "Failed to initialize call: " + error.message);
     }
   };
+  // remove user from  participants when call ends
+  const removeUser = async () => {
+    try {
+      const callDoc = doc(db, "activeCalls", callId);
+      const callDocSnap = await getDoc(callDoc);
+      if (callDocSnap.exists()) {
+        const callData = callDocSnap.data();
+        if (callData.participants.includes(userId)) {
+          await updateDoc(callDoc, {
+            participants: arrayRemove(userId),
+          });
+        }
+        if (callData.participants.length === 0) {
+          await deleteDoc(callDoc);
+        }
+      }
+    } catch (error) {
+      console.error("Error removing user from participants:", error);
+    }
+
+
+  };
+
+  useEffect(() => {
+    if (connectionState === "disconnected") {
+      removeUser();
+    }
+  }, [connectionState]);
 
   const setupLocalStream = async () => {
     try {
@@ -671,6 +718,7 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
   };
 
   const endCall = async () => {
+    updateCallParticipants(callDocId, userId, false);
     console.log("Ending call...");
     // Send end call message to all participants
     peerConnectionsRef.current.forEach((_, peerId) => {
@@ -794,23 +842,14 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
 
   const renderLocalVideo = () => {
     if (!localStreamRef.current || callType !== "video") return null;
-
-    console.log("Rendering local video:", {
-      streamId: localStreamRef.current.id,
-      tracks: localStreamRef.current.getTracks().map(track => ({
-        kind: track.kind,
-        enabled: track.enabled,
-        muted: track.muted,
-        readyState: track.readyState
-      }))
-    });
-
     return (
-      <View className="absolute top-4 right-4 w-[120px] h-[160px] z-10 rounded-lg overflow-hidden">
+      <View
+        className={`absolute bottom-40 right-4  w-[120px] h-[160px] z-10 rounded-2xl overflow-hidden`}
+      >
         <RTCView
           streamURL={localStreamRef.current.toURL()}
           className="absolute inset-0"
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: "100%", height: "100%" }}
           objectFit="cover"
           mirror={true}
           zOrder={2}
@@ -823,26 +862,11 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
     if (callType !== "video") return null;
 
     const remoteStreamArray = Array.from(remoteStreams.entries());
-    console.log("Rendering remote videos:", {
-      streamCount: remoteStreamArray.length,
-      streams: remoteStreamArray.map(([peerId, stream]) => ({
-        peerId,
-        streamId: stream.id,
-        tracks: stream.getTracks().length
-      }))
-    });
-
     if (remoteStreamArray.length === 0) {
       return (
         <View className="flex-1 justify-center items-center bg-gray-900">
           <Text className="text-white text-lg">
             Waiting for participants...
-          </Text>
-          <Text className="text-white text-sm mt-2.5">
-            Connected: {participants.length} participant(s)
-          </Text>
-          <Text className="text-white text-xs mt-1">
-            Status: {connectionState}
           </Text>
         </View>
       );
@@ -860,7 +884,7 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
             <View className="relative flex-1 bg-black rounded-lg overflow-hidden">
               <RTCView
                 streamURL={stream.toURL()}
-                style={{ width: '100%', height: '100%' }}
+                style={{ width: "100%", height: "100%" }}
                 className="absolute inset-0"
                 objectFit="cover"
                 mirror={false}
@@ -868,7 +892,8 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
               />
               <View className="absolute bottom-4 left-4 bg-black/50 px-3 py-1.5 rounded-lg z-10">
                 <Text className="text-white font-medium">
-                  {participants.find((p) => p.id === peerId)?.name || "Participant"}
+                  {participants.find((p) => p.id === peerId)?.name ||
+                    "Participant"}
                 </Text>
               </View>
             </View>
@@ -885,6 +910,9 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
         {callType === "video" ? (
           <>
             <View className="flex-1">
+              <Text className="text-white text-2xl font-semibold font-poppins text-center">
+                {groupName} Session
+              </Text>
               {renderRemoteVideos()}
             </View>
             {renderLocalVideo()}
@@ -894,7 +922,9 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
             <View className="bg-gray-800/50 rounded-full p-8 mb-6">
               <Ionicons name="call" size={100} color="white" />
             </View>
-            <Text className="text-white text-2xl font-semibold">Audio Call</Text>
+            <Text className="text-white text-2xl font-semibold">
+              Audio Call
+            </Text>
             <Text className="text-white/80 text-base mt-2.5">
               Connected: {participants.length} participant(s)
             </Text>
@@ -907,7 +937,7 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
 
       {/* Control buttons */}
       <View className="absolute bottom-safe left-0 right-0 pb-6">
-        <View className="flex-row justify-center items-center px-5 space-x-4">
+        <View className="flex-row justify-center items-center px-5 gap-4">
           <TouchableOpacity
             onPress={toggleAudio}
             className={`${
@@ -944,21 +974,6 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
           )}
         </View>
       </View>
-
-      {/* Debug info */}
-      {__DEV__ && (
-        <View className="absolute top-safe left-4 bg-black/70 p-2.5 rounded-lg">
-          <Text className="text-white/80 text-xs">Room: {roomId}</Text>
-          <Text className="text-white/80 text-xs">User: {userId}</Text>
-          <Text className="text-white/80 text-xs">
-            Participants: {participants.length}
-          </Text>
-          <Text className="text-white/80 text-xs">
-            Remote Streams: {remoteStreams.size}
-          </Text>
-          <Text className="text-white/80 text-xs">Status: {connectionState}</Text>
-        </View>
-      )}
     </View>
   );
 };

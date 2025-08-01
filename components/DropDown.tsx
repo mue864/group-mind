@@ -29,8 +29,49 @@ const DropDown: React.FC<DropDownProps> = ({
     setValue(value);
   }, [value, setValue]);
 
+  // Style objects for different states
+  const pickerStyle = {
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 56,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 18,
+    backgroundColor: "#fff",
+    borderColor: error ? "#ef4444" : "#9EADD9",
+  };
+
+  const dropDownContainerStyle = {
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 4,
+    backgroundColor: error ? "#fff" : "rgba(158,173,217,0.1)",
+    borderColor: error ? "#ef4444" : "#9EADD9",
+  };
+
+  const placeholderStyle = {
+    color: "#9EADD9",
+    fontWeight: "bold" as const,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 16,
+  };
+         
+
+
+  const textStyle = {
+    fontSize: 16,
+    color: "#4B5563",
+    fontFamily: "Poppins-SemiBold",
+  };
+
+  const listItemLabelStyle = {
+    color: "#6B7280",
+    fontWeight: "bold" as const,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 16,
+  };
+
   return (
-    <View style={{ zIndex: open ? zIndex : 1 }}>
+    <View className={open ? `z-[${zIndex}]` : "z-[1]"}>
       <DropDownPicker
         open={open}
         value={value}
@@ -43,17 +84,11 @@ const DropDown: React.FC<DropDownProps> = ({
         modalProps={{
           animationType: "slide",
         }}
-        style={{
-          backgroundColor: error ? "#fff" : "rgba(158, 173, 217, 0.1)",
-          borderColor: error ? "#ef4444" : "#9EADD9",
-        }}
-        placeholderStyle={{ color: "rgb(107, 114, 128)", fontWeight: "bold" }}
-        textStyle={{ fontSize: 16 }}
-        listItemLabelStyle={{ color: "rgb(107, 114, 128)", fontWeight: "bold" }}
-        dropDownContainerStyle={{
-          borderColor: error ? "#ef4444" : "#9EADD9",
-          backgroundColor: error ? "#fff" : "rgba(158, 173, 217, 0.1)",
-        }}
+        style={pickerStyle}
+        placeholderStyle={placeholderStyle}
+        textStyle={textStyle}
+        listItemLabelStyle={listItemLabelStyle}
+        dropDownContainerStyle={dropDownContainerStyle}
         ArrowDownIconComponent={() => (
           <FontAwesome6
             name="chevron-down"

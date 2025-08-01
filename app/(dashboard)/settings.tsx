@@ -10,19 +10,12 @@ const Settings = () => {
     try {
       await signOut(auth);
       router.replace("/(auth)/signInScreen");
-    } catch (err) {
-      Alert.alert("Error", "Unable to sign you out");
+    } catch (err: any) {
+      Alert.alert("Error", "Unable to sign you out", err.message);
     }
   }
 
   const settingsOptions = [
-    {
-      title: "Permission Test",
-      description: "Test camera and microphone permissions",
-      icon: "camera-outline",
-      onPress: () => router.push("/(settings)/permissionTest"),
-      color: "#4169E1",
-    },
     {
       title: "Profile",
       description: "Manage your profile settings",

@@ -1,0 +1,68 @@
+@startuml Core Architecture Classes
+title GroupMind - Core Architecture Classes
+
+skinparam class {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+}
+
+' Core App Classes
+class App {
+  +FlashMessage: FlashMessage
+  +Router: ExpoRouter
+  +initializeApp(): void
+  +handleAppState(): void
+}
+
+class ExpoRouter {
+  +routes: Route[]
+  +navigate(path: string): void
+  +goBack(): void
+  +getCurrentRoute(): Route
+}
+
+' Context Providers
+class GroupContext {
+  +groups: Group[]
+  +currentGroup: Group | null
+  +loading: boolean
+  +error: string | null
+  +fetchGroups(): Promise<Group[]>
+  +createGroup(data: CreateGroupData): Promise<Group>
+  +joinGroup(groupId: string): Promise<void>
+  +leaveGroup(groupId: string): Promise<void>
+  +updateGroup(groupId: string, data: Partial<Group>): Promise<void>
+}
+
+class PostContext {
+  +posts: Post[]
+  +currentPost: Post | null
+  +loading: boolean
+  +error: string | null
+  +fetchPosts(groupId: string): Promise<Post[]>
+  +createPost(data: CreatePostData): Promise<Post>
+  +updatePost(postId: string, data: Partial<Post>): Promise<void>
+  +deletePost(postId: string): Promise<void>
+}
+
+class MessagesProvider {
+  +messages: Message[]
+  +loading: boolean
+  +error: string | null
+  +fetchMessages(groupId: string): Promise<Message[]>
+  +sendMessage(groupId: string, content: string): Promise<Message>
+  +deleteMessage(messageId: string): Promise<void>
+  +reactToMessage(messageId: string, reaction: string): Promise<void>
+}
+
+' Authentication
+class AuthModule {
+  +currentUser: User | null
+  +isAuthenticated: boolean
+  +login(email: string, password: string): Promise<User>
+  +register(email: string, password: string): Promise<User>
+  +logout(): void
+  +resetPassword(email: string): Promise<void>
+}
+
+@enduml 
