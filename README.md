@@ -31,18 +31,6 @@ npm install
 npm start
 ```
 
-## 📚 Documentation
-
-📁 **[Documentation Folder](documentation/)** - All documentation organized in one place
-
-### Key Documentation
-
-- **[📖 Comprehensive Documentation](documentation/DOCUMENTATION.md)** - Complete guide to the application
-- **[🧩 Component Documentation](documentation/COMPONENT_DOCUMENTATION.md)** - Detailed component reference
-- **[🏠 Home Screen Documentation](documentation/HOME_SCREEN_DOCUMENTATION.md)** - Detailed guide to the main dashboard
-- **[⚡ Quick Start Guide](documentation/QUICK_START.md)** - Get started in 5 minutes
-- **[🔧 Setup Instructions](documentation/QUICK_START.md#firebase-setup-required)** - Firebase and Agora setup
-
 ## 🏗️ Architecture
 
 GroupMind is built with modern technologies and follows best practices:
@@ -84,10 +72,6 @@ GroupMind is built with modern technologies and follows best practices:
 - Accessibility support
 - Offline functionality
 
-## 📱 Screenshots
-
-_[Screenshots will be added here]_
-
 ## 🛠️ Development
 
 ### Prerequisites
@@ -96,7 +80,6 @@ _[Screenshots will be added here]_
 - npm or yarn
 - Expo CLI
 - Firebase account
-- Agora account (for video calling)
 
 ### Setup
 
@@ -163,65 +146,3 @@ expo build:ios
 expo build:android
 ```
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](documentation/DOCUMENTATION.md#contributing) for details.
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 🐛 Troubleshooting
-
-Common issues and solutions are documented in our [Troubleshooting Guide](documentation/DOCUMENTATION.md#troubleshooting).
-
-### Common Issues
-
-- **Firebase not initialized**: Check your `.env` file
-- **Video call not working**: Verify Agora credentials
-- **Groups not loading**: Check Firestore security rules
-- **Performance issues**: Clear app cache and restart
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Expo](https://expo.dev/) for the amazing development platform
-- [Firebase](https://firebase.google.com/) for backend services
-- [Agora](https://www.agora.io/) for video calling capabilities
-- [React Native](https://reactnative.dev/) for the mobile framework
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-
-## 📞 Support
-
-- **Documentation**: Check our comprehensive [documentation](documentation/DOCUMENTATION.md)
-- **Issues**: Create an issue in the repository
-- **Discussions**: Use GitHub discussions for questions
-- **Email**: [support@groupmind.app](mailto:support@groupmind.app)
-
-## 🗺️ Roadmap
-
-### Upcoming Features
-
-- [ ] Advanced search and filtering
-- [ ] Group analytics and insights
-- [ ] Integration with learning management systems
-- [ ] Web dashboard for administrators
-- [ ] Push notifications
-- [ ] Advanced moderation tools
-
-### Version History
-
-- **v1.0.0** - Initial release with core features
-- **v1.1.0** - Enhanced suggested groups system
-- **v1.2.0** - Improved UI/UX and performance
-
----
-
-**Made with ❤️ by the GroupMind Team**
-
-For more information, visit our [documentation](documentation/DOCUMENTATION.md) or [quick start guide](documentation/QUICK_START.md).
