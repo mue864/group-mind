@@ -53,7 +53,9 @@ class WebRTCWebSocketService {
   };
 
   // Signaling server URL (change this to your server)
-  private signalingServerUrl = "ws://localhost:3001";
+  // private signalingServerUrl = "ws://localhost:3001";
+
+  private signalingServerUrl = "ws://signaling-server-seo6.onrender.com";
 
   constructor() {
     if (Platform.OS !== "web") {
