@@ -658,7 +658,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     maxGradeLevel: string,
     onboardingText: string,
     isPrivate: boolean,
-    onboardingRules: string[] // NEW
+    onboardingRules: string[]
   ) => {
     try {
       setGroupCreating(true);
@@ -670,7 +670,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         category,
         imageUrl,
         onboardingText,
-        onboardingRules, // NEW
+        onboardingRules,
         maxGradeLevel,
         members: [user?.uid],
         admins: [user?.uid],

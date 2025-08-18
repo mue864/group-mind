@@ -9,7 +9,7 @@ const PrivacyScreen = () => {
   const router = useRouter();
   const [isPressed, setIsPressed] = useState(false);
 
-  const Section = ({ title, children }) => (
+  const Section = ({ title, children }: {title: string, children: React.ReactNode}) => (
     <View className="mb-6">
       <Text className="text-gray-900 font-inter font-semibold text-lg mb-3 leading-relaxed">
         {title}
@@ -18,7 +18,7 @@ const PrivacyScreen = () => {
     </View>
   );
 
-  const Paragraph = ({ children, className = "" }) => (
+  const Paragraph = ({ children, className = "" }: {children: React.ReactNode}) => (
     <Text
       className={`text-gray-700 font-inter text-base leading-relaxed mb-3 ${className}`}
     >
@@ -26,7 +26,7 @@ const PrivacyScreen = () => {
     </Text>
   );
 
-  const BulletList = ({ items }) => (
+  const BulletList = ({ items }: {items: string[]}) => (
     <View className="ml-2 mb-3">
       {items.map((item, index) => (
         <View key={index} className="flex-row items-start mb-1">

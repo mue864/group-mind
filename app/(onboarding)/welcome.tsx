@@ -56,7 +56,7 @@ const Welcome = () => {
 
       <View className={`absolute right-14 left-14 bottom-14 h-20`}>
         <Button
-          onPress={() => router.replace("/(onboarding)/OnboardingNavigator")}
+          onPress={() => router.replace("/(onboarding)/introduceScreen_1")}
           title={Strings.getStartedButton}
         />
       </View>

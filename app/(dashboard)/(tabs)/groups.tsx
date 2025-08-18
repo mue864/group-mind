@@ -5,7 +5,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  Dimensions,
   RefreshControl,
   StatusBar,
   Text,
@@ -16,7 +15,6 @@ import {
 import { FlatList } from "react-native-gesture-handler";
 import { FAB, Portal, Provider } from "react-native-paper";
 
-const { width: screenWidth } = Dimensions.get("window");
 
 // Modern Tab Component
 interface TabButtonProps {

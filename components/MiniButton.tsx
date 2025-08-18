@@ -1,18 +1,8 @@
-import { TouchableOpacity } from "react-native";
-import { useRef } from "react";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withSequence,
-  runOnJS,
-} from "react-native-reanimated";
+import Done from "@/assets/icons/Done_round.svg";
 import Left from "@/assets/icons/Expand_left.svg";
 import Right from "@/assets/icons/Expand_right.svg";
-import Done from "@/assets/icons/Done_round.svg";
-
-const AnimatedTouchableOpacity =
-  Animated.createAnimatedComponent(TouchableOpacity);
+import { useRef } from "react";
+import { TouchableOpacity, View } from "react-native";
 
 type MiniButtonProps = {
   direction: string;
@@ -27,9 +17,6 @@ const MiniButton = ({
   disabled = false,
   size = "medium",
 }: MiniButtonProps) => {
-  const scale = useSharedValue(1);
-  const rotation = useSharedValue(0);
-  const shadowScale = useSharedValue(1);
   const isPressed = useRef(false);
 
   const sizeConfig = {
@@ -40,62 +27,9 @@ const MiniButton = ({
 
   const { padding, iconSize } = sizeConfig[size];
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }, { rotate: `${rotation.value}deg` }],
-  }));
-
-  const shadowStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: shadowScale.value }],
-    opacity: disabled ? 0.5 : 1,
-  }));
-
-  const handlePressIn = () => {
-    if (disabled) return;
-    isPressed.current = true;
-
-    scale.value = withSpring(0.95, { damping: 15, stiffness: 200 });
-    shadowScale.value = withSpring(0.9, { damping: 15, stiffness: 200 });
-
-    // Add subtle rotation for visual feedback
-    rotation.value = withSequence(
-      withSpring(direction === "left" ? -2 : 2, {
-        damping: 15,
-        stiffness: 200,
-      }),
-      withSpring(0, { damping: 15, stiffness: 200 })
-    );
-  };
-
-  const handlePressOut = () => {
-    if (disabled) return;
-
-    scale.value = withSequence(
-      withSpring(1.05, { damping: 15, stiffness: 200 }),
-      withSpring(1, { damping: 15, stiffness: 200 })
-    );
-    shadowScale.value = withSpring(1, { damping: 15, stiffness: 200 });
-
-    if (isPressed.current) {
-      setTimeout(() => {
-        runOnJS(onPress)();
-      }, 100);
-    }
-    isPressed.current = false;
-  };
-
   const handlePress = () => {
     if (disabled) return;
-
-    // Add a satisfying bounce animation
-    scale.value = withSequence(
-      withSpring(0.9, { damping: 15, stiffness: 200 }),
-      withSpring(1.1, { damping: 15, stiffness: 200 }),
-      withSpring(1, { damping: 15, stiffness: 200 })
-    );
-
-    setTimeout(() => {
-      onPress();
-    }, 200);
+    onPress();
   };
 
   const getIcon = () => {
@@ -119,30 +53,25 @@ const MiniButton = ({
   };
 
   return (
-    <Animated.View style={shadowStyle}>
-      <AnimatedTouchableOpacity
+    <View style={{ opacity: disabled ? 0.5 : 1 }}>
+      <TouchableOpacity
         onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
         disabled={disabled}
         activeOpacity={0.8}
-        style={[
-          animatedStyle,
-          {
-            backgroundColor: getBackgroundColor(),
-            padding,
-            borderRadius: 16,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 8,
-          },
-        ]}
+        style={{
+          backgroundColor: getBackgroundColor(),
+          padding,
+          borderRadius: 16,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
+        }}
       >
         {getIcon()}
-      </AnimatedTouchableOpacity>
-    </Animated.View>
+      </TouchableOpacity>
+    </View>
   );
 };
 

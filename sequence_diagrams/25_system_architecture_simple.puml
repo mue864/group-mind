@@ -1,0 +1,75 @@
+@startuml System Architecture Simple
+title GroupMind - System Architecture
+
+skinparam package {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+skinparam cloud {
+  BackgroundColor LightGreen
+  BorderColor Green
+}
+
+skinparam database {
+  BackgroundColor LightCyan
+  BorderColor Cyan
+}
+
+' --- CLIENT LAYER ---
+package "Client Layer" {
+  [React Native App]
+  [UI Components]
+  [Navigation]
+}
+
+' --- APPLICATION LAYER ---
+package "Application Layer" {
+  [State Management]
+  [Business Logic]
+  [Hooks & Utilities]
+}
+
+' --- SERVICE LAYER ---
+package "Service Layer" {
+  cloud "Firebase" {
+    [Auth]
+    [Database]
+    [Storage]
+  }
+  
+  cloud "WebRTC" {
+    [Signaling]
+    [STUN/TURN]
+  }
+  
+  [Service Classes]
+}
+
+' --- DATA LAYER ---
+database "Data Storage" {
+  [Local Storage]
+  [Firestore]
+  [File Storage]
+}
+
+' --- LAYER CONNECTIONS ---
+[React Native App] --> [State Management]
+[UI Components] --> [Business Logic]
+[Navigation] --> [Business Logic]
+
+[State Management] --> [Service Classes]
+[Business Logic] --> [Service Classes]
+
+[Service Classes] --> [Auth]
+[Service Classes] --> [Database]
+[Service Classes] --> [Storage]
+[Service Classes] --> [Signaling]
+
+[Auth] --> [Local Storage]
+[Database] --> [Firestore]
+[Storage] --> [File Storage]
+
+@enduml
+
+

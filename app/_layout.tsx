@@ -3,9 +3,8 @@ import { PostProvider } from "@/store/PostContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, StatusBar } from "react-native";
 import FlashMessage from "react-native-flash-message";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DefaultTheme, Provider as PaperProvider } from "react-native-paper";
@@ -67,20 +66,13 @@ const RootLayout = () => {
             {/* Wrap everything in a view that sets the background color */}
             <View className="flex-1 ">
               {/* Place StatusBar OUTSIDE SafeAreaView */}
-              <StatusBar
-                style="dark"
-                backgroundColor="#F8FAFF"
-                translucent={false}
-              />
-
+              <StatusBar barStyle="dark-content" />
               <SafeAreaView className="flex-1">
                 <View onLayout={onLayoutRootView} className="flex-1">
                   <Stack
                     screenOptions={({ route }) => ({
                       headerShown: false,
-                      headerStyle: {
-                        backgroundColor: "#fff",
-                      },
+
                       headerTitle: "",
                     })}
                   >

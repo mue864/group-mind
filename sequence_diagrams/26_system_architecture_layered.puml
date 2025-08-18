@@ -1,0 +1,70 @@
+@startuml System Architecture Layered
+title GroupMind - Layered System Architecture
+
+skinparam package {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+skinparam cloud {
+  BackgroundColor LightGreen
+  BorderColor Green
+}
+
+skinparam database {
+  BackgroundColor LightCyan
+  BorderColor Cyan
+}
+
+' --- LAYER 1: CLIENT LAYER ---
+package "Client Layer" {
+  [React Native App]
+  [UI Components]
+  [Navigation]
+}
+
+' --- LAYER 2: APPLICATION LAYER ---
+package "Application Layer" {
+  [State Management]
+  [Business Logic]
+  [Hooks & Utilities]
+}
+
+' --- LAYER 3: SERVICE LAYER ---
+package "Service Layer" {
+  [Service Classes]
+  
+  cloud "External Services" {
+    [Firebase Auth]
+    [Firestore DB]
+    [WebRTC]
+  }
+}
+
+' --- LAYER 4: DATA LAYER ---
+database "Data Layer" {
+  [Local Storage]
+  [Firestore]
+  [File Storage]
+}
+
+' --- LAYER INTERACTIONS ---
+[React Native App] --> [State Management]
+[UI Components] --> [Business Logic]
+[Navigation] --> [Business Logic]
+
+[State Management] --> [Service Classes]
+[Business Logic] --> [Service Classes]
+
+[Service Classes] --> [Firebase Auth]
+[Service Classes] --> [Firestore DB]
+[Service Classes] --> [WebRTC]
+
+[Firebase Auth] --> [Local Storage]
+[Firestore DB] --> [Firestore]
+[WebRTC] --> [Local Storage]
+
+@enduml
+
+
+

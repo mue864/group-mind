@@ -20,7 +20,7 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+
 import Toast from "react-native-toast-message";
 
 const SignUpScreen = () => {
@@ -146,22 +146,19 @@ const SignUpScreen = () => {
         paddingHorizontal: 20,
       }}
     >
-      <Animated.View
-        entering={FadeInUp.duration(500)}
-        style={{ width: "100%", maxWidth: 360, alignItems: "center" }}
-      >
+      <View style={{ width: "100%", maxWidth: 380, alignItems: "center" }}>
         <FontAwesome6
           name="brain"
-          size={42}
+          size={40}
           color="#4169E1"
-          style={{ marginBottom: 28 }}
+          style={{ marginBottom: 20 }}
         />
 
         <Text className="text-primary text-center font-poppins-semiBold text-3xl mb-2">
           {Strings.login.createAccountHeading}
         </Text>
 
-        <Text className="text-center font-poppins-semiBold text-base text-muted mb-10">
+        <Text className="text-center font-poppins-semiBold text-base text-muted mb-8">
           {Strings.login.createAccountSubHeading}
         </Text>
 
@@ -172,7 +169,7 @@ const SignUpScreen = () => {
           secureTextEntry={false}
         />
 
-        <View style={{ height: 18 }} />
+        <View style={{ height: 12 }} />
 
         <TextBox
           placeholder={Strings.login.passwordPlaceholder}
@@ -187,7 +184,7 @@ const SignUpScreen = () => {
           }
         />
 
-        <View style={{ height: 18 }} />
+        <View style={{ height: 12 }} />
 
         <TextBox
           placeholder={Strings.login.confirmPasswordPlaceholder}
@@ -209,8 +206,8 @@ const SignUpScreen = () => {
           disabled={loading}
           loading={loading}
           style={{
-            marginTop: 30,
-            marginBottom: 14,
+            marginTop: 22,
+            marginBottom: 12,
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
@@ -226,11 +223,26 @@ const SignUpScreen = () => {
           </Text>
         </Pressable>
 
-        <Text
-          style={{ color: "#9EADD9", fontWeight: "600", marginVertical: 12 }}
+        <View
+          style={{
+            width: "100%",
+            flexDirection: "row",
+            alignItems: "center",
+            marginVertical: 16,
+          }}
         >
-          or
-        </Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
+          <Text
+            style={{
+              marginHorizontal: 12,
+              color: "#9EADD9",
+              fontWeight: "600",
+            }}
+          >
+            or
+          </Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
+        </View>
 
         <Pressable style={{ width: "100%" }} onPress={handleGooglePress}>
           <View
@@ -241,7 +253,7 @@ const SignUpScreen = () => {
               borderRadius: 999,
               borderWidth: 1,
               borderColor: "#E5E7EB",
-              paddingVertical: 12,
+              paddingVertical: 14,
               backgroundColor: "#fff",
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
@@ -261,7 +273,7 @@ const SignUpScreen = () => {
             </Text>
           </View>
         </Pressable>
-      </Animated.View>
+      </View>
     </KeyboardAvoidingView>
   );
 };

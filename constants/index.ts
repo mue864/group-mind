@@ -7,8 +7,8 @@ export { default as TosStrings } from "./tosStrings";
 export const WEBRTC_CONFIG = {
   // Use a proper WebSocket URL for your environment
   SIGNALING_URL: __DEV__
-    ? "ws://192.168.101.113:3001" // Local development
-    : "ws://192.168.101.113:3001", // Production server - replace with your actual server
+    ? "ws://signaling-server-seo6.onrender.com" // Development and production use the same deployed server
+    : "ws://signaling-server-seo6.onrender.com", // Production server
 
   // ICE Servers configuration
   ICE_SERVERS: [

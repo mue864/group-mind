@@ -1,0 +1,144 @@
+@startuml System Architecture
+title GroupMind - System Architecture Overview
+
+!define RECTANGLE class
+
+skinparam component {
+  BackgroundColor LightBlue
+  BorderColor Blue
+}
+
+skinparam package {
+  BackgroundColor LightYellow
+  BorderColor Orange
+}
+
+skinparam cloud {
+  BackgroundColor LightGreen
+  BorderColor Green
+}
+
+skinparam database {
+  BackgroundColor LightCyan
+  BorderColor Cyan
+}
+
+' --- CLIENT LAYER ---
+package "Client Layer" {
+  package "React Native App" {
+    [Mobile App] as MobileApp
+    [Web App] as WebApp
+  }
+  
+  package "UI Components" {
+    [Authentication Screens]
+    [Dashboard Screens]
+    [Group Management]
+    [Video Call Interface]
+    [Chat Interface]
+  }
+  
+  package "Navigation" {
+    [Expo Router]
+    [Stack Navigation]
+    [Tab Navigation]
+  }
+}
+
+' --- APPLICATION LAYER ---
+package "Application Layer" {
+  package "State Management" {
+    [Redux Store]
+    [Context Providers]
+    [Group Context]
+    [Post Context]
+    [Auth Context]
+  }
+  
+  package "Business Logic" {
+    [Group Management]
+    [User Management]
+    [Post Management]
+    [Message Handling]
+    [Call Management]
+  }
+  
+  package "Hooks & Utilities" {
+    [Custom Hooks]
+    [Form Validation]
+    [Date Formatting]
+    [Permission Handling]
+  }
+}
+
+' --- SERVICE LAYER ---
+package "Service Layer" {
+  package "External Services" {
+    cloud "Firebase" {
+      [Authentication]
+      [Firestore Database]
+      [Cloud Storage]
+      [Cloud Functions]
+    }
+    
+    cloud "WebRTC" {
+      [Signaling Server]
+      [STUN/TURN Servers]
+    }
+    
+    cloud "Agora" {
+      [Video SDK]
+      [Voice SDK]
+    }
+  }
+  
+  package "Service Classes" {
+    [AuthService]
+    [GroupService]
+    [MessageService]
+    [PostService]
+    [WebRTCService]
+    [FileService]
+  }
+}
+
+' --- DATA LAYER ---
+package "Data Layer" {
+  database "Local Storage" as LocalDB
+  database "Firestore Collections" as FirestoreDB
+  database "File Storage" as FileStorage
+}
+
+' --- CONNECTIONS ---
+
+' Client to Application Layer
+MobileApp --> ExpoRouter
+WebApp --> ExpoRouter
+UI Components --> State Management
+Navigation --> Business Logic
+
+' Application to Service Layer
+State Management --> Service Classes
+Business Logic --> Service Classes
+Hooks & Utilities --> Service Classes
+
+' Service Layer to External Services
+Service Classes --> Firebase
+Service Classes --> WebRTC
+Service Classes --> Agora
+
+' Service Layer to Data Layer
+Service Classes --> FirestoreDB
+Service Classes --> FileStorage
+Service Classes --> LocalDB
+
+' Cross-layer connections
+MobileApp --> UI Components
+WebApp --> UI Components
+UI Components --> Navigation
+State Management --> Business Logic
+Service Classes --> Firebase
+Service Classes --> WebRTC
+
+@enduml
+

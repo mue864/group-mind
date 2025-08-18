@@ -90,3 +90,8 @@ template.md
 dev-log.md
 README.md 
 
+# folders
+signaling-server/
+webrtcDocs/
+sequence_diagrams/
+
