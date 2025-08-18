@@ -35,15 +35,26 @@ export interface Group {
   joinRequests: string[];
   blockedUsers: string[];
   callScheduled?: {
-    CallTime: Timestamp;
+    callTime: Timestamp;
     callType: string;
     scheduled: boolean;
     sessionTitle: string;
+    joinLink: string;
+    groupId: string;
+  };
+  activeCall?: {
+    callType: string;
+    callTime: Timestamp;
+    callStatus: string;
+    joinLink: string;
+    groupId: string;
   };
   [key: string]: any;
   createdBy: string;
   imageUrl: string;
 }
+
+
 
 interface MessageData {
   message: string;

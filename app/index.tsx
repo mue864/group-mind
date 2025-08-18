@@ -5,9 +5,27 @@ import { useEffect } from "react";
 import { auth } from "@/services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '@/assets/icons/logo/logo.svg';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 const Entry = () => {
-    const router = useRouter();
+
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.8);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const router = useRouter();
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 1000 });
+    scale.value = withTiming(1, { duration: 1000 });
+  }, []);
+
     useEffect(() => {
 
         // firebase auth
@@ -29,7 +47,7 @@ const Entry = () => {
     return (
       <View
         className="flex-1 justify-center items-center bg-white">
-        <View className="gap-4">
+        <Animated.View className="gap-4" style={animatedStyle}>
           <View>
             <Logo width={150} height={150} />
           </View>
@@ -38,7 +56,7 @@ const Entry = () => {
               Group<Text className="text-[#84DBFF]">Mind</Text>
             </Text>
           </View>
-        </View>
+        </Animated.View>
       </View>
     );
 }

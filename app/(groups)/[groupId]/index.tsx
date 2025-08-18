@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
 import { FAB, Portal, Provider } from "react-native-paper";
@@ -29,7 +29,7 @@ export type QaPost = {
   userName: string;
 };
 
-export let id = "";
+
 
 function GroupQA() {
   const { groupId, groupName } = useLocalSearchParams();
@@ -38,22 +38,47 @@ function GroupQA() {
   const [open, setOpen] = useState(false);
   const [messagesById, setMessagesById] = useState<Record<string, QaPost>>({});
   const [localGroupName, setLocalGroupName] = useState("");
-
+  const [id, setId] = useState("");
+  const idRef = useRef(id);
+  const groupNameRef = useRef(groupName);
   const router = useRouter();
  
 
   useEffect(() => {
     const interval = setInterval(() => {
-      id = groupId.toString();
+      if (!groupId) {
+      const fetchGroupId = async () => {
+        try {
+          const cachedGroupId = await AsyncStorage.getItem("groupID");
+          const cachedGroupName = await AsyncStorage.getItem("groupName");
+          if (cachedGroupId) {
+            setId(cachedGroupId);
+            idRef.current = cachedGroupId;
+          }
+          if (cachedGroupName) {
+            setLocalGroupName(cachedGroupName);
+            groupNameRef.current = cachedGroupName;
+          }
+        } catch (error) {
+          console.error("Error fetching group ID: ", error);
+        }
+      };
+      fetchGroupId();
+      } else {
+        setId(groupId.toString());
+      }
+      
     }, 1000);
     return () => clearInterval(interval);
   }, [groupId]);
 
   // first fetch locally
   useEffect(() => {
+    // problem here
     const localData = async () => {
       try {
-        const cachedQaGroups = await AsyncStorage.getItem(id);
+        // i think the an old id is being used here sometimes
+        const cachedQaGroups = await AsyncStorage.getItem(idRef.current);
         if (cachedQaGroups) {
           setPosts(JSON.parse(cachedQaGroups));
         } else {
@@ -64,9 +89,11 @@ function GroupQA() {
       }
     };
 
+    // make sure that groups matching the id are fetched
     const localMessages = async () => {
       try {
-        const cachedLocalData = await AsyncStorage.getItem(`local-${groupId}`);
+        if (!groupId) return;
+        const cachedLocalData = await AsyncStorage.getItem(`local-${idRef.current}`);
         if (cachedLocalData) {
           setMessagesById(JSON.parse(cachedLocalData));
         } else {
@@ -92,7 +119,7 @@ function GroupQA() {
     fetchGroupName();
     localData();
     localMessages();
-  }, [groupId]);
+  }, [groupId,id]);
 
   useEffect(() => {
     if (!user || !groupId) return;
@@ -153,7 +180,7 @@ function GroupQA() {
       }
     );
     return () => unsubscribe();
-  }, [groupId, user]);
+  }, [groupId, user, posts]);
 
   // save groupName locally
   useEffect(() => {

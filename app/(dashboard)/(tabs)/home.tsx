@@ -10,7 +10,6 @@ import { useInterval } from "@/hooks/useInterval";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -41,12 +40,26 @@ type QaPost = {
   imageUrl: string | undefined;
   purpose: string;
   userName: string;
-  groupId: string; // Add groupId for navigation
+  groupId: string; 
 };
+  type ScheduledCall ={
+    id: string;
+    title: string;
+    scheduledTime: Timestamp;
+    groupId: string;
+    createdBy: string;
+    createdByUserName: string;
+    status: "scheduled" | "in-progress" | "completed";
+    callType: "audio" | "video";
+    channelName: string;
+    joinLink?: string;
+    participants: string[];
+    maxParticipants?: number;
+  }
 
 const Home = () => {
   const router = useRouter();
-  const { groups, allGroups, loading, user, refreshGroups, fetchAllGroups } =
+  const { groups, allGroups, loading, user, refreshGroups, fetchAllGroups, activeCalls } =
     useGroupContext();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -55,6 +68,7 @@ const Home = () => {
   const [qaPosts, setQaPosts] = useState<QaPost[]>([]);
   const [qaLoading, setQaLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+ const [combinedCalls, setCombinedCalls] = useState<any[]>([{}])
   const userID = user?.uid;
 
   // Refresh function for pull-to-refresh
@@ -69,6 +83,7 @@ const Home = () => {
       setRefreshing(false);
     }
   }, [refreshGroups, fetchAllGroups]);
+
 
   // Fetch Q&A posts from all user's groups
   useEffect(() => {
@@ -133,9 +148,30 @@ const Home = () => {
     };
   }, [user, groups]);
 
+  // active calls
+  useEffect(() => {
+    // const activeCall = activeCalls.find((call) => call.groupId === groupID);
+    // if (activeCall) {
+    //   setOngoingCall(true);
+    // } else {
+    //   setOngoingCall(false);
+    // }
+  }, [activeCalls]);
+
   const scheduledGroups = useMemo(() => {
     return groups.filter((group) => group.callScheduled);
   }, [groups]);
+
+  const activeCall = useMemo(() => {
+    return groups.filter((group) => group.activeCall);
+  }, [groups]);
+
+  useEffect(() => {
+    const combinedCalls = [...activeCall, ...scheduledGroups];
+    setCombinedCalls(combinedCalls);
+  }, [activeCall, scheduledGroups]);
+
+  console.log("Scheduled groups: ", scheduledGroups)
 
   // Get suggested groups (groups the user hasn't joined yet)
   const suggestedGroups = useMemo(() => {
@@ -178,16 +214,17 @@ const Home = () => {
     [screenWidth]
   );
 
-  // memoizing values to improve device performance
-  // using useCallback to only recall the
   const renderScheduledCard = useCallback(
     ({ item }: { item: any }) => (
       <View style={{ width: screenWidth }}>
         <ScheduledCard
-          title={item.callScheduled.sessionTitle}
-          time={item.callScheduled.CallTime}
-          type={item.callScheduled.callType}
+          title={item.activeCall?.callStatus === "active" ? item.name : item.callScheduled?.sessionTitle}
+          time={item.activeCall?.callStatus === "active" ? item.activeCall.callTime : item.callScheduled?.callTime}
+          type={item.activeCall?.callStatus === "active" ? item.activeCall.callType : item.callScheduled?.callType}
           groupName={item.name}
+          groupLink={item.activeCall?.callStatus === "active" ? item.activeCall.joinLink : item.callScheduled?.joinLink}
+          groupID={item.id}
+          
         />
       </View>
     ),
@@ -198,7 +235,7 @@ const Home = () => {
   const renderScheduledCardDots = useMemo(
     () => (
       <View className="flex-row justify-center items-center mt-2">
-        {scheduledGroups.map((_, index) => (
+        {combinedCalls.map((_, index) => (
           <View
             key={index}
             style={{
@@ -212,7 +249,7 @@ const Home = () => {
         ))}
       </View>
     ),
-    [scheduledGroups, currentIndex]
+    [combinedCalls, currentIndex]
   );
 
   // Create a single FlatList with all content
@@ -223,7 +260,7 @@ const Home = () => {
           <View>
             <FlatList
               ref={flatListRef}
-              data={scheduledGroups}
+              data={combinedCalls}
               keyExtractor={(item, index) => index.toString()}
               horizontal
               pagingEnabled
@@ -427,7 +464,7 @@ const Home = () => {
         </View>
       ) : groups.length === 0 && suggestedGroups.length === 0 ? (
         // Empty state
-        <View className="flex-1 justify-center items-center">
+        <View className="flex-1 justify-center items-center relative">
           <View>
             <Book width={100} height={100} color={"#7291EE"} />
           </View>
@@ -439,9 +476,11 @@ const Home = () => {
             </Text>
           </View>
 
-          <ActionButton
-            action={() => router.push("/(dashboard)/(tabs)/groups")}
-          />
+          <View className="absolute bottom-28">
+            <ActionButton
+              action={() => router.push("/(dashboard)/(tabs)/groups")}
+            />
+          </View>
         </View>
       ) : (
         // Main content with single FlatList

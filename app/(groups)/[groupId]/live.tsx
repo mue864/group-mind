@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
 import { Camera } from "expo-camera";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   addDoc,
   arrayUnion,
@@ -26,9 +26,9 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
+import CallInvitation from "../../../components/CallInvitation";
 import { db } from "../../../services/firebase";
 import { useGroupContext } from "../../../store/GroupContext";
-import { showMessage } from "react-native-flash-message";
 
 // Types for calls
 type ScheduledCall = {
@@ -66,9 +66,47 @@ export default function Live() {
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
 
+  const {isDeepLink} = useLocalSearchParams();
+
   // Add group context
-  const { userInformation, groupID: contextGroupID, updateCallParticipants } = useGroupContext();
+  const {
+    userInformation,
+    groupID: contextGroupID,
+    updateCallParticipants,
+  } = useGroupContext();
   const router = useRouter();
+
+  // if navigated from deeplink fetch groupID and groupName
+  useEffect(() => {
+    console.log("in here")
+
+    if(isDeepLink) {
+      console.log("isDeepLink")
+      const fetchGroupData = async () => {
+        try {
+          await AsyncStorage.clear();
+
+           fetchIdFromParams();
+      } catch (error) {
+        console.error("Error clearing AsyncStorage:", error);
+      }
+    };
+    fetchGroupData();
+  }
+  }, []);
+
+  const params = useLocalSearchParams();
+  const fetchIdFromParams = async () => {
+
+      console.log("Params valid")
+      setGroupID(params.groupId as string);
+      setGroupName(params.groupName as string);
+      console.log("Group ID: ", params.groupId);
+      console.log("Group Name: ", params.groupName);
+
+      await AsyncStorage.setItem("groupID", params.groupId as string);
+      await AsyncStorage.setItem("groupName", params.groupName as string);
+  }
 
   // Local state for groupID and groupName from AsyncStorage
   const [groupID, setGroupID] = useState("");
@@ -80,6 +118,11 @@ export default function Live() {
   const [isLoading, setIsLoading] = useState(true);
   const [isStartingCall, setIsStartingCall] = useState(false);
   const [callDocId, setCallDocId] = useState("");
+
+  // Invitation modal state
+  const [inviteVisible, setInviteVisible] = useState(false);
+  const [inviteChannel, setInviteChannel] = useState("");
+  const [inviteType, setInviteType] = useState<"audio" | "video">("video");
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -184,12 +227,25 @@ export default function Live() {
         participants: [userInformation.userID],
         groupName,
       });
+
+
+      // there can only be one call per group
+      await updateDoc(doc(db, "groups", groupID), {
+        activeCall: {
+          id: callRef.id,
+          callType: type,
+          callTime: serverTimestamp(),
+          callStatus: "active",
+          joinLink: generateJoinLink(channelName, type),
+          groupId: groupID,
+        },
+      });
       const joinLink = generateJoinLink(channelName, type);
       setCallDocId(callRef.id);
-      await updateDoc(doc(db, "activeCalls", callRef.id),{
+      await updateDoc(doc(db, "activeCalls", callRef.id), {
         id: callRef.id,
         joinLink,
-      } );
+      });
       Toast.show({
         type: "success",
         text1: "Call Started",
@@ -241,7 +297,7 @@ export default function Live() {
     }
     try {
       console.log("callDocId: ", callDocId);
-      console.log("User info", userInformation.userID)
+      console.log("User info", userInformation.userID);
       // update participants in firestore
       await updateDoc(doc(db, "activeCalls", call.id), {
         participants: arrayUnion(userInformation.userID),
@@ -284,6 +340,70 @@ export default function Live() {
     });
   };
 
+  const handleScheduleCall = async () => {
+    if (!userInformation) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please sign in to schedule a call",
+      });
+      return;
+    }
+    if (!groupID) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "No group selected",
+      });
+      return;
+    }
+    try {
+      const channelName = generateChannelName();
+      const callRef = await addDoc(collection(db, "scheduledCalls"), {
+        groupId: groupID,
+        title: callTitle,
+        scheduledTime: Timestamp.fromDate(
+          new Date(`${scheduledDate}T${scheduledTime}:00`)
+        ),
+        createdBy: userInformation.userID,
+        createdByUserName: userInformation.userName,
+        callType: callType,
+        channelName,
+        status: "scheduled",
+        participants: [userInformation.userID],
+        groupName,
+      });
+
+      // savi
+      await updateDoc(doc(db, "groups", groupID), {
+        callScheduled: {
+          callTime: Timestamp.fromDate(
+            new Date(`${scheduledDate}T${scheduledTime}:00`)
+          ),
+          callType: callType,
+          scheduled: true,
+          sessionTitle: callTitle,
+          joinLink: channelName,
+          groupID: groupID,
+        },
+      });
+      Toast.show({
+        type: "success",
+        text1: "Call Scheduled",
+        text2: `Your ${callType} call has been scheduled for ${formatDate(
+          Timestamp.fromDate(new Date(`${scheduledDate}T${scheduledTime}:00`))
+        )}`,
+      });
+    } catch (error) {
+      console.error("Error scheduling call:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to schedule call",
+      });
+    }
+  };
+
   return (
     <View className="flex-1 bg-white">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -293,7 +413,6 @@ export default function Live() {
             Live Sessions
           </Text>
         </View>
-        
 
         {/* Active Calls Section */}
         <View className="px-6 py-4">
@@ -331,13 +450,25 @@ export default function Live() {
                 <Text className="text-slate-400 text-sm mb-3">
                   {call.participants.length} participant(s)
                 </Text>
-                <View className="flex-row space-x-2">
+                <View className="flex-row gap-3">
                   <TouchableOpacity
                     className="flex-1 bg-emerald-500 py-3 rounded-xl"
                     onPress={() => handleJoinActiveCall(call)}
                   >
                     <Text className="text-white font-bold text-center font-poppins">
                       Join Now
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className="flex-1 bg-white py-3 rounded-xl border border-emerald-300"
+                    onPress={() => {
+                      setInviteChannel(String(call.channelName));
+                      setInviteType(call.callType);
+                      setInviteVisible(true);
+                    }}
+                  >
+                    <Text className="text-emerald-700 font-bold text-center font-poppins">
+                      Invite
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -354,10 +485,10 @@ export default function Live() {
           <View className="flex-row gap-3 mb-4">
             <TouchableOpacity
               className={`flex-1 bg-indigo-500 py-4 rounded-2xl items-center ${
-                isStartingCall ? "opacity-60" : ""
+                isStartingCall || activeCalls.length > 0 ? "opacity-60" : ""
               }`}
               onPress={() => handleStartCall("video")}
-              disabled={isStartingCall}
+              disabled={isStartingCall || activeCalls.length > 0}
             >
               <Ionicons name="videocam" size={32} color="white" />
               <Text className="text-white font-poppins-semiBold mt-2">
@@ -366,10 +497,10 @@ export default function Live() {
             </TouchableOpacity>
             <TouchableOpacity
               className={`flex-1 bg-emerald-500 py-4 rounded-2xl items-center ${
-                isStartingCall ? "opacity-60" : ""
+                isStartingCall || activeCalls.length > 0 ? "opacity-60" : ""
               }`}
               onPress={() => handleStartCall("audio")}
-              disabled={isStartingCall}
+              disabled={isStartingCall || activeCalls.length > 0}
             >
               <Ionicons name="call" size={32} color="white" />
               <Text className="text-white font-poppins-semiBold mt-2">
@@ -463,7 +594,9 @@ export default function Live() {
               </View>
               <TouchableOpacity
                 className="bg-primary py-4 rounded-xl items-center"
-                onPress={() => {}}
+                onPress={() => {
+                  handleScheduleCall();
+                }}
               >
                 <View className="flex-row items-center justify-center">
                   <Ionicons name="calendar" size={24} color="white" />
@@ -524,9 +657,18 @@ export default function Live() {
           )}
         </View>
 
-
         <View className="h-20" />
       </ScrollView>
+
+      {/* Call Invitation Modal */}
+      <CallInvitation
+        visible={inviteVisible}
+        onClose={() => setInviteVisible(false)}
+        channelName={inviteChannel || generateChannelName()}
+        callType={inviteType}
+        groupName={groupName || "Group"}
+        groupId={groupID}
+      />
     </View>
   );
 }

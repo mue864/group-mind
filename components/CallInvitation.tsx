@@ -23,7 +23,6 @@ import {
   Modal,
   Platform,
   Share,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -39,6 +38,9 @@ interface CallInvitationProps {
   channelName: string; // Channel name for the call
   callType: "audio" | "video"; // Type of call (audio or video)
   groupName?: string; // Optional group name for display
+  groupId?: string; // Optional group id to include in deep link
+  callId?: string; // Optional call document id (active calls)
+  callDocId?: string; // Optional call doc id used by client logic
 }
 
 /**
@@ -53,6 +55,9 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
   channelName,
   callType,
   groupName = "Group",
+  groupId,
+  callId,
+  callDocId,
 }) => {
   // Get user context for personalization
   const { user, userInformation } = useGroupContext();
@@ -67,12 +72,15 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
    * @returns Generated call link
    */
   const generateCallLink = (): string => {
-    // In a real app, you would generate a proper deep link
-    // For now, we'll create a simple link that can be shared
     const baseUrl =
       Platform.OS === "ios" ? "groupmind://call" : "groupmind://call";
-
-    return `${baseUrl}?channel=${channelName}&type=${callType}`;
+    const params = new URLSearchParams();
+    params.set("channel", channelName);
+    params.set("type", callType);
+    if (groupId) params.set("groupId", groupId);
+    if (callId) params.set("callId", callId);
+    if (callDocId) params.set("callDocId", callDocId);
+    return `${baseUrl}?${params.toString()}`;
   };
 
   /**
@@ -162,62 +170,58 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      {/* Modal overlay */}
-      <View style={styles.overlay}>
-        {/* Modal container */}
-        <View style={styles.container}>
-          {/* Header section */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Invite to Call</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+      <View className="flex-1 bg-black/50 justify-center items-center">
+        <View
+          className="bg-white rounded-2xl p-5 w-11/12"
+          style={{ maxWidth: 400, maxHeight: "80%" }}
+        >
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="text-xl font-bold text-gray-800">
+              Invite to Call
+            </Text>
+            <TouchableOpacity onPress={onClose} className="p-1.5">
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
 
-          {/* Call information display */}
-          <View style={styles.callInfo}>
+          <View className="items-center mb-7 py-5 bg-gray-50 rounded-xl">
             <Ionicons
               name={callType === "video" ? "videocam" : "call"}
               size={40}
               color="#4169E1"
             />
-            <Text style={styles.callType}>
+            <Text className="text-lg font-semibold text-gray-800 mt-2">
               {callType === "video" ? "Video" : "Audio"} Call
             </Text>
-            <Text style={styles.groupName}>{groupName}</Text>
-            <Text style={styles.channelName}>Channel: {channelName}</Text>
+            <Text className="text-base text-gray-600 mt-1">{groupName}</Text>
           </View>
 
-          {/* Invitation options */}
-          <View style={styles.options}>
-            {/* Share call link option */}
+          <View className="mb-5">
             <TouchableOpacity
-              style={styles.optionButton}
+              className="flex-row items-center py-4 px-5 bg-gray-50 rounded-lg mb-2.5"
               onPress={handleShareCall}
               disabled={isSharing}
               accessibilityLabel="Share call link"
               accessibilityRole="button"
             >
               <Ionicons name="share-outline" size={24} color="#4169E1" />
-              <Text style={styles.optionText}>
+              <Text className="text-base text-gray-800 ml-2.5">
                 {isSharing ? "Sharing..." : "Share Call Link"}
               </Text>
             </TouchableOpacity>
 
-            {/* Copy link option */}
             <TouchableOpacity
-              style={styles.optionButton}
+              className="flex-row items-center py-4 px-5 bg-gray-50 rounded-lg mb-2.5"
               onPress={handleCopyLink}
               accessibilityLabel="Copy call link"
               accessibilityRole="button"
             >
               <Ionicons name="copy-outline" size={24} color="#4169E1" />
-              <Text style={styles.optionText}>Copy Link</Text>
+              <Text className="text-base text-gray-800 ml-2.5">Copy Link</Text>
             </TouchableOpacity>
 
-            {/* Send notifications option */}
             <TouchableOpacity
-              style={styles.optionButton}
+              className="flex-row items-center py-4 px-5 bg-gray-50 rounded-lg"
               onPress={handleSendNotification}
               accessibilityLabel="Send notifications to group members"
               accessibilityRole="button"
@@ -227,170 +231,28 @@ const CallInvitation: React.FC<CallInvitationProps> = ({
                 size={24}
                 color="#4169E1"
               />
-              <Text style={styles.optionText}>Send Notifications</Text>
+              <Text className="text-base text-gray-800 ml-2.5">
+                Send Notifications
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Instructions section */}
-          <View style={styles.instructions}>
-            <Text style={styles.instructionsTitle}>How to join:</Text>
-            <Text style={styles.instructionsText}>
+          <View className="mb-5 p-4 bg-blue-50 rounded-lg">
+            <Text className="text-base font-semibold text-gray-800 mb-2">
+              How to join:
+            </Text>
+            <Text className="text-sm text-gray-600 leading-5">
               1. Share the call link with group members{"\n"}
               2. They can tap the link to join the call{"\n"}
               3. Or they can navigate to the group and join manually
             </Text>
           </View>
-
-          {/* Close button */}
-          <TouchableOpacity
-            style={styles.closeButtonLarge}
-            onPress={onClose}
-            accessibilityLabel="Close invitation modal"
-            accessibilityRole="button"
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
 };
 
-/**
- * Styles for the CallInvitation component
- * Clean, modern design with proper spacing and accessibility
- */
-const styles = StyleSheet.create({
-  // Modal overlay background
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  // Main modal container
-  container: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    width: "90%",
-    maxWidth: 400,
-    maxHeight: "80%",
-  },
-
-  // Header section with title and close button
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-
-  // Modal title
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-
-  // Close button in header
-  closeButton: {
-    padding: 5,
-  },
-
-  // Call information display section
-  callInfo: {
-    alignItems: "center",
-    marginBottom: 30,
-    paddingVertical: 20,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 15,
-  },
-
-  // Call type text (Video/Audio)
-  callType: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 10,
-  },
-
-  // Group name display
-  groupName: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 5,
-  },
-
-  // Channel name display
-  channelName: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 5,
-  },
-
-  // Options section containing sharing buttons
-  options: {
-    marginBottom: 20,
-  },
-
-  // Individual option button
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-
-  // Option button text
-  optionText: {
-    fontSize: 16,
-    color: "#333",
-    marginLeft: 10,
-  },
-
-  // Instructions section
-  instructions: {
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: "#f0f8ff",
-    borderRadius: 10,
-  },
-
-  // Instructions title
-  instructionsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 10,
-  },
-
-  // Instructions text
-  instructionsText: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-  },
-
-  // Large close button at bottom
-  closeButtonLarge: {
-    backgroundColor: "#4169E1",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    alignItems: "center",
-  },
-
-  // Close button text
-  closeButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
+// Converted to NativeWind classes; no StyleSheet below
 
 export default CallInvitation;

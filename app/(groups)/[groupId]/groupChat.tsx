@@ -1,10 +1,35 @@
 import { Text, View } from "react-native";
 import { Button } from "react-native-paper";
 import { router } from "expo-router";
-import { id } from "./index";
+import { useState, useEffect, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const GroupChat = () => {
+    const [id, setId] = useState("");
+    const idRef = useRef(id);
+    const [groupName, setGroupName] = useState("");
+    const groupNameRef = useRef(groupName);
+    useEffect(() => {
+        const fetchGroupId = async () => {
+            try {
+                const cachedGroupId = await AsyncStorage.getItem("groupID");
+                const cachedGroupName = await AsyncStorage.getItem("groupName");
+                if (cachedGroupId) {
+                    setId(cachedGroupId);
+                    idRef.current = cachedGroupId;
+                }
+                if (cachedGroupName) {
+                    setGroupName(cachedGroupName);
+                    groupNameRef.current = cachedGroupName;
+                } 
+            } catch (error) {
+                console.error("Error fetching group ID: ", error);
+            }
+        };
 
+
+        fetchGroupId();
+    }, []);
     return (
       <View className="flex-1 bg-background relative">
         <View className="justify-center items-center flex-1">
@@ -19,7 +44,8 @@ const GroupChat = () => {
             onPress={() => router.push({
                 pathname: `/(settings)/(group_chat)/[groupId]`,
                 params: {
-                    groupId: id,
+                    groupId: idRef.current,
+                    groupName: groupNameRef.current,
                 }
             })}
             className="self-center shadow-xl drop-shadow-xl shadow-black  shadow-opacity-5"
