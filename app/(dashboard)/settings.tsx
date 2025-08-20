@@ -28,41 +28,21 @@ const Settings = () => {
       description: "Account and security settings",
       icon: "shield-outline",
       onPress: () =>
-        Alert.alert("In progress", "Still under maintainance, usatye"),
+        router.push("/(settings)/(app_settings)/(account_settings)/"),
       color: "#F59E0B",
-    },
-    {
-      title: "Notifications",
-      description: "Manage notification preferences",
-      icon: "notifications-outline",
-      onPress: () =>
-        Alert.alert("Chimbomira", "Still under maintainance, usatye"),
-      color: "#EF4444",
-    },
-    {
-      title: "Privacy",
-      description: "Privacy and data settings",
-      icon: "lock-closed-outline",
-      onPress: () =>
-        Alert.alert("In progress", "Still under maintainance, usatye"),
-      color: "#8B5CF6",
     },
     {
       title: "Help & Support",
       description: "Get help and contact support",
       icon: "help-circle-outline",
       onPress: () =>
-        Alert.alert("No help is coming", "Still under maintainance, usatye"),
+        router.push("/(settings)/(app_settings)/(support)/"),
       color: "#06B6D4",
     },
   ];
 
   return (
     <View className="flex-1 bg-[#F5F6FA]">
-      <View className="bg-white pt-12 pb-4 px-4 border-b border-gray-200">
-        <Text className="text-2xl font-bold text-gray-800">Settings</Text>
-        <Text className="text-gray-600 mt-1">Manage your app preferences</Text>
-      </View>
 
       <ScrollView className="flex-1 px-4 pt-4">
         <View className="gap-3">

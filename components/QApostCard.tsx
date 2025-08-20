@@ -1,11 +1,12 @@
-import { Timestamp } from "firebase/firestore";
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Text, View, TouchableOpacity, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Comment from "@/assets/icons/comment_duotone.svg";
 import Time from "@/assets/icons/time-qa.svg";
 import Button from "@/assets/icons/Arrow-Right.svg";
 import { router } from "expo-router";
+import { db } from "@/services/firebase";
+import { getDoc, doc, Timestamp } from "firebase/firestore";
 
 interface QaProps {
   post: string;
@@ -14,6 +15,7 @@ interface QaProps {
   responseFrom: [];
   postID: string;
   groupID: string | string[];
+  isHome?: boolean;
 }
 
 function QApostCard({
@@ -22,27 +24,54 @@ function QApostCard({
   responseFrom,
   postID,
   groupID,
+  isHome,
 }: QaProps) {
   let displayTime = "";
   const sentTime = timeSent?.toDate?.() ?? new Date();
-
-  
+  const [cloudGroupName, setCloudGroupName] = useState<string | null>(null);
+  const groupNameRef = useRef(cloudGroupName)
 
   const now = new Date();
   const sentTimeMs = sentTime.getTime();
   const diffMs = now.getTime() - sentTimeMs; // difference in milliseconds
   const diffMin = Math.floor(diffMs / 60000);
 
+  // fetch group name if its from Home page
+useEffect(() => {
+    const getCloudGroupName = async () => {
+      const groupRef = doc(db, "groups", groupID.toString());
+      const groupDoc = await getDoc(groupRef);
+      if (groupDoc.exists()) {
+        const data = groupDoc.data();
+        setCloudGroupName(data.name);
+        groupNameRef.current = data.name;
+      }
+      return null;
+    };
+    getCloudGroupName();
+}, [groupID]);
+
   const delayNavigate = () => {
     const timeout = setTimeout(() => {
-      router.push({
-        pathname: "/(settings)/(create_post)/(view_post)/[postId]",
-        params: {
-          postId: postID,
-          groupId: groupID,
-        },
-      });
-    }, 100);
+      if (isHome) {
+        router.push({
+          pathname: "/(settings)/(create_post)/(view_post)/[postId]",
+          params: {
+            postId: postID,
+            groupId: groupID,
+            passedGroupName: groupNameRef.current,
+            isHome: "true",
+          },
+        });
+      } else {
+        router.push({
+          pathname: "/(settings)/(create_post)/(view_post)/[postId]",
+          params: {
+            postId: postID,
+            groupId: groupID,
+          },
+        });
+    }}, 100);
     return () => clearTimeout(timeout);
   };
 
@@ -64,6 +93,7 @@ function QApostCard({
   const responseCount = responseFrom?.length || 0;
   const hasResponses = responseCount > 0;
 
+
   return (
     <View className="mx-3">
       <TouchableOpacity
@@ -76,7 +106,6 @@ function QApostCard({
           shadowOpacity: 0.2,
           shadowRadius: 3,
         }}
-        
       >
         <View
           className="bg-white rounded-2xl overflow-hidden border border-secondary/50"
@@ -107,7 +136,7 @@ function QApostCard({
                     style={{
                       shadowColor: "#4facfe",
                       shadowOffset: { width: 0, height: 5 },
-                      shadowOpacity: 0.20,
+                      shadowOpacity: 0.2,
                       shadowRadius: 3,
                       elevation: 3,
                     }}
@@ -119,7 +148,7 @@ function QApostCard({
             </View>
 
             {/* Meta Information Bar */}
-            <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center justify-between mb-2">
               {/* Left Side - Stats */}
               <View className="flex-row items-center space-x-4">
                 {/* Comment Count */}
@@ -152,44 +181,52 @@ function QApostCard({
               </View>
             </View>
 
-            {/* Status Indicator */}
-            {hasResponses && (
-              <View className="mt-3 pt-3 border-t border-gray-100">
-                <View className="flex-row items-center">
-                  <LinearGradient
-                    colors={["#10B981", "#059669"]}
-                    className="rounded-full px-3 py-1"
-                  >
-                    <Text
-                      className={` ${
-                        Platform.OS === "ios" ? "p-1" : ""
-                      } text-white font-poppins font-semibold text-xs`}
-                    >
-                      ✓ Answered
-                    </Text>
-                  </LinearGradient>
+            <View className="flex-row justify-between border-t border-gray-100">
+              {/* Status Indicator */}
+              {hasResponses && (
+                <View className="mt-3 pt-3">
+                  <View className="flex-row items-center">
+                    <View className="rounded-full px-3 py-1 bg-green-600">
+                      <Text
+                        className={` ${
+                          Platform.OS === "ios" ? "p-1" : ""
+                        } text-white font-poppins font-semibold text-xs`}
+                      >
+                        ✓ Answered
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
 
-            {!hasResponses && (
-              <View className="mt-3 pt-3 border-t border-gray-100">
-                <View className="flex-row items-center">
-                  <LinearGradient
-                    colors={["#F59E0B", "#D97706"]}
-                    className="rounded-full px-3 py-1"
-                  >
-                    <Text
-                      className={` ${
-                        Platform.OS === "ios" ? "p-1" : ""
-                      } text-white font-semibold text-xs font-poppins`}
-                    >
-                      🤔 Awaiting Answer
-                    </Text>
-                  </LinearGradient>
+              {!hasResponses && (
+                <View className="mt-3 pt-3">
+                  <View className="flex-row items-center">
+                    <View className="rounded-full px-3 py-1 bg-orange-400">
+                      <Text
+                        className={` ${
+                          Platform.OS === "ios" ? "p-1" : ""
+                        } text-white font-semibold text-xs font-poppins`}
+                      >
+                        🤔 Awaiting Answer
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
+
+              {cloudGroupName && isHome ? (
+                <View className="mt-3 pt-3">
+                  <View className="flex-row items-center">
+                    <View className="rounded-full px-3 py-1 bg-secondary">
+                      <Text className="text-white font-poppins font-semibold text-xs">
+                        {cloudGroupName}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+            </View>
           </View>
 
           {/* Hover Effect Gradient */}

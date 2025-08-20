@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, updateDoc, arrayRemove } from "firebase/firestore";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Image,
   Modal,
   Pressable,
@@ -104,16 +105,15 @@ const GroupSettings = () => {
   const [menuOptions, setMenuOptions] = useState<MenuOption[]>([]);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
-  // At the top of your GroupSettings component
+
   const handleCloseMenu = () => {
     setMenuVisible(false);
-    // Add these two lines to reset the state
     setSelectedUser(null);
     setMenuOptions([]);
   };
-
-  // Add this useEffect hook in your GroupSettings component
   useEffect(() => {
     // Open the modal only when a user has been selected and there are options to show.
     if (selectedUser && menuOptions.length > 0) {
@@ -135,9 +135,9 @@ const GroupSettings = () => {
     approveJoinRequest,
     rejectJoinRequest,
     transferOwnership,
+    refreshGroups,
   } = useGroupContext();
 
-  // Add a hook to fetch user profiles for all user IDs in the group
   const [userProfiles, setUserProfiles] = useState<
     Record<string, { userName: string; profileImage: string }>
   >({});
@@ -167,6 +167,82 @@ const GroupSettings = () => {
 
     fetchGroup();
   }, [groupId]);
+
+  const handleDeleteGroup = async () => {
+    if (!groupId) return;
+    setIsDeleting(true);
+    try {
+      const groupRef = doc(db, "groups", groupId.toString());
+      const groupSnap = await getDoc(groupRef);
+
+      if (groupSnap.exists()) {
+        // get userlist
+        const data = groupSnap.data();
+        const userList = data.members?.concat(data.admins).concat(data.moderators);
+        // delete all users
+        userList.map((userId: string) => {
+          arrayRemove(userId)
+        })
+      }
+
+      refreshGroups();
+
+      await deleteDoc(groupRef);
+      router.replace("/(dashboard)/groups");
+    } catch (error) {
+      console.error("Error deleting group:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+    const handleExitGroup = async (userId: string) => {
+      if (!groupId) return;
+      setIsExiting(true);
+      try {
+        const groupRef = doc(db, "groups", groupId.toString());
+        const groupSnap = await getDoc(groupRef);
+        if (groupSnap.exists()) {
+          const data = groupSnap.data();
+          if (data.members?.includes(userId)) {
+            const newMembers = data.members.filter(
+              (id: string) => id !== userId
+            );
+            await updateDoc(groupRef, { members: newMembers });
+          }
+          if (data.admins?.includes(userId)) {
+            const newAdmins = data.admins.filter((id: string) => id !== userId);
+            await updateDoc(groupRef, { admins: newAdmins });
+          }
+          if (data.moderators?.includes(userId)) {
+            const newModerators = data.moderators.filter(
+              (id: string) => id !== userId
+            );
+            await updateDoc(groupRef, { moderators: newModerators });
+          }
+          if (data.blockedUsers?.includes(userId)) {
+            const newBlockedUsers = data.blockedUsers.filter(
+              (id: string) => id !== userId
+            );
+            await updateDoc(groupRef, { blockedUsers: newBlockedUsers });
+          }
+          if (data.joinRequests?.includes(userId)) {
+            const newJoinRequests = data.joinRequests.filter(
+              (id: string) => id !== userId
+            );
+            await updateDoc(groupRef, { joinRequests: newJoinRequests });
+          }
+
+          refreshGroups();
+          router.replace("/(dashboard)/groups");
+        }
+      } catch (error) {
+        console.error("Error exiting group:", error);
+        }
+        finally {
+          setIsExiting(false);
+        }
+    };
 
   // Memoized computations
   const currentUserId = user?.uid;
@@ -298,7 +374,7 @@ const GroupSettings = () => {
 
   // Helper functions
   const getDisplayName = (userId: string) => {
-    if (!userProfiles[userId]) return userId;
+    if (!userProfiles[userId]) return "loading...";
     const name = userProfiles[userId].userName;
     if (userInformation?.userID === userId) {
       return `${name} (You)`;
@@ -318,6 +394,8 @@ const GroupSettings = () => {
 
     return null;
   };
+
+
 
   const buildMenuOptions = (
     targetId: string,
@@ -680,12 +758,12 @@ const GroupSettings = () => {
               </TouchableOpacity>
             </>
           ) : (
-            <>
+            <View className="items-center justify-center">
               <Ionicons name="hourglass-outline" size={48} color="#6B7280" />
               <Text className="font-poppins-medium text-gray-600 mt-4">
                 Loading group...
               </Text>
-            </>
+            </View>
           )}
         </View>
       </View>
@@ -794,6 +872,67 @@ const GroupSettings = () => {
                 ROLE_CONFIG[b as keyof typeof ROLE_CONFIG].priority
             )
             .map((role, index) => renderRoleSection(role, index))}
+        </View>
+
+        {/* Destructive action */}
+        <View className="px-6 mt-6 flex-col gap-4">
+          <View className="mb-2 flex-row items-center gap-2">
+            <Ionicons name="close-circle-outline" size={24} color="#FF6347" />
+            <Text className="font-poppins font-bold text-xl text-gray-900">
+              Destructive Actions
+            </Text>
+          </View>
+
+          <TouchableOpacity className="flex-row items-center justify-center bg-primary gap-2 p-4 rounded-md shadow-sm shadow-black"
+          onPress={() => {
+            Alert.alert("Exit Group", "Are you sure to exit this group", [
+              {
+                text: "Cancel",
+                onPress: () => {},
+                style: "cancel",
+              },
+              {
+                text: "Exit",
+                onPress: () => {
+                  handleExitGroup(user?.uid as string);
+                },
+                style: "destructive",
+              },
+            ])
+          }}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#FF6347" />
+            <Text className="font-poppins font-bold text-xl text-white">
+             {isExiting ? "Exiting..." : "Exit Group"}
+            </Text>
+          </TouchableOpacity>
+
+          {currentRole === "groupOwner" && (
+            <TouchableOpacity className="flex-row items-center justify-center bg-red-500 gap-2 p-4 rounded-md shadow-sm shadow-black"
+            onPress={() => {
+              Alert.alert("Delete Group", "Are you sure to delete this group", [
+                {
+                  text: "Cancel",
+                  onPress: () => {},
+                  style: "cancel",
+                },
+                {
+                  text: "Delete",
+                  onPress: () => {
+                    handleDeleteGroup();
+                  },
+                  style: "destructive",
+                },
+              ])
+            }}
+          >
+            <Ionicons name="trash-outline" size={24} color="#FFF" />
+            <Text className="font-poppins font-bold text-xl text-white">
+             {isDeleting ? "Deleting..." : "Delete Group"}
+            </Text>
+          </TouchableOpacity>
+          )}
+          
         </View>
 
         {/* Bottom padding */}

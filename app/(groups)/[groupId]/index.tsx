@@ -38,6 +38,7 @@ function GroupQA() {
   const [open, setOpen] = useState(false);
   const [messagesById, setMessagesById] = useState<Record<string, QaPost>>({});
   const [localGroupName, setLocalGroupName] = useState("");
+  const [postsLoading, setPostsLoading] = useState(false);
   const [id, setId] = useState("");
   const idRef = useRef(id);
   const groupNameRef = useRef(groupName);
@@ -124,6 +125,7 @@ function GroupQA() {
   useEffect(() => {
     if (!user || !groupId) return;
 
+    setPostsLoading(true);
     const unsubscribe = onSnapshot(
       collection(db, "groups", groupId.toString(), "qa"),
       (snapshot) => {
@@ -174,6 +176,7 @@ function GroupQA() {
           } satisfies QaPost;
         });
         compareData(posts, onlineData);
+        setPostsLoading(false);
       },
       (error) => {
         console.error("Error fetching QA posts:", error);
@@ -352,7 +355,7 @@ function GroupQA() {
           </View>
 
           <View style={{ flex: 1 }}>
-            {sortedPosts.length > 0 ? (
+            {sortedPosts.length > 0 && !postsLoading ? (
               <FlatList
                 data={sortedPosts}
                 keyExtractor={(item) => item.id.toString()}
@@ -361,9 +364,11 @@ function GroupQA() {
               />
             ) : (
               <View className="flex-1 items-center justify-center">
-                <Text className="font-poppins text-gray-500 ">
-                  No Posts Yet.
-                </Text>
+                {postsLoading ? (
+                  <Text className="font-poppins text-gray-500 ">Loading...</Text>
+                ) : (
+                  <Text className="font-poppins text-gray-500 ">No Posts Yet.</Text>
+                )}
               </View>
             )}
           </View>

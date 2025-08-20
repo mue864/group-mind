@@ -31,6 +31,7 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { TextInput } from "react-native-paper";
 
+
 type QaResponses = {
   message: string;
   sentBy: string;
@@ -72,7 +73,7 @@ function ViewPost() {
   const [messagesByID, setMessagesById] = useState<Record<string, QaPost>>({});
   const [authorMessage, setAuthorMessage] = useState("");
   const [messageTime, setMessageTime] = useState("");
-  const { postId, groupId } = useLocalSearchParams();
+  const { postId, groupId, passedGroupName } = useLocalSearchParams();
   const [isAdmin] = useState(false);
   const [isMod] = useState(false);
   const [timeCheck, setCheckTime] = useState("");
@@ -90,6 +91,7 @@ function ViewPost() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
   const [showReplyInput, setShowReplyInput] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   const userAvatar = userInformation?.profilePicture;
 
@@ -108,6 +110,9 @@ function ViewPost() {
 
     getGroupName();
   }, []);
+
+  console.log("GroupId from params ", groupId)
+  console.log("Passed groupname from params ", passedGroupName)
 
 
   // Keyboard listeners
@@ -238,6 +243,7 @@ function ViewPost() {
   useEffect(() => {
     if (!user || !groupId) return;
 
+    setLoadingMessages(true);
     const unsubscribe = onSnapshot(
       collection(
         db,
@@ -267,6 +273,7 @@ function ViewPost() {
           } satisfies QaResponses;
         });
         setQA_Responses(responseData);
+        setLoadingMessages(false);
       }
     );
     return () => unsubscribe();
@@ -463,7 +470,7 @@ function ViewPost() {
 
           {/* Messages */}
           <View className="px-2 py-2 flex-1">
-            {timeline.length > 0 ? (
+            {timeline.length > 0 && !loadingMessages ? (
               timeline.map((msg) => (
                 <MessageBubble
                   key={msg.id}
@@ -500,9 +507,15 @@ function ViewPost() {
                 />
               ))
             ) : (
-              <View className="flex-1 justify-center items-center p-5">
-                <Text className="text-gray-400 text-base">No messages yet</Text>
-              </View>
+              loadingMessages ? (
+                <View className="flex-1 justify-center items-center p-5">
+                  <Text className="text-gray-400 text-base">Loading messages...</Text>
+                </View>
+              ) : (
+                <View className="flex-1 justify-center items-center p-5">
+                  <Text className="text-gray-400 text-base">No messages yet</Text>
+                </View>
+              )
             )}
           </View>
         </KeyboardAwareScrollView>

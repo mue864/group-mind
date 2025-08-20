@@ -1,44 +1,22 @@
+import ScheduledCard from "@/components/ScheduledCard";
+import { useGroupContext } from "@/store/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useState } from "react";
-import {
-  ScrollView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useEffect, useState } from "react";
+import { ScrollView, StatusBar, Text, View } from "react-native";
 
 const LiveSession = () => {
-  const [session, setSession] = useState([]);
+  const [session, setSession] = useState<any[]>([{}]);
+  const { activeCalls, groups } = useGroupContext();
 
-  const quickActions = [
-    {
-      title: "Test Permissions",
-      description: "Check camera and microphone access",
-      icon: "camera-outline" as const,
-      onPress: () => router.push("/(settings)/permissionTest"),
-      color: "#4169E1",
-    },
-    {
-      title: "Test Call",
-      description: "initialization prob with Expo",
-      icon: "call-outline" as const,
-      onPress: () => {
-        // Start test call functionality
-      },
-      color: "#10B981",
-    },
-    {
-      title: "Join Session",
-      description: "Wont work so far",
-      icon: "people-outline" as const,
-      onPress: () => {
-        // Join session functionality
-      },
-      color: "#F59E0B",
-    },
-  ];
+  const getActiveCalls = () => {
+    const activeCalls = groups.filter((group) => group.activeCall);
+    return activeCalls;
+  };
+
+  useEffect(() => {
+    const activeCallz = getActiveCalls();
+    setSession(activeCallz);
+  }, [groups]);
 
   return (
     <View className="flex-1 bg-[#F5F6FA]">
@@ -56,51 +34,12 @@ const LiveSession = () => {
         className="flex-1 px-4 pt-4"
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* Quick Actions */}
-        {/* <View className="mb-6">
-          <Text className="text-lg font-semibold text-gray-800 mb-3">
-            Quick Actions
-          </Text>
-          <View className="space-y-3">
-            {quickActions.map((action, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={action.onPress}
-                className="bg-white p-4 rounded-xl shadow-sm border border-gray-100"
-                activeOpacity={0.7}
-              >
-                <View className="flex-row items-center">
-                  <View
-                    className="w-12 h-12 rounded-full items-center justify-center mr-4"
-                    style={{ backgroundColor: `${action.color}20` }}
-                  >
-                    <Ionicons
-                      name={action.icon}
-                      size={24}
-                      color={action.color}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-lg font-semibold text-gray-800">
-                      {action.title}
-                    </Text>
-                    <Text className="text-gray-600 text-sm mt-1">
-                      {action.description}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View> */}
-
         {/* Active Sessions */}
         <View className="mb-6">
           <Text className="text-lg font-semibold text-gray-800 mb-3">
             Active Sessions
           </Text>
-          {session.length === 0 ? (
+          {activeCalls.length === 0 ? (
             <View className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <View className="items-center">
                 <Ionicons name="videocam-outline" size={48} color="#9CA3AF" />
@@ -110,9 +49,21 @@ const LiveSession = () => {
               </View>
             </View>
           ) : (
-            <Text className="text-gray-600">
-              Active sessions will appear here
-            </Text>
+            <View className="bg-white py-6 rounded-xl shadow-sm border border-gray-100">
+              <View>
+                {session.map((session, index) => (
+                  <ScheduledCard
+                    key={index}
+                    title={session.activeCall?.name}
+                    time={session.activeCall?.callTime}
+                    type={session.activeCall?.callType}
+                    groupName={session.name}
+                    groupLink={session.activeCall?.joinLink}
+                    groupID={session.id}
+                  />
+                ))}
+              </View>
+            </View>
           )}
         </View>
 

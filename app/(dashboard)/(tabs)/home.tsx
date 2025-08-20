@@ -42,24 +42,10 @@ type QaPost = {
   userName: string;
   groupId: string; 
 };
-  type ScheduledCall ={
-    id: string;
-    title: string;
-    scheduledTime: Timestamp;
-    groupId: string;
-    createdBy: string;
-    createdByUserName: string;
-    status: "scheduled" | "in-progress" | "completed";
-    callType: "audio" | "video";
-    channelName: string;
-    joinLink?: string;
-    participants: string[];
-    maxParticipants?: number;
-  }
 
 const Home = () => {
   const router = useRouter();
-  const { groups, allGroups, loading, user, refreshGroups, fetchAllGroups, activeCalls } =
+  const { groups, allGroups, loading, user, refreshGroups, fetchAllGroups } =
     useGroupContext();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -148,15 +134,7 @@ const Home = () => {
     };
   }, [user, groups]);
 
-  // active calls
-  useEffect(() => {
-    // const activeCall = activeCalls.find((call) => call.groupId === groupID);
-    // if (activeCall) {
-    //   setOngoingCall(true);
-    // } else {
-    //   setOngoingCall(false);
-    // }
-  }, [activeCalls]);
+
 
   const scheduledGroups = useMemo(() => {
     return groups.filter((group) => group.callScheduled);
@@ -170,8 +148,6 @@ const Home = () => {
     const combinedCalls = [...activeCall, ...scheduledGroups];
     setCombinedCalls(combinedCalls);
   }, [activeCall, scheduledGroups]);
-
-  console.log("Scheduled groups: ", scheduledGroups)
 
   // Get suggested groups (groups the user hasn't joined yet)
   const suggestedGroups = useMemo(() => {
@@ -191,9 +167,9 @@ const Home = () => {
   }, [qaPosts]);
 
   useInterval(() => {
-    if (!isAutoScrolling || scheduledGroups.length <= 1) return;
+    if (!isAutoScrolling || combinedCalls.length <= 1) return;
 
-    const index = (currentIndex + 1) % scheduledGroups.length;
+    const index = (currentIndex + 1) % combinedCalls.length;
     flatListRef.current?.scrollToIndex({ index, animated: true });
     setCurrentIndex(index);
   }, 5000);
@@ -314,6 +290,7 @@ const Home = () => {
               responseFrom={item.data.responseFrom}
               postID={item.data.id}
               groupID={item.data.groupId}
+              isHome={true}
             />
           </View>
         );
@@ -400,7 +377,7 @@ const Home = () => {
       handleUserScroll,
       router,
       recentQaPosts,
-      scheduledGroups,
+      combinedCalls,
     ]
   );
 

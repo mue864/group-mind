@@ -54,8 +54,6 @@ export interface Group {
   imageUrl: string;
 }
 
-
-
 interface MessageData {
   message: string;
   sentBy: string;
@@ -462,10 +460,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       await updateDoc(groupRef, {
         groupOwner: receiverId, // Set new owner directly
         admins: arrayUnion(receiverId), // Add new owner as admin
-      });
-      // Remove old owner from admins in a separate update
-      await updateDoc(groupRef, {
-        admins: arrayRemove(ownerId),
       });
     } catch (error) {
       Toast.show({
