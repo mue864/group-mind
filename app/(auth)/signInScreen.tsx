@@ -5,10 +5,9 @@ import { validateEmail } from "@/constants/emailValidation";
 import { auth } from "@/services/firebase";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -38,7 +37,7 @@ const SignInScreen = () => {
   const processLogin = async () => {
     setLoading(true);
     try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       Toast.show({
         type: "success",
         text1: "Welcome Back!",
@@ -56,10 +55,34 @@ const SignInScreen = () => {
     }
   };
 
-  const handleGooglePress = () => {
-    Alert.alert("Not Yet Implemented", "Use email/password signin for now");
+  const resetPassword = async () => {
+    
+    if (!validateEmail({ email })) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Email",
+        text2: "Please enter a valid email address before you continue",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Toast.show({
+        type: "success",
+        text1: "Password Reset Email Sent",
+        text2: "Check your email inbox/spam folder for a reset link.",
+      });
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Password Reset Failed",
+        text2: error.message || "An error occurred during password reset.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -127,6 +150,15 @@ const SignInScreen = () => {
           </Text>
         </Pressable>
 
+        <Pressable onPress={resetPassword}>
+          <Text
+            className="font-poppins-semiBold text-center text-primary"
+            style={{ textDecorationLine: "underline", marginBottom: 18 }}
+          >
+            {Strings.login.forgotPassword}
+          </Text>
+        </Pressable>
+
         <View
           style={{
             width: "100%",
@@ -136,47 +168,7 @@ const SignInScreen = () => {
           }}
         >
           <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
-          <Text
-            style={{
-              marginHorizontal: 12,
-              color: "#9EADD9",
-              fontWeight: "600",
-            }}
-          >
-            or
-          </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
         </View>
-
-        <Pressable style={{ width: "100%" }} onPress={handleGooglePress}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              paddingVertical: 14,
-              backgroundColor: "#fff",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
-            <FontAwesome6
-              name="google"
-              size={18}
-              color="#EA4335"
-              style={{ marginRight: 8 }}
-            />
-            <Text style={{ color: "#222", fontWeight: "500", fontSize: 15 }}>
-              Continue with Google
-            </Text>
-          </View>
-        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );

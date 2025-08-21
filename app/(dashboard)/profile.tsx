@@ -6,7 +6,7 @@ import { auth, db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { signOut } from "firebase/auth";
+import { signOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
@@ -14,7 +14,6 @@ import {
   Modal,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -22,11 +21,12 @@ import {
 const Profile = () => {
   const router = useRouter();
   const { user, userInformation, groups } = useGroupContext();
-  const [isEditing, setIsEditing] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [localUserInfo, setLocalUserInfo] = useState(userInformation);
+  const [resetModalVisible, setResetModalVisible] = useState(false);
+  const [password, setPassword] = useState("")
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -85,6 +85,29 @@ const Profile = () => {
     postsCount: 0, // This would need to be calculated from actual posts data
   };
 
+  const deleteUserAccount = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    
+    const credential = EmailAuthProvider.credential(user.email as string, password);
+
+    reauthenticateWithCredential(user, credential).then(() => {
+      deleteUser(user).then(() => {
+        Alert.alert("Success", "Account Deleted");
+        setLoading(false);
+        router.replace("/(auth)/signInScreen");
+      }).catch((error) => {
+      console.error("Delete error:", error);
+      Alert.alert("Error", "Failed to delete account. Please try again.");
+    })
+    }).catch((error) => {
+      console.error("Reauthentication error:", error);
+      Alert.alert("Error", "Failed to reauthenticate. Please try again.");
+      setLoading(false);
+    });
+  }
+
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       {
@@ -121,7 +144,6 @@ const Profile = () => {
       });
 
       setEditModalVisible(false);
-      setIsEditing(false);
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
       console.error("Update error:", error);
@@ -321,9 +343,59 @@ const Profile = () => {
         )}
       </View>
 
+      <TouchableOpacity
+        className="p-4 bg-red-500 mx-10 rounded-md shadow-sm shadow-black flex-row gap-3 justify-center items-center"
+        onPress={() => setResetModalVisible(true)}
+      >
+        <Ionicons name="trash" size={20} color="white" />
+        <Text className="text-white font-poppins-semiBold">Delete Account</Text>
+      </TouchableOpacity>
+
       {/* Bottom Spacing */}
       <View className="h-20" />
 
+      {/* Reenter password modal */}
+      <Modal
+        visible={resetModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View className="flex-1 bg-white">
+          <View className="flex-row justify-between p-4">
+
+            <TouchableOpacity onPress={() => setResetModalVisible(false)}>
+              <Ionicons name="close" size={24} color="black" />
+            </TouchableOpacity>
+            <View>
+              <Text className="font-poppins text-gray-600">
+                Confirm Your Password
+              </Text>
+            </View>
+          </View>
+
+          <View className="justify-center items-center mt-10">
+            <TextBox
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={{ width: 300 }}
+              placeholder="Enter your password"
+            />
+          </View>
+
+          <View className="flex-col gap-4 mt-10">
+            <TouchableOpacity
+              onPress={() => {deleteUserAccount()}}
+              className={` ${loading ? "opacity-50" : ""} bg-red-500 p-4 mx-10 rounded-md shadow-sm shadow-black flex-row gap-3 justify-center items-center`}
+            >
+              <Ionicons name="trash" size={20} color="white" />
+              <Text className="font-poppins-semiBold text-xl text-white">
+                {loading ? "Deleting..." : "Delete Account"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       {/* Edit Profile Modal */}
       <Modal
         visible={editModalVisible}

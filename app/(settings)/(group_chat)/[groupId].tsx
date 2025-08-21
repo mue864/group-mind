@@ -194,7 +194,7 @@ function GroupChat() {
                     doc.id,
                     "responses"
                   );
-                  // You'd need to count these - this is a simplified example
+
                   responseCount = 0; 
                 } catch (error) {
                   console.log("Error getting response count:", error);
@@ -296,6 +296,7 @@ function GroupChat() {
       setIsSending(true);
       const timeSent = Timestamp.now();
       const messageText = message.trim();
+      setMessage("");
 
       // Send message normally
       if (replyingTo) {
@@ -322,7 +323,7 @@ function GroupChat() {
         );
       }
 
-      setMessage("");
+
       setMessageType("message");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -518,7 +519,7 @@ function GroupChat() {
           {/* Input Row */}
           <View style={styles.inputRow}>
             <TextInput
-              value={message}
+              value={isSending ? "" : message}
               onChangeText={setMessage}
               mode="outlined"
               outlineColor="transparent"

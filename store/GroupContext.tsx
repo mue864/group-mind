@@ -183,6 +183,10 @@ interface GroupContextType {
     userId: string,
     groupId: string
   ) => Promise<boolean>;
+  deleteOnboardingCompleted: (
+    userId: string,
+    groupId: string
+  ) => Promise<void>;
   saveGroupResource: (params: {
     groupId: string;
     name: string;
@@ -366,23 +370,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
             callData.createdBy !== user?.uid &&
             !callData.participants.includes(user?.uid)
           ) {
-            showMessage({
-              message: "New Call Started",
-              description: `${callData.createdByUserName} started a ${callData.callType} call in ${callData.groupName}`,
-              type: "info",
-              duration: 4000,
-              onPress: () => {
-                router.push({
-                  pathname: "/call",
-                  params: {
-                    groupId: callData.groupId,
-                    channel: callData.channelName,
-                    type: callData.callType,
-                    groupName: callData.groupName,
-                  },
-                });
-              },
-            });
+            console.log("Call created")
           }
         }
 
@@ -1074,6 +1062,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
             } satisfies UserInfo;
             setUserInformation(savedData);
           }
+          unsubscribe();
         },
         (error) => {
           console.error("Error listening to user data updates:", error);
@@ -1143,6 +1132,20 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     const docSnap = await getDoc(membershipRef);
     return docSnap.exists() && docSnap.data().onboardingCompleted === true;
   };
+
+  // deleting onboardingCompletedFlag if user exits group
+  const deleteOnboardingCompleted = async (
+    userId: string,
+    groupId: string,
+  ) => {
+    console.log("UserId ", userId)
+    console.log("GroupId ", groupId)
+    const userRef = firestoreDoc(db, "users", userId, "groups", groupId);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      await deleteDoc(userRef);
+    }
+  }
 
   /**
    * Save a resource to the group's resources subcollection in Firestore
@@ -1214,9 +1217,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       // If no participants left, delete the call document
       if (!joining && updatedParticipants.length === 0) {
         await deleteDoc(callRef);
-        console.log("Call document deleted due to 0 participants");
-      } else {
-        console.log("Call participants updated");
       }
     } catch (error) {
       console.error("Error updating call participants:", error);
@@ -1268,6 +1268,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         getAllUserResources,
         activeCalls,
         updateCallParticipants,
+        deleteOnboardingCompleted,
       }}
     >
       {children}

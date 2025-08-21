@@ -136,6 +136,7 @@ const GroupSettings = () => {
     rejectJoinRequest,
     transferOwnership,
     refreshGroups,
+    deleteOnboardingCompleted
   } = useGroupContext();
 
   const [userProfiles, setUserProfiles] = useState<
@@ -184,7 +185,6 @@ const GroupSettings = () => {
           arrayRemove(userId)
         })
       }
-
       refreshGroups();
 
       await deleteDoc(groupRef);
@@ -220,18 +220,8 @@ const GroupSettings = () => {
             );
             await updateDoc(groupRef, { moderators: newModerators });
           }
-          if (data.blockedUsers?.includes(userId)) {
-            const newBlockedUsers = data.blockedUsers.filter(
-              (id: string) => id !== userId
-            );
-            await updateDoc(groupRef, { blockedUsers: newBlockedUsers });
-          }
-          if (data.joinRequests?.includes(userId)) {
-            const newJoinRequests = data.joinRequests.filter(
-              (id: string) => id !== userId
-            );
-            await updateDoc(groupRef, { joinRequests: newJoinRequests });
-          }
+
+          deleteOnboardingCompleted(user?.uid as string, groupId as string);
 
           refreshGroups();
           router.replace("/(dashboard)/groups");

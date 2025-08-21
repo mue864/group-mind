@@ -43,7 +43,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
   const [groupId, setGroupId] = useState<string>("");
 
   // FIrebase logic for group join and send request
-  const { sendJoinRequest, joinGroup, user, isJoining, isSendingJoinRequest } =
+  const { sendJoinRequest, joinGroup, user, isJoining, isSendingJoinRequest, refreshGroups } =
     useGroupContext();
   const userID = user?.uid.toString();
 
@@ -117,6 +117,7 @@ const SimpleGroupCard = memo(function SimpleGroupCard({
     } else {
       joinGroup(group.id);
       if (!isJoining) {
+        refreshGroups();
         router.push({
           pathname: "/(group_onboarding)/[groupId]",
           params: {

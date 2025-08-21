@@ -1,7 +1,6 @@
 import Button from "@/components/Button";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
-import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -9,7 +8,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import Group from "@/assets/icons/grp.svg";
 
 const GroupOnboarding = () => {
-  const { user, setGroupOnboardingCompleted, checkGroupOnboardingCompleted } =
+  const { user, setGroupOnboardingCompleted, checkGroupOnboardingCompleted, refreshGroups } =
     useGroupContext();
   const { groupId, groupName } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
@@ -48,6 +47,7 @@ const GroupOnboarding = () => {
     setButtonLoading(true);
     await setGroupOnboardingCompleted(user.uid, groupId as string);
     setButtonLoading(false);
+    refreshGroups();
     router.replace({
         pathname: '/(groups)/[groupId]',
         params: {

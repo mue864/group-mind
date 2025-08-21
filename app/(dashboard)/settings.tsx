@@ -32,8 +32,8 @@ const Settings = () => {
       color: "#F59E0B",
     },
     {
-      title: "Help & Support",
-      description: "Get help and contact support",
+      title: "Help & Manual",
+      description: "Get help and view manual",
       icon: "help-circle-outline",
       onPress: () =>
         router.push("/(settings)/(app_settings)/(support)/"),

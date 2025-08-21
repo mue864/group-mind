@@ -31,7 +31,7 @@ const GroupChat = () => {
         fetchGroupId();
     }, []);
     return (
-      <View className="flex-1 bg-background relative">
+      <View className="flex-1 bg-white relative">
         <View className="justify-center items-center flex-1">
           <Text className="text-center text-lg font-inter">
             As always, be respectful, kind, and considerate. Ask questions,

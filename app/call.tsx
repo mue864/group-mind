@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TouchableOpacity, View, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useGroupContext } from '@/store/GroupContext';
 import WebRTCCall from '@/components/WebRTCCall';
 
@@ -44,7 +43,7 @@ export default function GroupCallScreen() {
   if (!isInCall) {
     return (
       <View className="flex-1 bg-background justify-center items-center">
-        <StatusBar style="dark" />
+        <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
         <View className="p-5 items-center">
           <Text className="text-2xl font-bold mb-5">Start Group Call</Text>
           <TouchableOpacity
@@ -73,7 +72,7 @@ export default function GroupCallScreen() {
   if (isInCall && userInformation) {
     return (
       <View className="flex-1">
-        <StatusBar style="light" />
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <WebRTCCall
           roomId={String(channel)}
           userId={userInformation.userID}

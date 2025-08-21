@@ -1,7 +1,6 @@
 import Book from "@/assets/icons/book.svg";
 import Elipse from "@/assets/icons/ellipse.svg";
 import Rect from "@/assets/icons/rectangle.svg";
-import ActionButton from "@/components/ActionButton";
 import QApostCard from "@/components/QApostCard";
 import RandomGroupCard from "@/components/RandomGroupCard";
 import ScheduledCard from "@/components/ScheduledCard";
@@ -79,7 +78,6 @@ const Home = () => {
     }
 
     const unsubscribes: (() => void)[] = [];
-    const allQaPosts: QaPost[] = [];
 
     groups.forEach((group) => {
       if (!group.id) return;
@@ -451,12 +449,6 @@ const Home = () => {
               You have not joined or created any study groups yet. Start by
               creating your own or exploring existing ones!
             </Text>
-          </View>
-
-          <View className="absolute bottom-28">
-            <ActionButton
-              action={() => router.push("/(dashboard)/(tabs)/groups")}
-            />
           </View>
         </View>
       ) : (

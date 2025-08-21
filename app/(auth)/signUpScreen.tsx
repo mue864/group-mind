@@ -13,7 +13,6 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -124,13 +123,6 @@ const SignUpScreen = () => {
     }
   };
 
-  const handleGooglePress = () => {
-    Alert.alert(
-      "Not yet implemented",
-      "Use Email and password signup for now."
-    );
-  };
-
   useEffect(() => {
     setPasswordMatch(validatePasswords(password, confirmPassword));
   }, [password, confirmPassword]);
@@ -232,47 +224,7 @@ const SignUpScreen = () => {
           }}
         >
           <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
-          <Text
-            style={{
-              marginHorizontal: 12,
-              color: "#9EADD9",
-              fontWeight: "600",
-            }}
-          >
-            or
-          </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
         </View>
-
-        <Pressable style={{ width: "100%" }} onPress={handleGooglePress}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              paddingVertical: 14,
-              backgroundColor: "#fff",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
-            <FontAwesome6
-              name="google"
-              size={18}
-              color="#EA4335"
-              style={{ marginRight: 8 }}
-            />
-            <Text style={{ color: "#222", fontWeight: "500", fontSize: 15 }}>
-              Continue with Google
-            </Text>
-          </View>
-        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
