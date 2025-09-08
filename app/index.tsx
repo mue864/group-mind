@@ -31,10 +31,10 @@ const Entry = () => {
         // firebase auth
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             const timeout = setTimeout(() => {
-                if (user) {
+                if (user?.emailVerified) {
                     router.replace("/(dashboard)/(tabs)/home");
                 } else {
-                    router.replace("/(onboarding)/welcome");
+                    router.replace("/(auth)/verifyEmail");
                 }
             }, 2000);
 

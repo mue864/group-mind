@@ -9,7 +9,7 @@ import {
 import { auth, db } from "@/services/firebase";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
@@ -62,6 +62,7 @@ const SignUpScreen = () => {
   };
 
   const registerUser = async () => {
+    // to deal with resource agressive apps, save the user info before verifying the email in to prevent problems
     setLoading(true);
     try {
       const userCred = await createUserWithEmailAndPassword(
@@ -96,7 +97,12 @@ const SignUpScreen = () => {
         text2: "Let’s set up your profile 🧠",
       });
 
-      router.replace("/(auth)/createProfile");
+      
+      if (user.emailVerified) {
+        router.replace("/(auth)/createProfile");
+      } else {
+        router.replace("/(auth)/verifyEmail");
+      }
     } catch (error: any) {
       let message = "";
       switch (error.code) {

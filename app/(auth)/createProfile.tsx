@@ -34,7 +34,6 @@ const CreateProfile = () => {
   const [level, setLevel] = useState("");
   const [age, setAge] = useState("");
   const [purpose, setPurpose] = useState("");
-  const [bio, setBio] = useState("");
 
   const [isChecked, setIsChecked] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
@@ -46,8 +45,7 @@ const CreateProfile = () => {
     userName.trim().length > 0 &&
     level.trim().length > 0 &&
     age.trim().length > 0 &&
-    purpose.trim().length > 0 &&
-    bio.trim().length > 0;
+    purpose.trim().length > 0;
   const handleSubmit = () => {
     setSubmitted(true);
     if (!isFormValid) {
@@ -71,7 +69,6 @@ const CreateProfile = () => {
         purpose: purpose,
         profileImage: selectedImage,
         canExplainToPeople: isChecked,
-        bio: bio,
         profileComplete: true,
       });
       // Refresh context before navigating
@@ -230,26 +227,6 @@ const CreateProfile = () => {
           {submitted && purpose === "" && (
             <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
               Purpose is required
-            </Text>
-          )}
-        </View>
-
-        {/* Bio Field */}
-        <View style={{ width: "100%", marginBottom: 14 }}>
-          <TextInput
-            value={bio}
-            onChangeText={setBio}
-            placeholder={"Tell us about yourself..."}
-            multiline
-            numberOfLines={4}
-            className="font-poppins-semiBold text-lg text-[#222] bg-white border border-[#9EADD9] rounded-xl p-3 min-h-[80px] text-left"
-            textAlignVertical="top"
-            maxLength={300}
-            placeholderTextColor="#9EADD9"
-          />
-          {submitted && bio.trim().length === 0 && (
-            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
-              Bio is required
             </Text>
           )}
         </View>
