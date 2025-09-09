@@ -215,6 +215,7 @@ interface UserInfo {
   canExplainToPeople: boolean;
   userID: string;
   bio?: string;
+  profileComplete: boolean;
 }
 
 interface CallInfo {
@@ -1059,6 +1060,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
               canExplainToPeople: data.canExplainToPeople,
               userID: user.uid,
               bio: data.bio || "",
+              profileComplete: data.profileComplete
             } satisfies UserInfo;
             setUserInformation(savedData);
           }
@@ -1068,9 +1070,6 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
           console.error("Error listening to user data updates:", error);
         }
       );
-
-      // Store unsubscribe function for cleanup (you can add cleanup logic if needed)
-      // For now, we'll let it run indefinitely as it's a real-time listener
     } catch (error) {
       console.error("Unable to fetch user data", error);
     }

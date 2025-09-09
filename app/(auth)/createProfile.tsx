@@ -23,6 +23,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CreateProfile = () => {
   const router = useRouter();
@@ -46,7 +47,7 @@ const CreateProfile = () => {
     level.trim().length > 0 &&
     age.trim().length > 0 &&
     purpose.trim().length > 0;
-  const handleSubmit = () => {
+  const handleNext = () => {
     setSubmitted(true);
     if (!isFormValid) {
       Toast.show({
@@ -59,6 +60,20 @@ const CreateProfile = () => {
     dataSave();
   };
 
+  // save step
+  const localSave = async () => {
+    const saveData = {
+      profileStep: 1,
+      profilePurpose: purpose,
+    }
+    const newValue = JSON.stringify(saveData);
+    try {
+      await AsyncStorage.setItem('@profileStep', newValue);
+    } catch (error) {
+      console.error('Error saving profile step to AsyncStorage:', error);
+    }
+  }
+
   const dataSave = async () => {
     const user = auth.currentUser;
     if (user) {
@@ -69,18 +84,24 @@ const CreateProfile = () => {
         purpose: purpose,
         profileImage: selectedImage,
         canExplainToPeople: isChecked,
-        profileComplete: true,
+       // profileComplete: true, 
       });
       // Refresh context before navigating
       if (getCurrentUserInfo) {
         await getCurrentUserInfo();
       }
-      router.replace("/(dashboard)/(tabs)/home");
+      await localSave();
+      if (purpose === "Volunteer") {
+        router.replace("/(auth)/volunteerRegister");
+      } else {
+        router.replace("/(auth)/studentRegister");
+      } 
+
     } else {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "An error occured, please log in again.",
+        text2: "An error occured, please signup in again.",
       });
       router.replace("/(auth)/signInScreen");
     }
@@ -253,8 +274,8 @@ const CreateProfile = () => {
         </Pressable>
 
         <Button
-          title={Strings.continueButton}
-          onPress={handleSubmit}
+          title="Next"
+          onPress={handleNext}
           fullWidth
           style={{
             marginTop: 8,

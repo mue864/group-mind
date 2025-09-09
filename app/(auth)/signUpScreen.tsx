@@ -9,7 +9,7 @@ import {
 import { auth, db } from "@/services/firebase";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification, getAuth } from "firebase/auth";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
@@ -61,6 +61,17 @@ const SignUpScreen = () => {
     registerUser();
   };
 
+  const sendEmail = async () => {
+    const userAuth = getAuth();
+
+    if(!userAuth.currentUser) return;
+
+    // send user verification email
+    await sendEmailVerification(userAuth.currentUser);
+
+    router.replace("/(auth)/verifyEmail");
+  }
+
   const registerUser = async () => {
     // to deal with resource agressive apps, save the user info before verifying the email in to prevent problems
     setLoading(true);
@@ -101,7 +112,7 @@ const SignUpScreen = () => {
       if (user.emailVerified) {
         router.replace("/(auth)/createProfile");
       } else {
-        router.replace("/(auth)/verifyEmail");
+        sendEmail();
       }
     } catch (error: any) {
       let message = "";

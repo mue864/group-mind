@@ -72,7 +72,6 @@ const RootLayout = () => {
                   <Stack
                     screenOptions={({ route }) => ({
                       headerShown: false,
-
                       headerTitle: "",
                     })}
                   >
