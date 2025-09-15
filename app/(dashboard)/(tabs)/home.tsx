@@ -44,7 +44,7 @@ type QaPost = {
 
 const Home = () => {
   const router = useRouter();
-  const { groups, allGroups, loading, user, refreshGroups, fetchAllGroups } =
+  const { groups, allGroups, loading, user, refreshGroups, fetchAllGroups, userInformation } =
     useGroupContext();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -152,10 +152,28 @@ const Home = () => {
     if (!userID || !allGroups.length) return [];
 
     const userJoinedGroupIds = groups.map((group) => group.id);
-    return allGroups
-      .filter((group) => !userJoinedGroupIds.includes(group.id))
-      .slice(0, 3); // Show up to 3 suggested groups
-  }, [allGroups, groups, userID]);
+    let filtered = allGroups.filter((group) => !userJoinedGroupIds.includes(group.id));
+    
+    // For volunteers, only show groups in categories they're verified for
+    if (userInformation?.purpose === "Volunteer" && userInformation?.volunteerVerification) {
+      const verifiedSubjects = Object.keys(userInformation.volunteerVerification)
+        .filter(subject => userInformation.volunteerVerification[subject].status === "passed")
+        .map(subject => {
+          // Convert database format (computer_science) to readable format (Computer Science)
+          return subject === "computer_science" ? "Computer Science" :
+                 subject === "software_engineering" ? "Software Engineering" :
+                 subject === "mathematics" ? "Mathematics" :
+                 subject === "accounting" ? "Accounting" :
+                 subject === "economics" ? "Economics" :
+                 subject === "business_studies" ? "Business Studies" :
+                 subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        });
+      
+      filtered = filtered.filter((group) => verifiedSubjects.includes(group.category));
+    }
+    
+    return filtered.slice(0, 3); // Show up to 3 suggested groups
+  }, [allGroups, groups, userID, userInformation]);
 
   // Sort Q&A posts by time (most recent first) and limit to 2
   const recentQaPosts = useMemo(() => {

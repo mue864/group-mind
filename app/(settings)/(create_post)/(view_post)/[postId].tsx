@@ -6,9 +6,12 @@ import MessageBubble from "@/components/MessageBubble";
 import ShareModal from "@/components/ShareModal";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
+import { analyzePastedContent, getEducationalTooltip } from "@/utils/pasteDetector";
+import EducationalTooltip from "@/components/EducationalTooltip";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format, isToday, isYesterday } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
+import {fastAIDetector} from "@/utils/aiDetector";
 import {
   collection,
   doc,
@@ -46,6 +49,8 @@ type QaResponses = {
   helpfulCount?: number;
   helpfulUsers?: string[];
   responseId?: string; // Add this to track individual responses
+  aiScore?: number;
+  aiWarning?: 'none' | 'likely' | 'detected';
 };
 
 type TimelineMessage = {
@@ -60,6 +65,8 @@ type TimelineMessage = {
   type: "question" | "response";
   userName: string;
   purpose: string;
+  aiScore?: number;
+  aiWarning?: 'none' | 'likely' | 'detected';
 };
 
 function ViewPost() {
@@ -73,7 +80,7 @@ function ViewPost() {
   const [messagesByID, setMessagesById] = useState<Record<string, QaPost>>({});
   const [authorMessage, setAuthorMessage] = useState("");
   const [messageTime, setMessageTime] = useState("");
-  const { postId, groupId, passedGroupName } = useLocalSearchParams();
+  const { postId, groupId } = useLocalSearchParams();
   const [isAdmin] = useState(false);
   const [isMod] = useState(false);
   const [timeCheck, setCheckTime] = useState("");
@@ -84,6 +91,8 @@ function ViewPost() {
   const [isSending, setIsSending] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [groupName, setGroupName] = useState("");
+  const replyMessageRef = useRef("");
+  const sendMessageRef = useRef("")
 
   const [qa_Responses, setQA_Responses] = useState<QaResponses[]>([]);
 
@@ -92,8 +101,40 @@ function ViewPost() {
   const [replyMessage, setReplyMessage] = useState("");
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [showEducationalTooltip, setShowEducationalTooltip] = useState(false);
+  const [educationalMessage, setEducationalMessage] = useState("");
+  const prevReplyTextRef = useRef("");
+  const prevPostTextRef = useRef("");
 
   const userAvatar = userInformation?.profilePicture;
+
+  const handleReplyMessage = (val: string) => {
+    const analysis = analyzePastedContent(val, prevReplyTextRef.current);
+    
+    if (analysis.isEducationalMoment && analysis.educationalMessage) {
+      setEducationalMessage(analysis.educationalMessage);
+      setShowEducationalTooltip(true);
+    }
+    
+    setReplyMessage(val);
+    replyMessageRef.current = val;
+    prevReplyTextRef.current = val;
+  }
+
+  const handleSendMessage = (val: string) => {
+    const analysis = analyzePastedContent(val, prevPostTextRef.current);
+    
+    if (analysis.isEducationalMoment && analysis.educationalMessage) {
+      setEducationalMessage(analysis.educationalMessage);
+      setShowEducationalTooltip(true);
+    }
+    
+    setPost(val);
+    sendMessageRef.current = val;
+    prevPostTextRef.current = val;
+    setUserTyping(!!val);
+  };
+
 
   // fetch group name
   useEffect(() => {
@@ -110,9 +151,6 @@ function ViewPost() {
 
     getGroupName();
   }, []);
-
-  console.log("GroupId from params ", groupId)
-  console.log("Passed groupname from params ", passedGroupName)
 
 
   // Keyboard listeners
@@ -204,6 +242,10 @@ function ViewPost() {
   const handleSendReply = async () => {
     if (!replyMessage.trim() || !user || !replyingTo) return;
 
+    // check if response is not AI generated
+    const isAIGenerated = fastAIDetector(replyMessage);
+
+    console.log(isAIGenerated);
     try {
       setIsSending(true);
       await responseQaPost(
@@ -270,6 +312,8 @@ function ViewPost() {
             helpfulCount: data.helpfulCount || 0,
             helpfulUsers: data.helpfulUsers || [],
             responseId: snap.id, // Add the document ID as responseId
+            aiScore: data.aiScore,
+            aiWarning: data.aiWarning || 'none',
           } satisfies QaResponses;
         });
         setQA_Responses(responseData);
@@ -372,6 +416,8 @@ function ViewPost() {
       type: "question",
       userName: rawPost.userName || "Anonymous",
       purpose: rawPost.purpose || "",
+      aiScore: rawPost.aiScore,
+      aiWarning: rawPost.aiWarning || 'none',
     };
 
     // Process responses
@@ -392,10 +438,11 @@ function ViewPost() {
           type: "response",
           userName: response.userName || "Anonymous",
           purpose: response.purpose || "",
+          aiScore: response.aiScore,
+          aiWarning: response.aiWarning || 'none',
         };
       }
     );
-
     // Combine and sort by time
     const combined = [originalMessage, ...responseMessages].sort(
       (a, b) => a.timeSent.seconds - b.timeSent.seconds
@@ -483,6 +530,8 @@ function ViewPost() {
                   isSelf={msg.isSelf}
                   type={msg.type}
                   purpose={msg.purpose}
+                  aiScore={msg.aiScore}
+                  aiWarning={msg.aiWarning}
                   onReply={handleReply}
                   onHelpful={handleHelpful}
                   messageId={msg.id}
@@ -544,7 +593,7 @@ function ViewPost() {
               <View className="flex-1 mr-2">
                 <TextInput
                   value={replyMessage}
-                  onChangeText={setReplyMessage}
+                  onChangeText={handleReplyMessage}
                   mode="outlined"
                   outlineColor="transparent"
                   activeOutlineColor="transparent"
@@ -605,7 +654,7 @@ function ViewPost() {
             <View className="flex-1 mx-2 ">
               <TextInput
                 value={post}
-                onChangeText={(text) => (setPost(text), setUserTyping(!!text))}
+                onChangeText={handleSendMessage}
                 mode="outlined"
                 outlineColor="transparent"
                 activeOutlineColor="transparent"
@@ -629,7 +678,8 @@ function ViewPost() {
               disabled={post.length === 0}
               onPress={() => {
                 if (post.length === 0 || !user) return;
-
+                const isAIGenerated = fastAIDetector(post)
+                console.log(isAIGenerated);
                 setIsSending(true);
                 setPost("");
                 responseQaPost(
@@ -671,6 +721,14 @@ function ViewPost() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Educational Tooltip */}
+        <EducationalTooltip
+          message={educationalMessage}
+          visible={showEducationalTooltip}
+          onDismiss={() => setShowEducationalTooltip(false)}
+          type="tip"
+        />
 
         <ShareModal
           visible={isActive}

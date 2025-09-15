@@ -1,4 +1,3 @@
-
 import Button from "@/components/Button";
 import DropDown from "@/components/DropDown";
 import ImageModal from "@/components/ImageModal";
@@ -8,29 +7,28 @@ import { Strings } from "@/constants";
 import { ageInfo, levelInfo, userPurpose } from "@/constants/accSetupInfo";
 import { auth, db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import CheckBox from "expo-checkbox";
 import { useRouter } from "expo-router";
 import { doc, updateDoc } from "firebase/firestore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CreateProfile = () => {
   const router = useRouter();
   const { getCurrentUserInfo } = useGroupContext();
   // text input value
   const [userName, setUserName] = useState("");
-
+  const [isVolunteer, setIsVolunteer] = useState(false);
   // rn dropdown value
   const [level, setLevel] = useState("");
   const [age, setAge] = useState("");
@@ -41,12 +39,17 @@ const CreateProfile = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
+  useEffect(() => {
+    setIsVolunteer(purpose === "Volunteer");
+  }, [purpose]);
+
   const isFormValid =
-    !!selectedImage &&
+    (isVolunteer) &&
     userName.trim().length > 0 &&
-    level.trim().length > 0 &&
+    (isVolunteer || level.trim().length > 0) &&
     age.trim().length > 0 &&
     purpose.trim().length > 0;
+
   const handleNext = () => {
     setSubmitted(true);
     if (!isFormValid) {
@@ -65,14 +68,14 @@ const CreateProfile = () => {
     const saveData = {
       profileStep: 1,
       profilePurpose: purpose,
-    }
+    };
     const newValue = JSON.stringify(saveData);
     try {
-      await AsyncStorage.setItem('@profileStep', newValue);
+      await AsyncStorage.setItem("@profileStep", newValue);
     } catch (error) {
-      console.error('Error saving profile step to AsyncStorage:', error);
+      console.error("Error saving profile step to AsyncStorage:", error);
     }
-  }
+  };
 
   const dataSave = async () => {
     const user = auth.currentUser;
@@ -84,7 +87,7 @@ const CreateProfile = () => {
         purpose: purpose,
         profileImage: selectedImage,
         canExplainToPeople: isChecked,
-       // profileComplete: true, 
+        // profileComplete: true,
       });
       // Refresh context before navigating
       if (getCurrentUserInfo) {
@@ -95,8 +98,7 @@ const CreateProfile = () => {
         router.replace("/(auth)/volunteerRegister");
       } else {
         router.replace("/(auth)/studentRegister");
-      } 
-
+      }
     } else {
       Toast.show({
         type: "error",
@@ -171,7 +173,7 @@ const CreateProfile = () => {
             </View>
           )}
         </Pressable>
-        {submitted && !selectedImage && (
+        {submitted && !selectedImage && !isVolunteer && (
           <Text
             style={{
               color: "#ef4444",
@@ -198,37 +200,6 @@ const CreateProfile = () => {
           style={{ marginTop: 20 }}
         />
 
-        {/* DropDowns */}
-        <View style={{ width: "100%", marginTop: 18, zIndex: 3000 }}>
-          <DropDown
-            data={levelInfo}
-            placeholder={Strings.userProfile.userLevel}
-            zIndex={3000}
-            zIndexInverse={1000}
-            setValue={setLevel}
-            error={submitted && level === ""}
-          />
-          {submitted && level === "" && (
-            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
-              Level is required
-            </Text>
-          )}
-        </View>
-        <View style={{ width: "100%", marginTop: 18, zIndex: 2000 }}>
-          <DropDown
-            data={ageInfo}
-            placeholder={Strings.userProfile.userAge}
-            zIndex={2000}
-            zIndexInverse={2000}
-            setValue={setAge}
-            error={submitted && age === ""}
-          />
-          {submitted && age === "" && (
-            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
-              Age is required
-            </Text>
-          )}
-        </View>
         <View
           style={{
             width: "100%",
@@ -252,26 +223,39 @@ const CreateProfile = () => {
           )}
         </View>
 
-        {/* Checkbox */}
-        <Pressable
-          style={{
-            width: "100%",
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 24,
-            marginTop: 10
-          }}
-          onPress={() => setIsChecked(!isChecked)}
-        >
-          <CheckBox
-            value={isChecked}
-            onValueChange={setIsChecked}
-            color={isChecked ? "#4169E1" : "#9EADD9"}
+        {/* DropDowns */}
+        {!isVolunteer && (
+          <View style={{ width: "100%", zIndex: 3000 }}>
+            <DropDown
+              data={levelInfo}
+              placeholder={Strings.userProfile.userLevel}
+              zIndex={3000}
+              zIndexInverse={1000}
+              setValue={setLevel}
+              error={submitted && level === ""}
+            />
+            {submitted && level === "" && (
+              <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
+                Level is required
+              </Text>
+            )}
+          </View>
+        )}
+        <View style={{ width: "100%", zIndex: 2000 }}>
+          <DropDown
+            data={ageInfo}
+            placeholder={Strings.userProfile.userAge}
+            zIndex={2000}
+            zIndexInverse={2000}
+            setValue={setAge}
+            error={submitted && age === ""}
           />
-          <Text className="font-poppins-semiBold text-md text-[#4169E1] ml-3">
-            {Strings.userProfile.userConfident}
-          </Text>
-        </Pressable>
+          {submitted && age === "" && (
+            <Text className="font-poppins-semibold text-sm text-[#ef4444] mt-1 ml-1">
+              Age is required
+            </Text>
+          )}
+        </View>
 
         <Button
           title="Next"

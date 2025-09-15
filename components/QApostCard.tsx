@@ -16,6 +16,8 @@ interface QaProps {
   postID: string;
   groupID: string | string[];
   isHome?: boolean;
+  aiScore?: number;
+  aiWarning?: 'none' | 'likely' | 'detected';
 }
 
 function QApostCard({
@@ -25,6 +27,8 @@ function QApostCard({
   postID,
   groupID,
   isHome,
+  aiScore,
+  aiWarning = 'none',
 }: QaProps) {
   let displayTime = "";
   const sentTime = timeSent?.toDate?.() ?? new Date();
@@ -93,6 +97,16 @@ useEffect(() => {
   const responseCount = responseFrom?.length || 0;
   const hasResponses = responseCount > 0;
 
+  // AI detection styling
+  const getAIBorderStyle = () => {
+    if (aiWarning === 'detected') {
+      return { borderColor: '#ef4444', borderWidth: 2 }; // red border
+    } else if (aiWarning === 'likely') {
+      return { borderColor: '#f59e0b', borderWidth: 2 }; // yellow border
+    }
+    return {};
+  };
+
 
   return (
     <View className="mx-3">
@@ -112,6 +126,7 @@ useEffect(() => {
           style={{
             // android shadows
             elevation: 4,
+            ...getAIBorderStyle(),
           }}
         >
           {/* Main Content Container */}
@@ -227,6 +242,24 @@ useEffect(() => {
                 </View>
               ) : null}
             </View>
+
+            {/* AI Detection Warning */}
+            {aiWarning !== 'none' && (
+              <View className="mt-3 pt-3 border-t border-gray-100">
+                <View className="flex-row items-center">
+                  <View 
+                    className={`rounded-full px-3 py-1 ${
+                      aiWarning === 'detected' ? 'bg-red-500' : 'bg-yellow-500'
+                    }`}
+                  >
+                    <Text className="text-white font-poppins font-semibold text-xs">
+                      {aiWarning === 'detected' ? '🤖 AI Generated' : '⚠️ Likely AI'} 
+                      {aiScore && ` (${Math.round(aiScore * 100)}%)`}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Hover Effect Gradient */}

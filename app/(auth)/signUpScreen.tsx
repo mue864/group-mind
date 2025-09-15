@@ -100,6 +100,7 @@ const SignUpScreen = () => {
         canExplainToPeople: false,
         isFirstLogin: true,
         profileComplete: false,
+        volunteerVerified: false,
       });
 
       Toast.show({

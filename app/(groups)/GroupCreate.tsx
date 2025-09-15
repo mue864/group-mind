@@ -6,7 +6,7 @@ import GroupImageModal from "@/components/GroupImageModal";
 import TextBox from "@/components/TextBox";
 import { useGroupContext } from "@/store/GroupContext";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -26,7 +26,7 @@ interface GroupImagesProp {
 }
 
 const GroupCreate = () => {
-  const { groupCreating, createGroup, groupCreated, groupID, setGroupCreated } =
+  const { groupCreating, createGroup, groupCreated, groupID, setGroupCreated, userInformation } =
     useGroupContext();
 
   const [isModalVisible, setModalVisible] = useState(false);
@@ -46,21 +46,38 @@ const GroupCreate = () => {
   const [submitted, setSubmitted] = useState(false);
   const [privacy, setPrivacy] = useState("");
 
-  const categoryOptions = [
-    { label: "Math", value: "Math" },
-    { label: "Science", value: "Science" },
-    { label: "History", value: "History" },
-    { label: "English", value: "English" },
-    { label: "Social Studies", value: "Social Studies" },
-    { label: "Geography", value: "Geography" },
-    { label: "Life Sciences", value: "Life Sciences" },
-    { label: "Physical Sciences", value: "Physical Sciences" },
-    { label: "Accounting", value: "Accounting" },
-    { label: "Economics", value: "Economics" },
-    { label: "Business Studies", value: "Business Studies" },
-    { label: "Computer Science", value: "Computer Science" },
-    { label: "Art", value: "Art" },
-  ];
+  // Filter categories based on volunteer verification status
+  const categoryOptions = useMemo(() => {
+    const allCategories = [
+      { label: "Accounting", value: "Accounting" },
+      { label: "Economics", value: "Economics" },
+      { label: "Business Studies", value: "Business Studies" },
+      { label: "Computer Science", value: "Computer Science" },
+      { label: "Software Engineering", value: "Software Engineering" },
+      { label: "Mathematics", value: "Mathematics" },
+    ];
+
+    // For volunteers, only show categories they're verified for
+    if (userInformation?.purpose === "Volunteer" && userInformation?.volunteerVerification) {
+      const verifiedSubjects = Object.keys(userInformation.volunteerVerification)
+        .filter(subject => userInformation.volunteerVerification[subject].status === "passed")
+        .map(subject => {
+          // Convert database format (computer_science) to readable format (Computer Science)
+          return subject === "computer_science" ? "Computer Science" :
+                 subject === "software_engineering" ? "Software Engineering" :
+                 subject === "mathematics" ? "Mathematics" :
+                 subject === "accounting" ? "Accounting" :
+                 subject === "economics" ? "Economics" :
+                 subject === "business_studies" ? "Business Studies" :
+                 subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        });
+
+      return allCategories.filter(category => verifiedSubjects.includes(category.label));
+    }
+
+    // For students, show all categories
+    return allCategories;
+  }, [userInformation]);
 
 
   const privacyOptions = [

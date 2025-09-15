@@ -3,6 +3,7 @@ import { db, auth } from "../services/firebase";
 import { collection, onSnapshot, Timestamp, orderBy, query, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import {User, onAuthStateChanged} from "firebase/auth"
 import type {Group} from "./GroupContext"
+import { fastAIDetector } from "@/utils/aiDetector";
 
 export interface Post {
     id: string,
@@ -11,6 +12,8 @@ export interface Post {
     timeSent: Timestamp,
     groupId: string,
     userAvatar?: string,
+    aiScore?: number,
+    aiWarning?: 'none' | 'likely' | 'detected',
 }
 interface PostByGroup {
     [groupId: string]: Post[];
@@ -139,10 +142,17 @@ export const PostProvider = ({children, loading, groups: initialGroups}: {childr
     const sendPost = async (groupId: string, text: string) => {
         const groupRef = collection(db, "groups", groupId, "posts");
         if (!user) return;
+        
+        // AI Detection
+        const aiScore = fastAIDetector(text);
+        const aiWarning = aiScore >= 0.6 ? 'detected' : aiScore >= 0.55 ? 'likely' : 'none';
+        
         await addDoc(groupRef, {
             text,
             sender: user.uid,
             timeSent: serverTimestamp(),
+            aiScore,
+            aiWarning,
         })
     }
     return (

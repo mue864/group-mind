@@ -27,7 +27,7 @@ const DropDown: React.FC<DropDownProps> = ({
 
   useEffect(() => {
     setValue(value);
-  }, [value, setValue]);
+  }, [value]);
 
   // Style objects for different states
   const pickerStyle = {
@@ -54,8 +54,6 @@ const DropDown: React.FC<DropDownProps> = ({
     fontFamily: "Poppins-SemiBold",
     fontSize: 16,
   };
-         
-
 
   const textStyle = {
     fontSize: 16,

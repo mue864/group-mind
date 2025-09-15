@@ -27,6 +27,8 @@ export type QaPost = {
   imageUrl: string | undefined;
   purpose: string;
   userName: string;
+  aiScore?: number;
+  aiWarning?: 'none' | 'likely' | 'detected';
 };
 
 

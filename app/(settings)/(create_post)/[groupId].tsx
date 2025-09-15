@@ -5,11 +5,13 @@ import { messages } from "@/assets/icons/messages";
 import avatars from "@/assets/images/avatars";
 import ShareModal from "@/components/ShareModal";
 import { useGroupContext } from "@/store/GroupContext";
+import { analyzePastedContent, getEducationalTooltip } from "@/utils/pasteDetector";
+import EducationalTooltip from "@/components/EducationalTooltip";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format, isToday, isYesterday } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import { Timestamp } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Dimensions,
   Image,
@@ -48,6 +50,9 @@ const CreatePost = () => {
   const [checkTime, setCheckTime] = useState("");
   const [sentMessage, setSentMessage] = useState("");
   const [sentTime, setSentTime] = useState("");
+  const [showEducationalTooltip, setShowEducationalTooltip] = useState(false);
+  const [educationalMessage, setEducationalMessage] = useState("");
+  const prevTextRef = useRef("");
 
   const isAdmin = false;
   const isMod = true;
@@ -90,6 +95,18 @@ const CreatePost = () => {
 
   const userAvatar = userInformation?.profilePicture.toString();
   const isSelf = true;
+
+  const handlePostChange = (newText: string) => {
+    const analysis = analyzePastedContent(newText, prevTextRef.current);
+    
+    if (analysis.isEducationalMoment && analysis.educationalMessage) {
+      setEducationalMessage(analysis.educationalMessage);
+      setShowEducationalTooltip(true);
+    }
+    
+    setPost(newText);
+    prevTextRef.current = newText;
+  };
 
   const sendPost = (
     groupId: string,
@@ -286,7 +303,7 @@ const CreatePost = () => {
           <View className="flex-1 mx-2 justify-center">
             <TextInput
               value={post}
-              onChangeText={(text) => (setPost(text), setUserTyping(!!text))}
+              onChangeText={(text) => (handlePostChange(text), setUserTyping(!!text))}
               mode="outlined"
               outlineColor="transparent"
               activeOutlineColor="transparent"
@@ -343,6 +360,14 @@ const CreatePost = () => {
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Educational Tooltip - positioned below input */}
+        <EducationalTooltip
+          message={educationalMessage}
+          visible={showEducationalTooltip}
+          onDismiss={() => setShowEducationalTooltip(false)}
+          type="tip"
+        />
       </KeyboardAvoidingView>
     </View>
   );

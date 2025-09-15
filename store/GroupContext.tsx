@@ -3,25 +3,26 @@ import { reviveTimestamps } from "@/utils/formatDate";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import {
-  addDoc,
-  arrayRemove,
-  arrayUnion,
   collection,
-  deleteDoc,
-  FieldValue,
   doc as firestoreDoc,
   getDoc,
   getDocs,
   onSnapshot,
+  orderBy,
   query,
-  serverTimestamp,
   setDoc,
   Timestamp,
+  arrayRemove,
+  arrayUnion,
+  deleteDoc,
+  FieldValue,
+  serverTimestamp,
   updateDoc,
+  addDoc,
 } from "firebase/firestore";
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { showMessage } from "react-native-flash-message";
+import { fastAIDetector } from "@/utils/aiDetector";
 import Toast from "react-native-toast-message";
 
 export interface Group {
@@ -68,6 +69,8 @@ interface MessageData {
   isHelpful?: boolean;
   helpfulCount?: number;
   helpfulUsers?: string[];
+  aiScore?: number;
+  aiWarning?: 'none' | 'likely' | 'detected';
 }
 
 interface SendMessageParams {
@@ -216,6 +219,22 @@ interface UserInfo {
   userID: string;
   bio?: string;
   profileComplete: boolean;
+  university: string;
+  volunteerVerified: boolean;
+  volunteerSubjects: string[];
+  volunteerAvailability: {
+    day: string;
+    start: string;
+    end: string;
+  }[];
+  volunteerVerification: {
+    [key: string]: {
+      status: string;
+      score: number;
+      attempts: number;
+      updatedAt: number;
+    };
+  };
 }
 
 interface CallInfo {
@@ -249,6 +268,7 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const [isJoining, setIsJoining] = useState(false);
   const [isSendingJoinRequest, setIsSendingJoinRequest] = useState(false);
   const [activeCalls, setActiveCalls] = useState<CallInfo[]>([]);
+  const localUserInfoRef = useRef(userInformation);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -712,6 +732,11 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setQaPostSent(false);
       const qaRef = firestoreDoc(collection(db, "groups", groupId, "qa"));
+      
+      // AI Detection
+      const aiScore = fastAIDetector(message);
+      const aiWarning = aiScore >= 0.6 ? 'detected' : aiScore >= 0.55 ? 'likely' : 'none';
+      
       const qaData = {
         groupId,
         message,
@@ -725,6 +750,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         imageUrl: userInformation?.profilePicture,
         userName: userInformation?.userName,
         purpose: userInformation?.purpose,
+        aiScore,
+        aiWarning,
       };
       await setDoc(qaRef, qaData);
       setQaPostID(qaRef.id);
@@ -757,6 +784,10 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         )
       );
 
+      // AI Detection
+      const aiScore = fastAIDetector(message);
+      const aiWarning = aiScore >= 0.6 ? 'detected' : aiScore >= 0.55 ? 'likely' : 'none';
+
       const resposeData = {
         postId,
         userName: userInformation?.userName,
@@ -771,6 +802,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         isHelpful: false,
         helpfulCount: 0,
         helpfulUsers: [],
+        aiScore,
+        aiWarning,
       };
       await setDoc(responseRef, resposeData);
 
@@ -834,6 +867,11 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const userInfo = userInfoParam || userInformation;
+      
+      // AI Detection
+      const aiScore = fastAIDetector(message);
+      const aiWarning = aiScore >= 0.6 ? 'detected' : aiScore >= 0.55 ? 'likely' : 'none';
+      
       const messageData: MessageData = {
         message,
         sentBy,
@@ -844,6 +882,8 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
         userName: userInfo?.userName || "",
         purpose: userInfo?.purpose || "",
         type,
+        aiScore,
+        aiWarning,
         ...(parentMessageId && { parentMessageId }),
         ...(type === "response" && {
           isHelpful: false,
@@ -1038,6 +1078,16 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user]);
 
+  const saveCurrentUserInfo = async () => {
+    // tries to save the information locally just after it is fetched
+    const stringData = JSON.stringify(localUserInfoRef.current);
+    try {
+      await AsyncStorage.setItem("@localUserInfo", stringData);
+    } catch (error) {
+      console.error("Unable to save userInfo locally", error);
+    }
+  }
+
   // get and save the user information locally with real-time updates
   const getCurrentUserInfo = async () => {
     if (!user) return;
@@ -1060,9 +1110,16 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
               canExplainToPeople: data.canExplainToPeople,
               userID: user.uid,
               bio: data.bio || "",
-              profileComplete: data.profileComplete
+              profileComplete: data.profileComplete,
+              university: data.university,
+              volunteerVerified: data.volunteerVerified,
+              volunteerSubjects: data.volunteerSubjects,
+              volunteerAvailability: data.volunteerAvailability,
+              volunteerVerification: data.volunteerVerification,
             } satisfies UserInfo;
             setUserInformation(savedData);
+            localUserInfoRef.current = savedData;
+            saveCurrentUserInfo();
           }
           unsubscribe();
         },

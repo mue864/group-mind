@@ -80,10 +80,11 @@ const TabButton: React.FC<TabButtonProps> = ({
 
 const Groups = () => {
   const router = useRouter();
-  const { groups, allGroups, user, loading, refreshGroups, fetchAllGroups } =
+  const { groups, allGroups, user, loading, refreshGroups, fetchAllGroups, userInformation } =
     useGroupContext();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"joined" | "all">("joined");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [refreshing, setRefreshing] = useState(false);
 
   const onStateChange = ({ open }: { open: boolean }) => setOpen(open);
@@ -101,16 +102,74 @@ const Groups = () => {
     }
   }, [refreshGroups, fetchAllGroups]);
 
+  // Get categories based on user type and verification status
+  const categories = useMemo(() => {
+    const allGroupsData = activeTab === "joined" ? groups : allGroups;
+    let uniqueCategories = [...new Set(allGroupsData.map(group => group.category).filter(Boolean))];
+    
+    // Filter categories for volunteers based on verified subjects
+    if (userInformation?.purpose === "Volunteer" && userInformation?.volunteerVerification) {
+      const verifiedSubjects = Object.keys(userInformation.volunteerVerification)
+        .filter(subject => userInformation.volunteerVerification[subject].status === "passed")
+        .map(subject => {
+          // Convert database format (computer_science) to readable format (Computer Science)
+          return subject === "computer_science" ? "Computer Science" :
+                 subject === "software_engineering" ? "Software Engineering" :
+                 subject === "mathematics" ? "Mathematics" :
+                 subject === "accounting" ? "Accounting" :
+                 subject === "economics" ? "Economics" :
+                 subject === "business_studies" ? "Business Studies" :
+                 subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        });
+      
+      // Only show categories that match verified subjects (now using labels)
+      uniqueCategories = uniqueCategories.filter(category => 
+        verifiedSubjects.includes(category)
+      );
+    }
+    
+    return ["All", ...uniqueCategories.sort()];
+  }, [groups, allGroups, activeTab, userInformation]);
+
   // Separate joined groups from all groups
   const joinedGroups = useMemo(() => {
-    return groups.filter((group) => group.members.includes(user?.uid || ""));
-  }, [groups, user?.uid]);
+    const filtered = groups.filter((group) => group.members.includes(user?.uid || ""));
+    if (selectedCategory === "All") return filtered;
+    return filtered.filter((group) => group.category === selectedCategory);
+  }, [groups, user?.uid, selectedCategory]);
 
   const availableGroups = useMemo(() => {
     if (!user?.uid) return allGroups;
-    const joinedGroupIds = joinedGroups.map((group) => group.id);
-    return allGroups.filter((group) => !joinedGroupIds.includes(group.id));
-  }, [allGroups, joinedGroups, user?.uid]);
+    const joinedGroupIds = groups.filter((group) => group.members.includes(user?.uid || "")).map((group) => group.id);
+    let filtered = allGroups.filter((group) => !joinedGroupIds.includes(group.id));
+    
+    // For volunteers, only show groups in categories they're verified for
+    if (userInformation?.purpose === "Volunteer" && userInformation?.volunteerVerification) {
+      const verifiedSubjects = Object.keys(userInformation.volunteerVerification)
+        .filter(subject => userInformation.volunteerVerification[subject].status === "passed")
+        .map(subject => {
+          // Convert database format (computer_science) to readable format (Computer Science)
+          return subject === "computer_science" ? "Computer Science" :
+                 subject === "software_engineering" ? "Software Engineering" :
+                 subject === "mathematics" ? "Mathematics" :
+                 subject === "accounting" ? "Accounting" :
+                 subject === "economics" ? "Economics" :
+                 subject === "business_studies" ? "Business Studies" :
+                 subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        });
+      
+      console.log("Volunteer verification status:", userInformation.volunteerVerification);
+      console.log("Verified subjects (converted):", verifiedSubjects);
+      console.log("Available groups before filtering:", filtered.map(g => ({ name: g.name, category: g.category })));
+      
+      filtered = filtered.filter((group) => verifiedSubjects.includes(group.category));
+      
+      console.log("Available groups after filtering:", filtered.map(g => ({ name: g.name, category: g.category })));
+    }
+    
+    if (selectedCategory === "All") return filtered;
+    return filtered.filter((group) => group.category === selectedCategory);
+  }, [allGroups, groups, user?.uid, selectedCategory, userInformation]);
 
   const renderGroupCard = ({ item }: { item: any }) => (
     <View className="items-center">
@@ -258,42 +317,67 @@ const Groups = () => {
         <StatusBar barStyle={"dark-content"} />
 
         {/* Enhanced Header with tabs */}
-        <View className="bg-white border-b border-gray-100 pt-5 pb-6">
-
-
-          <View className="flex-row justify-between items-center px-6 mb-6">
-            <View>
-              <Text className="text-gray-500 text-xl font-poppins-semiBold">
-                {activeTab === "joined"
-                  ? "Your study communities"
-                  : "Discover new groups"}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => router.push("/(dashboard)/settings")}
-              className="p-3 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-200"
-              activeOpacity={0.7}
-            >
-              <Ionicons name="settings-outline" size={24} color="#667eea" />
-            </TouchableOpacity>
-          </View>
+        <View className="bg-white border-b border-gray-100 pt-10 pb-6">
 
           {/* Enhanced Tab Navigation */}
           <View className="px-6">
-            <View className="flex-row">
+            <View className="flex-row mb-4">
               <TabButton
                 title="My Groups"
-                count={joinedGroups.length}
+                count={activeTab === "joined" ? joinedGroups.length : groups.filter((group) => group.members.includes(user?.uid || "")).length}
                 isActive={activeTab === "joined"}
-                onPress={() => setActiveTab("joined")}
+                onPress={() => {
+                  setActiveTab("joined");
+                  setSelectedCategory("All");
+                }}
               />
               <TabButton
                 title="Explore"
-                count={availableGroups.length}
+                count={activeTab === "all" ? availableGroups.length : (() => {
+                  if (!user?.uid) return allGroups.length;
+                  const joinedGroupIds = groups.filter((group) => group.members.includes(user?.uid || "")).map((group) => group.id);
+                  return allGroups.filter((group) => !joinedGroupIds.includes(group.id)).length;
+                })()}
                 isActive={activeTab === "all"}
-                onPress={() => setActiveTab("all")}
+                onPress={() => {
+                  setActiveTab("all");
+                  setSelectedCategory("All");
+                }}
               />
             </View>
+            
+            {/* Category Filter */}
+            {categories.length > 1 && (
+              <View className="mb-2">
+                <Text className="text-gray-600 text-sm font-poppins-semiBold mb-3">
+                  Filter by Category
+                </Text>
+                <View className="flex-row flex-wrap">
+                  {categories.map((category) => (
+                    <TouchableOpacity
+                      key={category}
+                      onPress={() => setSelectedCategory(category)}
+                      className={`mr-2 mb-2 px-4 py-2 rounded-full border ${
+                        selectedCategory === category
+                          ? "bg-blue-500 border-blue-500"
+                          : "bg-white border-gray-300"
+                      }`}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        className={`text-sm font-poppins-semiBold ${
+                          selectedCategory === category
+                            ? "text-white"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         </View>
 
@@ -316,11 +400,11 @@ const Groups = () => {
               initialNumToRender={2}
               maxToRenderPerBatch={5}
               numColumns={1}
-              key={`${activeTab}-${
+              key={`${activeTab}-${selectedCategory}-${
                 activeTab === "joined"
                   ? joinedGroups.length
                   : availableGroups.length
-              }`} // Force re-render when tab changes or groups update
+              }`} // Force re-render when tab or category changes
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
               }

@@ -34,6 +34,7 @@ const Profile = () => {
     bio: "",
     purpose: "",
     level: "",
+    university: "",
   });
 
   // Real-time listener for user profile updates
@@ -55,6 +56,12 @@ const Profile = () => {
             canExplainToPeople: data.canExplainToPeople || false,
             userID: user.uid,
             bio: data.bio || "",
+            university: data.university || "",
+            profileComplete: data.profileComplete || false,
+            volunteerVerified: data.volunteerVerified || false,
+            volunteerSubjects: data.volunteerSubjects || [],
+            volunteerAvailability: data.volunteerAvailability || [],
+            volunteerVerification: data.volunteerVerification || {},
           };
           setLocalUserInfo(updatedUserInfo);
         }
@@ -75,6 +82,7 @@ const Profile = () => {
         bio: localUserInfo.bio || "",
         purpose: localUserInfo.purpose || "",
         level: localUserInfo.level || "",
+        university: localUserInfo.university || "",
       });
     }
   }, [localUserInfo]);
@@ -284,6 +292,13 @@ const Profile = () => {
           </View>
 
           <View>
+            <Text className="text-gray-500 text-sm font-poppins">University</Text>
+            <Text className="text-gray-800 font-poppins-semiBold">
+              {localUserInfo.university || "Not specified"}
+            </Text>
+          </View>
+
+          <View>
             <Text className="text-gray-500 text-sm font-poppins">Level</Text>
             <Text className="text-gray-800 font-poppins-semiBold">
               {localUserInfo.level || "Not specified"}
@@ -362,7 +377,6 @@ const Profile = () => {
       >
         <View className="flex-1 bg-white">
           <View className="flex-row justify-between p-4">
-
             <TouchableOpacity onPress={() => setResetModalVisible(false)}>
               <Ionicons name="close" size={24} color="black" />
             </TouchableOpacity>
@@ -385,8 +399,12 @@ const Profile = () => {
 
           <View className="flex-col gap-4 mt-10">
             <TouchableOpacity
-              onPress={() => {deleteUserAccount()}}
-              className={` ${loading ? "opacity-50" : ""} bg-red-500 p-4 mx-10 rounded-md shadow-sm shadow-black flex-row gap-3 justify-center items-center`}
+              onPress={() => {
+                deleteUserAccount();
+              }}
+              className={` ${
+                loading ? "opacity-50" : ""
+              } bg-red-500 p-4 mx-10 rounded-md shadow-sm shadow-black flex-row gap-3 justify-center items-center`}
             >
               <Ionicons name="trash" size={20} color="white" />
               <Text className="font-poppins-semiBold text-xl text-white">

@@ -2,16 +2,22 @@ import { View, Text, TouchableOpacity, Alert } from 'react-native'
 import React, {useState} from 'react'
 import {FontAwesome6} from "@expo/vector-icons";
 import { router } from 'expo-router';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, reload } from 'firebase/auth';
 import Toast from 'react-native-toast-message';
 
 
 const VerifyEmail = () => {
+const auth = getAuth();
 
-
+  async function refreshUser() {
+    if(auth.currentUser) {
+      await reload(auth.currentUser);
+      console.log("User reloaded, email verified:", auth.currentUser?.emailVerified);
+    }
+  }
   // this has to be async i think
   const verifyEmailApproved = () => {
-    const auth = getAuth();
+    refreshUser();    
 
     onAuthStateChanged(auth, (user) => {
       if (user?.emailVerified) {

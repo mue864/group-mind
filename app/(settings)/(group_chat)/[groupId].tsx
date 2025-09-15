@@ -5,6 +5,9 @@ import MessageBubble from "@/components/MessageBubble";
 import SearchBar from "@/components/SearchBar";
 import { db } from "@/services/firebase";
 import { useGroupContext } from "@/store/GroupContext";
+import { fastAIDetector } from "@/utils/aiDetector";
+import { analyzePastedContent, getEducationalTooltip } from "@/utils/pasteDetector";
+import EducationalTooltip from "@/components/EducationalTooltip";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -47,6 +50,8 @@ type TimelineMessage = {
   parentMessageId?: string;
   responseCount?: number;
   isHelpful?: boolean;
+  aiScore?: number;
+  aiWarning?: 'none' | 'likely' | 'detected';
 };
 
 function GroupChat() {
@@ -69,6 +74,9 @@ function GroupChat() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const prevTextRef = useRef("");
+  const [showEducationalTooltip, setShowEducationalTooltip] = useState(false);
+  const [educationalMessage, setEducationalMessage] = useState("");
 
   // Keyboard listeners
   useEffect(() => {
@@ -233,6 +241,8 @@ function GroupChat() {
                 parentMessageId: data.parentMessageId,
                 responseCount,
                 isHelpful: data.isHelpful || false,
+                aiScore: data.aiScore,
+                aiWarning: data.aiWarning || 'none',
               };
 
               messagesData.push(messageData);
@@ -289,51 +299,56 @@ function GroupChat() {
     });
   }, [timeline, searchQuery]);
 
+  const handleMessageChange = (newText: string) => {
+    const analysis = analyzePastedContent(newText, prevTextRef.current);
+    
+    if (analysis.isEducationalMoment && analysis.educationalMessage) {
+      setEducationalMessage(analysis.educationalMessage);
+      setShowEducationalTooltip(true);
+    }
+    
+    setMessage(newText);
+    prevTextRef.current = newText;
+  };
+
   const handleSendMessage = async () => {
-    if (!message.trim() || !user || isSending || !groupId) return;
+    if (!message.trim() || isSending || !user) return;
+
+    const messageToSend = message.trim();
+    const currentMessageType = messageType;
+    const currentReplyingTo = replyingTo;
+
+    // Clear input immediately for better UX
+    setMessage("");
+    setReplyingTo(null);
+    setIsSending(true);
 
     try {
-      setIsSending(true);
-      const timeSent = Timestamp.now();
-      const messageText = message.trim();
-      setMessage("");
+      await sendMessage(
+        messageToSend,
+        isAdmin,
+        isMod,
+        user.uid,
+        Timestamp.now(),
+        groupId.toString(),
+        currentMessageType,
+        currentReplyingTo || undefined
+      );
 
-      // Send message normally
-      if (replyingTo) {
-        await sendMessage(
-          messageText,
-          isAdmin,
-          isMod,
-          user.uid,
-          timeSent,
-          groupId.toString(),
-          "response",
-          replyingTo
-        );
-        setReplyingTo(null);
-      } else {
-        await sendMessage(
-          messageText,
-          isAdmin,
-          isMod,
-          user.uid,
-          timeSent,
-          groupId.toString(),
-          messageType
-        );
-      }
-
-
-      setMessageType("message");
+      // Scroll to bottom after sending
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd(true);
+      }, 100);
     } catch (error) {
       console.error("Error sending message:", error);
-      Alert.alert("Error", "Failed to send message. Please try again.");
+      // Restore message on error
+      setMessage(messageToSend);
+      setReplyingTo(currentReplyingTo);
     } finally {
       setIsSending(false);
     }
   };
 
-  // Handle reply to a message
   const handleReply = (messageId?: string) => {
     if (messageId) {
       setReplyingTo(messageId);
@@ -362,6 +377,138 @@ function GroupChat() {
     setReplyingTo(null);
   };
 
+  const loadMessages = async () => {
+    try {
+      // First try to load from cache (using your existing approach)
+      const cachedMessagesKey = `messages_${groupId}`;
+      const cachedData = await AsyncStorage.getItem(cachedMessagesKey);
+
+      if (cachedData) {
+        const cachedMessages = JSON.parse(cachedData);
+        setTimeline(cachedMessages);
+      }
+
+      // Then try to connect to Firestore
+      const messagesQuery = query(
+        collection(db, "groups", groupId.toString(), "messages"),
+        orderBy("timeSent", "asc")
+      );
+
+      const unsubscribe = onSnapshot(
+        messagesQuery,
+        async (snapshot) => {
+          const messagesData = [];
+
+          // Fetch group data to determine user roles
+          let groupData = null;
+          try {
+            const groupRef = doc(db, "groups", groupId.toString());
+            const groupSnapshot = await getDoc(groupRef);
+            if (groupSnapshot.exists()) {
+              groupData = groupSnapshot.data();
+            }
+          } catch (error) {
+            console.log("Error fetching group data for roles:", error);
+          }
+
+          for (const doc of snapshot.docs) {
+            const data = doc.data();
+
+            // Get response count for questions
+            let responseCount = 0;
+            if (data.type === "question") {
+              try {
+                const responsesSnapshot = await collection(
+                  db,
+                  "groups",
+                  groupId.toString(),
+                  "messages",
+                  doc.id,
+                  "responses"
+                );
+
+                responseCount = 0; 
+              } catch (error) {
+                console.log("Error getting response count:", error);
+              }
+            }
+
+            // Determine user role from group data
+            let isAdmin = false;
+            let isMod = false;
+            if (groupData) {
+              const userId = data.sentBy;
+              if (groupData.groupOwner === userId) {
+                isAdmin = true;
+                isMod = false;
+              } else if (groupData.admins?.includes(userId)) {
+                isAdmin = true;
+                isMod = false;
+              } else if (groupData.moderators?.includes(userId)) {
+                isAdmin = false;
+                isMod = true;
+              }
+            }
+
+            const messageData = {
+              id: doc.id,
+              message: data.message || "",
+              sentBy: data.sentBy || "",
+              timeSent: data.timeSent || Timestamp.now(),
+              isSelf: data.sentBy === user?.uid,
+              isAdmin: isAdmin,
+              isMod: isMod,
+              imageUrl: data.imageUrl,
+              userName: data.userName || "Unknown User",
+              purpose: data.purpose || "",
+              type: data.type || "message",
+              parentMessageId: data.parentMessageId,
+              responseCount,
+              isHelpful: data.isHelpful || false,
+              aiScore: data.aiScore,
+              aiWarning: data.aiWarning || 'none',
+            };
+
+            messagesData.push(messageData);
+          }
+
+          setTimeline(messagesData);
+
+          try {
+            await AsyncStorage.setItem(
+              cachedMessagesKey,
+              JSON.stringify(messagesData)
+            );
+          } catch (error) {
+            console.error("Error caching messages:", error);
+          }
+        },
+        (error) => {
+          console.error("Error fetching messages:", error);
+          // If online fetch fails, we already have cached data
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    }
+  };
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (timeline.length > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd(true);
+      }, 100);
+    }
+  }, [timeline.length]);
+
+  // Load messages with offline support using existing AsyncStorage approach
+  useEffect(() => {
+    if (!user || !groupId) return;
+    loadMessages();
+  }, [user, groupId]);
   return (
     <View className="flex-1 bg-[#F5F6FA]">
       {/* Header */}
@@ -447,6 +594,8 @@ function GroupChat() {
                     messageId={msg.id}
                     responseCount={msg.responseCount}
                     isHelpful={msg.isHelpful}
+                    aiScore={msg.aiScore}
+                    aiWarning={msg.aiWarning}
                     onReply={handleReply}
                     onHelpful={handleHelpful}
                   />
@@ -520,7 +669,7 @@ function GroupChat() {
           <View style={styles.inputRow}>
             <TextInput
               value={isSending ? "" : message}
-              onChangeText={setMessage}
+              onChangeText={handleMessageChange}
               mode="outlined"
               outlineColor="transparent"
               activeOutlineColor="transparent"
@@ -563,6 +712,14 @@ function GroupChat() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Educational Tooltip - positioned below input */}
+          <EducationalTooltip
+            message={educationalMessage}
+            visible={showEducationalTooltip}
+            onDismiss={() => setShowEducationalTooltip(false)}
+            type="warning"
+          />
         </View>
       </KeyboardAvoidingView>
     </View>
