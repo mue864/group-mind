@@ -5,12 +5,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { Text, View, Alert } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import * as Updates from 'expo-updates';
 import "../global.css";
 
 interface UserInfo {
@@ -43,13 +44,16 @@ interface UserInfo {
 
 const Entry = () => {
   const { userInformation, getCurrentUserInfo } = useGroupContext();
+  const [userState, setUserState] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [profileCompleted, setProfileCompleted] = useState(false);
   const [profileStep, setProfileStep] = useState(0);
   const [profilePurpose, setProfilePurpose] = useState("");
-  const profileStepRef = useRef(profileStep);
-  const profilePurposeRef = useRef(profilePurpose);
-  const profileCompletedRef = useRef(profileCompleted);
-  const userInfoRef = useRef(userInformation);
+  const profileCompletedRef = useRef(false);
+  const profileStepRef = useRef(0);
+  const profilePurposeRef = useRef("");
+  const userInfoRef = useRef<UserInfo | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [localUserInfo, setLocalUserInfo] = useState<UserInfo>();
   const localUserInfoRef = useRef(localUserInfo);
 
@@ -116,9 +120,49 @@ const Entry = () => {
     }
   };
 
+  // Check for app updates
+  const checkForUpdates = async () => {
+    try {
+      if (!Updates.isEnabled) {
+        console.log('Updates are not enabled');
+        return;
+      }
+
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        setUpdateAvailable(true);
+        Alert.alert(
+          'Update Available',
+          'A new version of the app is available. Would you like to update now?',
+          [
+            {
+              text: 'Later',
+              style: 'cancel',
+            },
+            {
+              text: 'Update',
+              onPress: async () => {
+                try {
+                  await Updates.fetchUpdateAsync();
+                  await Updates.reloadAsync();
+                } catch (error) {
+                  console.error('Error updating app:', error);
+                  Alert.alert('Update Failed', 'Failed to update the app. Please try again later.');
+                }
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+    }
+  };
+
   useEffect(() => {
     fetchState();
     fetchProfileStep();
+    checkForUpdates();
   }, []);
 
   useEffect(() => {
