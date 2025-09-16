@@ -5,17 +5,21 @@ export { default as TosStrings } from "./tosStrings";
 
 // WebRTC Configuration
 export const WEBRTC_CONFIG = {
-  // Use a proper WebSocket URL for your environment
+  // Use secure WebSocket URL for production builds
   SIGNALING_URL: __DEV__
-    ? "ws://signaling-server-seo6.onrender.com" // Development and production use the same deployed server
-    : "ws://signaling-server-seo6.onrender.com", // Production server
+    ? "ws://signaling-server-seo6.onrender.com" // Development - can use ws://
+    : "wss://signaling-server-seo6.onrender.com", // Production - must use wss:// for HTTPS domains
 
-  // ICE Servers configuration
+  // ICE Servers configuration with TURN servers for better connectivity
   ICE_SERVERS: [
+    // STUN servers for NAT traversal
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
     { urls: "stun:stun3.l.google.com:19302" },
     { urls: "stun:stun4.l.google.com:19302" },
+    // Additional STUN servers for redundancy
+    { urls: "stun:stun.services.mozilla.com" },
+    { urls: "stun:stun.stunprotocol.org:3478" },
   ],
 };

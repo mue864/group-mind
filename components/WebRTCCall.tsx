@@ -1,5 +1,6 @@
 import { WEBRTC_CONFIG } from "@/constants";
 import { useGroupContext } from "@/store/GroupContext";
+import { NetworkDiagnosticsService } from "@/utils/networkDiagnostics";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
@@ -74,6 +75,27 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
     try {
       console.log("Initializing WebRTC call...", { roomId, userId, userName });
 
+      // Run network diagnostics first in production builds
+      if (!__DEV__) {
+        console.log("Running network diagnostics...");
+        const diagnostics = await NetworkDiagnosticsService.getInstance().performDiagnostics(WEBRTC_CONFIG.SIGNALING_URL);
+        const report = NetworkDiagnosticsService.getInstance().generateDiagnosticReport(diagnostics);
+        console.log(report);
+        
+        // Show warning if critical issues detected
+        if (!diagnostics.canReachSignalingServer || !diagnostics.stunServerReachable) {
+          const suggestions = NetworkDiagnosticsService.getInstance().getTroubleshootingSuggestions(diagnostics);
+          Alert.alert(
+            "Connection Issues Detected",
+            `Network diagnostics found potential issues:\n\n${suggestions.join('\n')}\n\nDo you want to continue anyway?`,
+            [
+              { text: "Cancel", onPress: () => onEndCall() },
+              { text: "Continue", style: "default" }
+            ]
+          );
+        }
+      }
+
       // Get local media stream FIRST and wait for it
       const stream = await setupLocalStream();
       if (!stream) {
@@ -98,7 +120,7 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       connectToSignalingServer();
     } catch (error: any) {
       console.error("Failed to initialize call:", error);
-      Alert.alert("Error", "Failed to initialize call: " + error.message);
+      Alert.alert("Error", "Failed to initialize call: " + (error instanceof Error ? error.message : String(error)));
     }
   };
   // remove user from  participants when call ends
@@ -169,6 +191,7 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
     const stream = localStreamRef.current;
     if (!stream) {
       console.error("Cannot connect to signaling server without local stream");
+      setConnectionState("error");
       return;
     }
 
@@ -178,22 +201,51 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       userName
     )}`;
 
-    console.log("Connecting to signaling server:", wsUrl, {
+    console.log("Connecting to signaling server:", {
+      url: wsUrl,
+      isDev: __DEV__,
       streamId: stream.id,
       audioTracks: stream.getAudioTracks().length,
       videoTracks: stream.getVideoTracks().length,
     });
 
-    wsRef.current = new WebSocket(wsUrl);
+    try {
+      wsRef.current = new WebSocket(wsUrl);
+      
+      // Set connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (wsRef.current?.readyState !== WebSocket.OPEN) {
+          console.error("WebSocket connection timeout");
+          setConnectionState("error");
+          wsRef.current?.close();
+          Alert.alert(
+            "Connection Error", 
+            "Failed to connect to call server. Please check your internet connection and try again."
+          );
+        }
+      }, 10000); // 10 second timeout
 
-    wsRef.current.onopen = () => {
-      console.log("WebSocket connected, local stream ready:", {
-        streamId: stream.id,
-        audioTracks: stream.getAudioTracks().length,
-        videoTracks: stream.getVideoTracks().length,
-      });
-      setConnectionState("connected");
-    };
+      wsRef.current.onopen = () => {
+        clearTimeout(connectionTimeout);
+        console.log("WebSocket connected successfully:", {
+          url: wsUrl,
+          readyState: wsRef.current?.readyState,
+          streamId: stream.id,
+          audioTracks: stream.getAudioTracks().length,
+          videoTracks: stream.getVideoTracks().length,
+        });
+        setConnectionState("connected");
+      };
+    } catch (error) {
+      console.error("Failed to create WebSocket connection:", error);
+      setConnectionState("error");
+      Alert.alert(
+        "Connection Error", 
+        "Failed to initialize call connection: " + (error instanceof Error ? error.message : String(error))
+      );
+      return;
+    }
+
 
     wsRef.current.onmessage = async (event: WebSocketMessageEvent) => {
       try {
@@ -215,14 +267,57 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
       }
     };
 
-    wsRef.current.onerror = (event: Event) => {
-      console.error("WebSocket error:", event);
+    wsRef.current.onerror = async (event: Event) => {
+      console.error("WebSocket error:", {
+        event,
+        url: wsUrl,
+        readyState: wsRef.current?.readyState,
+        isDev: __DEV__,
+      });
       setConnectionState("error");
+      
+      // Run diagnostics on connection error in production
+      if (!__DEV__) {
+        try {
+          const diagnostics = await NetworkDiagnosticsService.getInstance().performDiagnostics(WEBRTC_CONFIG.SIGNALING_URL);
+          const suggestions = NetworkDiagnosticsService.getInstance().getTroubleshootingSuggestions(diagnostics);
+          
+          Alert.alert(
+            "Connection Error", 
+            `Lost connection to call server.\n\nTroubleshooting suggestions:\n${suggestions.join('\n')}`
+          );
+        } catch (diagError) {
+          Alert.alert(
+            "Connection Error", 
+            "Lost connection to call server. Please check your internet connection."
+          );
+        }
+      } else {
+        Alert.alert(
+          "Connection Error", 
+          "Lost connection to call server. Please check your internet connection."
+        );
+      }
     };
 
     wsRef.current.onclose = (event: WebSocketCloseEvent) => {
-      console.log("WebSocket closed:", event.code, event.reason);
-      setConnectionState("disconnected");
+      console.log("WebSocket closed:", {
+        code: event.code,
+        reason: event.reason,
+        url: wsUrl,
+        isDev: __DEV__,
+      });
+      
+      // Only show error if it wasn't a clean close
+      if (event.code !== 1000) {
+        setConnectionState("error");
+        Alert.alert(
+          "Connection Lost", 
+          `Call connection closed unexpectedly (Code: ${event.code}). ${event.reason || "Please try again."}`
+        );
+      } else {
+        setConnectionState("disconnected");
+      }
     };
   };
 
@@ -384,7 +479,37 @@ const WebRTCCall: React.FC<WebRTCCallProps> = ({
         iceTransportPolicy: "all",
         bundlePolicy: "max-bundle",
         rtcpMuxPolicy: "require",
+        // Additional configuration for better connectivity
+        iceCandidatePoolSize: 10,
       });
+
+      // Add connection state monitoring
+      (peerConnection as any).onconnectionstatechange = () => {
+        console.log(`Peer connection state changed for ${peerId}:`, {
+          connectionState: peerConnection.connectionState,
+          iceConnectionState: peerConnection.iceConnectionState,
+          iceGatheringState: peerConnection.iceGatheringState,
+          signalingState: peerConnection.signalingState,
+        });
+        
+        if (peerConnection.connectionState === 'failed') {
+          console.error(`Peer connection failed for ${peerId}`);
+          // Attempt to restart ICE
+          try {
+            (peerConnection as any).restartIce();
+          } catch (e) {
+            console.warn('Failed to restart ICE:', e);
+          }
+        }
+      };
+
+      (peerConnection as any).oniceconnectionstatechange = () => {
+        console.log(`ICE connection state changed for ${peerId}:`, peerConnection.iceConnectionState);
+        
+        if (peerConnection.iceConnectionState === 'failed') {
+          console.error(`ICE connection failed for ${peerId}`);
+        }
+      };
 
       // Store the peer connection FIRST
       peerConnectionsRef.current.set(peerId, peerConnection);
