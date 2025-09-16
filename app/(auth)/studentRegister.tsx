@@ -98,7 +98,7 @@ const StudentRegister = () => {
             key={`subject-${index}`}
             style={{
               width: "100%",
-              marginTop: 9,
+              marginTop: 18,
               marginBottom: 18,
               zIndex: 1000 - index * 10,
             }}
@@ -158,9 +158,7 @@ const StudentRegister = () => {
           }
           loading={loading}
           disabled={
-            submitted &&
-            (university === "" || selectedSubjects.some((s) => s === "")) &&
-            loading
+            university === "" || selectedSubjects.some((s) => s === "") || loading
           }
         />
       </ScrollView>

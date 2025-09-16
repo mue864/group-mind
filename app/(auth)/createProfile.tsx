@@ -38,13 +38,13 @@ const CreateProfile = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setIsVolunteer(purpose === "Volunteer");
   }, [purpose]);
 
   const isFormValid =
-    (isVolunteer) &&
     userName.trim().length > 0 &&
     (isVolunteer || level.trim().length > 0) &&
     age.trim().length > 0 &&
@@ -60,6 +60,7 @@ const CreateProfile = () => {
       });
       return;
     }
+    setLoading(true);
     dataSave();
   };
 
@@ -80,24 +81,34 @@ const CreateProfile = () => {
   const dataSave = async () => {
     const user = auth.currentUser;
     if (user) {
-      await updateDoc(doc(db, "users", user.uid), {
-        userName: userName,
-        level: level,
-        age: age,
-        purpose: purpose,
-        profileImage: selectedImage,
-        canExplainToPeople: isChecked,
-        // profileComplete: true,
-      });
-      // Refresh context before navigating
-      if (getCurrentUserInfo) {
-        await getCurrentUserInfo();
-      }
-      await localSave();
-      if (purpose === "Volunteer") {
-        router.replace("/(auth)/volunteerRegister");
-      } else {
-        router.replace("/(auth)/studentRegister");
+      try {
+        await updateDoc(doc(db, "users", user.uid), {
+          userName: userName,
+          level: level,
+          age: age,
+          purpose: purpose,
+          profileImage: selectedImage,
+          canExplainToPeople: isChecked,
+          // profileComplete: true,
+        });
+        // Refresh context before navigating
+        if (getCurrentUserInfo) {
+          await getCurrentUserInfo();
+        }
+        await localSave();
+        if (purpose === "Volunteer") {
+          router.replace("/(auth)/volunteerRegister");
+        } else {
+          router.replace("/(auth)/studentRegister");
+        }
+      } catch (error) {
+        console.error("Profile update error:", error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to update profile. Please try again.",
+        });
+        setLoading(false);
       }
     } else {
       Toast.show({
@@ -241,7 +252,7 @@ const CreateProfile = () => {
             )}
           </View>
         )}
-        <View style={{ width: "100%", zIndex: 2000 }}>
+        <View style={{ width: "100%", zIndex: 2000, marginTop: 18 }}>
           <DropDown
             data={ageInfo}
             placeholder={Strings.userProfile.userAge}
@@ -261,12 +272,13 @@ const CreateProfile = () => {
           title="Next"
           onPress={handleNext}
           fullWidth
+          loading={loading}
           style={{
             marginTop: 8,
             marginBottom: 24,
             opacity: isFormValid ? 1 : 0.6,
           }}
-          disabled={!isFormValid}
+          disabled={!isFormValid || loading}
         />
       </ScrollView>
     </KeyboardAvoidingView>
